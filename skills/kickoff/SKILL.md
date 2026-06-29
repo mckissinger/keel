@@ -34,8 +34,8 @@ The build runs as a repeated per-feature loop, each feature taken from the `00-p
 
 ```
 spec-feature   → deep interview + mock the feature's screens from the design system + author its milestones   (attended, one session, ends on your sign-off)
-build          → /goal over the feature's milestones                                                          (fresh session, autonomous)
-verify         → /verify-milestone per milestone, + the consolidated wave check on main                       (fresh session, autonomous)
+build          → implement-feature  (implement-milestone + verify-milestone per milestone)                     (fresh session, autonomous)
+verify         → verify-milestone per milestone, + the consolidated wave check on main                        (fresh session, autonomous)
 review-feature → render vs the feature's mockups, judge completeness + fidelity, refinement milestone          (attended)
 ```
 

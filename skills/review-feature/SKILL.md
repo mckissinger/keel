@@ -26,7 +26,7 @@ The first-run UX walk in `verify-milestone` is autonomous and **mechanical-only*
 
 ## Output — a refinement milestone, not a vibe
 
-Findings are phrased as **checkable remediation conditions with route + screenshot evidence**, exactly like a verifier discrepancy list, so they paste into a `/goal`:
+Findings are phrased as **checkable remediation conditions with route + screenshot evidence**, exactly like a verifier discrepancy list, so they paste into a `implement-milestone`:
 - "the `/contacts` empty state renders the themed `EmptyState` with a create-CTA (currently a bare 'No data' string) — see screenshot vs `design/mockups/contacts/list.html`"
 - "the timeline filter-by-event-type control specified in `features/crm.md` is absent on `/contacts/:id`"
 

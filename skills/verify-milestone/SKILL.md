@@ -1,14 +1,14 @@
 ---
 name: verify-milestone
-description: Independent verification of a completed milestone against the spec's stated verification method and ground truth. Run in a fresh session after a /goal completes, before accepting the work. Usage - /verify-milestone <milestone>.
+description: Independent verification of a completed milestone against the spec's stated verification method and ground truth. Run in a fresh session after an implement-milestone completes, before accepting the work. Usage - /verify-milestone <milestone>.
 argument-hint: <milestone>
 ---
 
 # Verify milestone
 
-Independently verify a completed milestone before its work is accepted. This runs in a fresh session, after the /goal completes — deliberately separate from the session that did the work, so no claim is taken on trust.
+Independently verify a completed milestone before its work is accepted. This runs in a fresh session, after the implement-milestone completes — deliberately separate from the session that did the work, so no claim is taken on trust.
 
-For sweeping many milestones at once — e.g. after a multi-milestone /goal run — use the saved workflow `verify-all-milestones` (one verifier per milestone, each in its own worktree) instead of running this skill repeatedly. It is a fast **`[auto]`-dimension** triage: the parallel verifiers can run schema/RLS/unit/logic checks and pin the milestones whose done-conditions are fully `[auto]`. It **cannot** close `[runtime]` conditions — the parallel worktrees have no browser and share one local DB/dev server, so a render/action/live walk can't run there. A milestone carrying any `[runtime]`/live condition comes back `blocked` ("runtime walk not run in the sweep"), gets **no pin**, and must be finished by a serial `/verify-milestone <slug>` (this skill, which runs the walk). Pass milestone slugs as args to re-sweep only specific ones.
+For sweeping many milestones at once — e.g. after a multi-milestone implement-milestone run — use the saved workflow `verify-all-milestones` (one verifier per milestone, each in its own worktree) instead of running this skill repeatedly. It is a fast **`[auto]`-dimension** triage: the parallel verifiers can run schema/RLS/unit/logic checks and pin the milestones whose done-conditions are fully `[auto]`. It **cannot** close `[runtime]` conditions — the parallel worktrees have no browser and share one local DB/dev server, so a render/action/live walk can't run there. A milestone carrying any `[runtime]`/live condition comes back `blocked` ("runtime walk not run in the sweep"), gets **no pin**, and must be finished by a serial `/verify-milestone <slug>` (this skill, which runs the walk). Pass milestone slugs as args to re-sweep only specific ones.
 
 ## Dispatch
 
@@ -33,7 +33,7 @@ For sweeping many milestones at once — e.g. after a multi-milestone /goal run 
 End with one of:
 
 - **Clean** — every condition verified, evidence cited.
-- **Discrepancy list** — formatted so it can be pasted directly into a remediation `/goal` completion condition: each item states what the spec requires, what actually exists, and where, phrased as a checkable condition (e.g., "unit 4B base rent in output matches rent_roll.xlsx row 14 ($2,150, currently $2,510)").
+- **Discrepancy list** — formatted so it can be pasted directly into a remediation `implement-milestone` completion condition: each item states what the spec requires, what actually exists, and where, phrased as a checkable condition (e.g., "unit 4B base rent in output matches rent_roll.xlsx row 14 ($2,150, currently $2,510)").
 
 ## Write the verified record — mandatory final step on a passing verdict
 
@@ -45,7 +45,7 @@ On a **Clean** verdict (or clean-with-noted-caveats), the verification is **not 
 
 - The `<short-sha>` is the HEAD you verified (`git rev-parse --short HEAD` *before* committing the record — i.e. the verified code commit); the pin is what makes the record self-invalidating. Commit the record on the milestone's branch, so the record commit becomes the tip and the pinned SHA is now `HEAD^`.
 - Writing the verdict line is part of verification, not remediation — it's the only thing this session writes, and it does **not** touch code (the "fix nothing" rule still holds).
-- **A discrepancy verdict writes no record** — status stays underived/failing until a remediation `/goal` clears the discrepancies and re-verification runs. Never write a `verified:` line for work that didn't pass.
+- **A discrepancy verdict writes no record** — status stays underived/failing until a remediation `implement-milestone` clears the discrepancies and re-verification runs. Never write a `verified:` line for work that didn't pass.
 - **No pin while a `[runtime]` (or required live) condition is unrun.** A verdict is `clean` only when every `[auto]` **and** `[runtime]` condition ran green (the runtime walk passed on dev + the production build; any required live call passed). An unrun `[runtime]`/live condition → verdict `blocked`, **no** record. And **the `verified:` line never contains a "pending verification" caveat** — if a check is pending, there is no pin. ("Pending the fresh /verify-milestone session" pins are the exact anti-pattern that shipped runtime-broken Crelaunch milestones; CI now rejects a `verified:` line whose verdict text contains "pending"/"unverified"/"to be verified".)
 - Nuanced verdicts stay nuanced in the line ("clean except environment-skew items, see report") — never compressed to a bare checkmark.
 

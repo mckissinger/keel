@@ -81,7 +81,7 @@ Rules that make the comparison fair and the decision easy:
 5. **Build the compare gallery.** Generate `design/mockups/compare.html` from `templates/compare.html`: it shows all directions in labeled frames with the thesis and tradeoff of each, viewable in one window.
 6. **Self-review before presenting.** If Playwright, a browser MCP, or any screenshot capability is available, render each mockup and *look at it* — check contrast, alignment, overflow, whether the signature element actually reads. A picture is worth a thousand tokens; fix what you see before the user sees it. If no browser is available, re-read each file critically against the Phase 2 rules and the anti-slop list.
 
-Present: tell the user to open `compare.html`, give a 1–2 sentence honest pitch per direction including its tradeoff, and ask which direction wins — noting that hybrid answers ("layout of B, palette of D") are normal and welcome.
+Present: **open `design/mockups/compare.html` in the browser for the user** (`open` on macOS / `xdg-open`), give a 1–2 sentence honest pitch per direction including its tradeoff, and ask which direction wins — noting that hybrid answers ("layout of B, palette of D") are normal and welcome.
 
 ## Phase 3 — Select: capture the decision
 
@@ -100,7 +100,7 @@ Phase 2 chose a direction on one screen. Before committing it to real code, vali
 2. **Why this set and not "all screens":** each archetype stresses the direction differently — a table tests density, a wizard tests flow, an empty state tests "what does nothing look like," a detail view tests hierarchy. A direction that sings on a dashboard can collapse on a form. Five archetypes catch that; thirty screens just repeat the finding.
    - **If the app has charts or a dashboard, a data-viz screen is a mandatory archetype** — not an optional one. Charts are where data apps look most generic, and the chart treatment (palette-matched axes/grids/labels, the recorded data-viz library) only gets proven on a real data-viz mockup. Skip it and the dashboard defaults to stock Recharts no matter how good the rest of the direction is. For data-heavy apps this is the single highest-leverage screen to mock.
 3. **These are direction references, not pixel specs.** Same static-HTML mechanics as Phase 2 (self-contained, real data, real states). They capture the *transferable* decisions — palette, type, density, layout architecture, the signature element — not final fidelity. The real build will look different and more polished (see Phase 4).
-4. **Screenshot-review each, then redline.** Present the archetype set for the user's sign-off. This is the milestone's human checkpoint — the direction isn't locked until the user has redlined the spread, not just the single Phase 2 screen.
+4. **Screenshot-review each, then redline.** **Open the archetype set in the browser for the user** (`open` / `xdg-open`) and present it for sign-off. This is the milestone's human checkpoint — the direction isn't locked until the user has redlined the spread, not just the single Phase 2 screen.
 
 For a project using the spec workflow, this completes the **design-system kickoff gate** — which is *not* a numbered build milestone. The gate runs attended during the kickoff sitting (the redline is the user's live judgment) and **ends at a redlined archetype set + `specs/design.md` + the built component gallery (Phase 4), all committed to main** (durable, like the other spec files — never carried on a milestone branch where a later merge/squash can orphan them).
 

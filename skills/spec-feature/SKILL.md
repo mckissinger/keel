@@ -33,15 +33,15 @@ Apply the `interview` discipline — restate the goal, surface open decisions, d
 - **The edges**: permissions/role differences, validation, conflicts, the worst-case screen.
 - **Cross-feature seams**: what existing surface this feature mounts into or links to (the integration seam — name it now, per the shared rules, or it's discovered at merge).
 
-End the interview with a one-paragraph feature definition and the resolved decision list. If you couldn't write that paragraph, you're not done interviewing.
+End the interview with a one-paragraph feature definition and the resolved decision list. If you couldn't write that paragraph, you're not done interviewing. Then **synthesize that understanding (plus any stack-profile delta) and get the user's explicit sign-off before Movement 2 — the confirm-before-author gate.** Don't start mocking or authoring until the interview is confirmed.
 
 ### 2. Design the feature's screens (from the locked system)
 
 **Skip this movement for a no-UI feature** (the profile's Q8 — a backend/CLI/library change has no screens): go straight to Movement 3 with two-dimension done-conditions (logic + behavioral completeness, no fidelity). Otherwise, mock **this feature's** screens — not generic archetypes — composing from the already-decided design system:
 
 - **Compose from the system, don't re-explore.** `specs/design.md` and the built component gallery own the palette, type, density, material palette (icons, motion, charts, primitives), and the signature element. Assemble the feature's screens from those primitives; for the craft the system leaves open — motion, micro-interactions, the feel of states — apply `${CLAUDE_PLUGIN_ROOT}/references/interaction-craft.md` and turn its relevant principles into **fidelity done-conditions** (so motion is specced, not left to the builder's defaults). **Do not run `app-design-directions`** — the direction is locked; re-exploring it per feature is wrong.
-- **One mockup per distinct screen/state of this feature**, self-contained HTML with real domain data and real states (not just the happy path), under `design/mockups/<feature>/<screen>.html`. These carry *this feature's* intent — which is exactly what a shared app-wide archetype could not, and the reason past builds drifted generic.
-- **You redline them.** Present the feature's mockup set for the user's sign-off. The direction was redlined once at kickoff; each feature's *screens* are redlined here. The feature isn't ready to spec until the screens are signed off.
+- **Mock the distinct screens/states — asked per screen, defaulting to mock.** A novel archetype gets a mockup (the default — this is the anti-generic mechanism). For a screen that's **pure composition of existing gallery components**, ask whether to mock it or to point its fidelity done-condition at the **named gallery components** instead — never at nothing. When you mock: one self-contained HTML per distinct screen/state with real domain data and real states (not just the happy path), under `design/mockups/<feature>/<screen>.html`. These carry *this feature's* intent — which a shared app-wide archetype could not, and the reason past builds drifted generic.
+- **You redline them.** **Open the mockup set in the browser** (`open` on macOS / `xdg-open`) so review is one glance, and present it for sign-off. The direction was redlined once at kickoff; each feature's *screens* are redlined here — though clean compositions you may trust-and-proceed. The feature isn't ready to spec until the screens are signed off (or explicitly waved through).
 
 ### 3. Author the feature's milestones
 

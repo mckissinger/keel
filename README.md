@@ -19,6 +19,7 @@ App        kickoff (greenfield) / adopt (brownfield)
 Feature    spec-feature → implement-feature → [you merge] → land-feature → review-feature
 Milestone  implement-milestone → verify-milestone   (+ verify-all-milestones sweep)
 Change     spec-change → implement-milestone → verify-milestone
+Chore      punch-list → one verified chore PR (batch pin)   ← many tiny changes at once
 Cross-cut  debug · provision (miniature)
                                         * design track runs only when the deliverable has a UI
 ```
@@ -39,14 +40,15 @@ hardcoded to any framework.
 
 ## What's in the plugin
 
-**14 skills**, grouped by grain:
+**15 skills**, grouped by grain:
 - **Kickoff** — `kickoff` (greenfield) / `adopt` (brownfield), `interview`, `spec-foundation`, `app-design-directions`, `provision`
 - **Feature** — `spec-feature`, `implement-feature`, `land-feature`, `review-feature`
 - **Milestone** — `implement-milestone`, `verify-milestone`
 - **Change** — `spec-change`
+- **Chore** — `punch-list` (a batch of tiny changes → one verified chore PR)
 - **Cross-cutting** — `debug`
 
-Plus the **`verifier`** agent, the **`verify-all-milestones`** workflow, the canonical **`scripts/check-verified-pin.sh`** gate (copy into your project), and shared references: the **profile interface**, the **milestone/verification rules**, and the **interaction-craft** + **motion-cookbook** craft layer.
+Plus the **`verifier`** agent, the **`verify-all-milestones`** + **`punch-list`** workflows, the canonical **`scripts/check-verified-pin.sh`** gate (copy into your project; its chore-lane accepts a `specs/chores/` batch pin), and shared references: the **profile interface**, the **milestone/verification rules**, and the **interaction-craft** + **motion-cookbook** craft layer.
 
 Two design principles worth calling out: the **design track is optional** (it runs only when the deliverable has a UI, so keel builds CLIs/backends/libraries too), and **every interview confirms its understanding with you before authoring anything**.
 

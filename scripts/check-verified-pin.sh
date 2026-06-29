@@ -42,13 +42,15 @@ if [ "$has_code" -eq 0 ]; then
   exit 0
 fi
 
-# 3. Code PR: every milestone spec it touches must carry a valid, drift-free pin.
+# 3. Code PR: every milestone OR chore-batch spec it touches must carry a valid, drift-free pin.
+#    A chore batch (specs/chores/<slug>.md) carries ONE batch pin covering many tiny changes —
+#    the punch-list lane — validated exactly like a milestone pin.
 specs=()
 for f in "${changed[@]}"; do
-  case "$f" in specs/milestones/*.md) specs+=("$f") ;; esac
+  case "$f" in specs/milestones/*.md|specs/chores/*.md) specs+=("$f") ;; esac
 done
 [ ${#specs[@]} -eq 0 ] && \
-  fail "code PR touches no milestone spec under specs/milestones/ — nothing carries a verified: pin"
+  fail "code PR touches no milestone or chore spec (specs/milestones/ or specs/chores/) — nothing carries a verified: pin"
 
 for spec in "${specs[@]}"; do
   line="$(git show "$HEAD_REF:$spec" 2>/dev/null | grep -m1 '^verified:' || true)"

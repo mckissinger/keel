@@ -89,6 +89,26 @@ printf 'verified: clean at %s, 2026-06-29, via verifier — pending the runtime 
 git add -A && git commit -qm "m5 pending pin"
 check "pending caveat fails" 1
 
+# 8. Chore batch: code PR with a specs/chores/<slug>.md batch pin → pass.
+fresh c8-chore
+mkdir -p specs/chores
+echo "fix1" > src/a.ts
+echo "fix2" > src/b.ts
+echo "# chore batch 2026-06-29" > specs/chores/2026-06-29.md
+git add -A && git commit -qm "chore: two small fixes"
+sha="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-06-29, via punch-list (evidence in PR #8)\n' "$sha" >> specs/chores/2026-06-29.md
+git add -A && git commit -qm "verify(chore): batch record"
+check "chore batch with a valid batch pin passes" 0
+
+# 9. Chore batch with no verified: line → fail.
+fresh c9-chore-nopin
+mkdir -p specs/chores
+echo "fix" > src/c.ts
+echo "# chore batch, unpinned" > specs/chores/unpinned.md
+git add -A && git commit -qm "chore: unpinned"
+check "chore batch without a pin fails" 1
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

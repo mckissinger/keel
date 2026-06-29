@@ -37,7 +37,7 @@ End the interview with a one-paragraph feature definition and the resolved decis
 
 ### 2. Design the feature's screens (from the locked system)
 
-Mock **this feature's** screens — not generic archetypes — composing from the already-decided design system:
+**Skip this movement for a no-UI feature** (the profile's Q8 — a backend/CLI/library change has no screens): go straight to Movement 3 with two-dimension done-conditions (logic + behavioral completeness, no fidelity). Otherwise, mock **this feature's** screens — not generic archetypes — composing from the already-decided design system:
 
 - **Compose from the system, don't re-explore.** `specs/design.md` and the built component gallery own the palette, type, density, material palette (icons, motion, charts, primitives), and the signature element. Assemble the feature's screens from those primitives; for craft defaults the system leaves open, lean on `taste-skill` / `emil-design-eng`. **Do not run `app-design-directions`** — the direction is locked; re-exploring it per feature is wrong.
 - **One mockup per distinct screen/state of this feature**, self-contained HTML with real domain data and real states (not just the happy path), under `design/mockups/<feature>/<screen>.html`. These carry *this feature's* intent — which is exactly what a shared app-wide archetype could not, and the reason past builds drifted generic.

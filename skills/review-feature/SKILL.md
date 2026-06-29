@@ -9,6 +9,8 @@ Close the loop the autonomous build can't: **does this built feature look and fe
 
 Run it **after** a feature's milestones are built, `/verify-milestone`-clean, and merged (the wave is green on main). The feature is not *done* until this gate passes.
 
+**This gate is for features with a UI.** A no-UI feature (the profile's Q8 — a backend/CLI/library change) has nothing to render-vs-mockup; its completeness is closed by `verify-milestone`, so this gate is skipped.
+
 ## Why this exists (and why mechanical checks don't cover it)
 
 The first-run UX walk in `verify-milestone` is autonomous and **mechanical-only** by design — it catches *application failures* (system font where a display face is specified, unstyled native controls, tokens absent, stock charts, layout not matching the direction). It explicitly does **not** judge "does this sing" or "is this the feature I pictured." That judgment is reserved for the human, and the previous workflow front-loaded it onto the kickoff design redline (on generic archetypes) with no per-feature post-build equivalent — so once building started, nothing asked the user to look. This skill is that look, per feature.

@@ -12,7 +12,7 @@ Write each completion condition so that a verifier subagent (`${CLAUDE_PLUGIN_RO
 
 ## 2. Done-conditions span three dimensions, not just invariants
 
-The failure mode that ships thin features is a milestone whose done-conditions only assert *logic/invariants* (objectively checkable, so they get written) and leave *UX completeness* and *fidelity* implicit (so the agent fills them with generic defaults). Every UI-touching milestone's done-conditions must cover all three:
+The failure mode that ships thin features is a milestone whose done-conditions only assert *logic/invariants* (objectively checkable, so they get written) and leave *UX completeness* and *fidelity* implicit (so the agent fills them with generic defaults). Every **UI-touching** milestone's done-conditions must cover all three (a milestone with **no UI** — per the profile's Q8 "has UI?" — covers only the first two: **fidelity does not apply** and the design track is skipped):
 
 - **Logic / invariants** — the data, the rules, the security/tenancy/gating guarantees. (What we always wrote.)
 - **UX completeness** — the states and interactions that make the feature *feel* finished, enumerated, not assumed: the empty state, the loading state, the error state, the exact data each surface shows, the specific interactions (sort, filter, inline-edit, keyboard), responsive behavior at target widths, and the first-run (no-data) path. "A contact timeline" is not a done-condition; "the timeline groups events by day, shows dwell inline, filters by event type, and renders a themed empty state when the contact has no events" is.

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Directions — Compare</title>
+<style>
+  /* Deliberately neutral chrome so it doesn't bias judgment of the directions */
+  :root { --ink:#1a1a1a; --muted:#6b6b6b; --line:#e3e3e3; --paper:#fafafa; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: var(--ink); background: var(--paper); padding: 32px; }
+  header { max-width: 1400px; margin: 0 auto 28px; }
+  h1 { font-size: 22px; font-weight: 650; }
+  header p { color: var(--muted); margin-top: 4px; font-size: 14px; }
+  .grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); gap: 28px; }
+  .direction { background: #fff; border: 1px solid var(--line); }
+  .meta { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .meta .name { font-weight: 650; font-size: 16px; }
+  .meta .thesis { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .meta .pills { display: flex; gap: 16px; margin-top: 8px; font-size: 12.5px; }
+  .meta .pills b { font-weight: 600; }
+  .frame { position: relative; height: 480px; overflow: hidden; background: #fff; }
+  .frame iframe { width: 1440px; height: 960px; border: 0; transform: scale(0.5); transform-origin: 0 0; pointer-events: none; }
+  .actions { padding: 10px 16px; border-top: 1px solid var(--line); display:flex; justify-content: space-between; align-items:center; }
+  .actions a { font-size: 13px; color: var(--ink); text-decoration: none; border: 1px solid var(--ink); padding: 6px 14px; }
+  .actions a:hover, .actions a:focus-visible { background: var(--ink); color: #fff; outline: none; }
+  .actions span { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Design Directions — [App Name]</h1>
+  <p>Same screen, same data, [N] design systems. Open any direction full-size to judge it honestly; thumbnails compress detail.</p>
+</header>
+<div class="grid" id="grid"></div>
+
+<script>
+// FILL THIS IN per project — one entry per direction, files in the same directory.
+const directions = [
+  {
+    name: "Direction Name",
+    file: "direction-file.html",
+    thesis: "One sentence on what this direction believes.",
+    optimizes: "what it's best at",
+    trades: "what it gives up"
+  }
+];
+
+const grid = document.getElementById("grid");
+for (const d of directions) {
+  const el = document.createElement("section");
+  el.className = "direction";
+  el.innerHTML = `
+    <div class="meta">
+      <div class="name">${d.name}</div>
+      <div class="thesis">${d.thesis}</div>
+      <div class="pills"><span><b>Optimizes:</b> ${d.optimizes}</span><span><b>Trades:</b> ${d.trades}</span></div>
+    </div>
+    <div class="frame"><iframe src="${d.file}" title="${d.name} mockup" loading="lazy"></iframe></div>
+    <div class="actions"><a href="${d.file}" target="_blank" rel="noopener">Open full size →</a><span>${d.file}</span></div>`;
+  grid.appendChild(el);
+}
+</script>
+</body>
+</html>

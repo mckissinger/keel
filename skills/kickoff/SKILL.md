@@ -41,7 +41,7 @@ review-feature → render vs the feature's mockups, judge completeness + fidelit
 
 - **Build/verify in fresh sessions, separate from spec-feature** — the spec must be self-contained enough to build from cold; separating enforces that.
 - **Cadence is the user's call** — interleaved (spec→build→review→next, so each spec is informed by the prior feature's reality), batched up-front (several spec-feature sessions, then one long build run — re-check unbuilt specs when a build surfaces something structural), or by wave (spec a wave of independent features, build concurrently, review, then the next wave). All work; the loop is the same.
-- The agent never merges and never commits to main; Michael reviews and merges.
+- The agent never merges and never commits to main; the user reviews and merges.
 
 ## Local-only projects
 

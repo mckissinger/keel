@@ -2,7 +2,7 @@
 
 **Foundation-first autonomous build workflow for Claude Code.**
 
-> Status: **work in progress.** v1 is being assembled — see `Build sequence` below.
+> **v1.** The methodology is distilled from real autonomous build runs and revised as it's dogfooded.
 
 keel is a Claude Code plugin — a set of skills, agents, and a workflow for building
 software autonomously. You stand up a durable foundation once, then build feature by
@@ -37,9 +37,27 @@ fixed **profile interface** (the questions every stack must answer to be verifia
 runtime-proof, design-token install, and migration scheme are profile verbs — not
 hardcoded to any framework.
 
+## What's in the plugin
+
+**14 skills**, grouped by grain:
+- **Kickoff** — `kickoff` (greenfield) / `adopt` (brownfield), `interview`, `spec-foundation`, `app-design-directions`, `provision`
+- **Feature** — `spec-feature`, `implement-feature`, `land-feature`, `review-feature`
+- **Milestone** — `implement-milestone`, `verify-milestone`
+- **Change** — `spec-change`
+- **Cross-cutting** — `debug`
+
+Plus the **`verifier`** agent, the **`verify-all-milestones`** workflow, the canonical **`scripts/check-verified-pin.sh`** gate (copy into your project), and shared references: the **profile interface**, the **milestone/verification rules**, and the **interaction-craft** + **motion-cookbook** craft layer.
+
+Two design principles worth calling out: the **design track is optional** (it runs only when the deliverable has a UI, so keel builds CLIs/backends/libraries too), and **every interview confirms its understanding with you before authoring anything**.
+
 ## Install
 
-_TBD once published — `claude plugin marketplace add mckissinger/keel`._
+```
+claude plugin marketplace add mckissinger/keel
+claude plugin install keel@keel
+```
+
+(The repo is private for now; published install instructions will work once it's public.)
 
 ## License
 

@@ -47,7 +47,7 @@ Each direction names exactly **one** ownable device: a distinctive table header 
 
 ## Writing the tradeoff line
 
-Force each direction to declare what it sacrifices ("Terminal: fastest for Michael daily, least friendly for an investor he screenshares with"). If a direction has no tradeoff you can articulate, it has no point of view — sharpen or cut it. The tradeoff lines are also what makes Phase 3 a real decision instead of a beauty contest: the user is choosing *priorities*, not just colors.
+Force each direction to declare what it sacrifices ("Terminal: fastest for the user daily, least friendly for an investor he screenshares with"). If a direction has no tradeoff you can articulate, it has no point of view — sharpen or cut it. The tradeoff lines are also what makes Phase 3 a real decision instead of a beauty contest: the user is choosing *priorities*, not just colors.
 
 ## Sanity checks before building mockups
 

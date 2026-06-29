@@ -23,7 +23,7 @@ Mandatory, before the feature interview. A reconnaissance pass (lean on `Explore
 - **The data model / shapes this feature touches** — the real entities and fields it will read and write, read from migrations / schema / types, not invented. (This is what Movement 1's "exact data each surface shows" pulls from when there is no `01-architecture.md`.)
 - **Integration seams** — the existing route, nav, layout, and auth the feature mounts into or links to. In an existing codebase the seams are with **already-built code**, not sibling milestones, so they are concrete: name the surface *and the file*. These become the cross-feature seams in Movement 1.
 - **Reusable components + the design language** — the existing themed primitives, tokens, fonts, icon set, motion, chart library. This is your design-system referent (see the floor below).
-- **Invariants the feature must honor** — tenancy/RLS, the permission model, money/precision rules, anything the feature could silently violate.
+- **Invariants the feature must honor** — tenancy/row-security, the permission model, money/precision rules, anything the feature could silently violate.
 
 Output a short **existing-context** section. It grounds the feature spec and seeds the thin foundation docs you write as a byproduct.
 

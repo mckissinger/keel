@@ -36,7 +36,7 @@ specs/
 
 This skill writes `00-product.md`, `01-architecture.md`, the `decisions/` + `deferrals/` conventions (with their kickoff entries), and the project CLAUDE.md. The `features/` and `milestones/` dirs are *created* here but *populated* by `spec-feature`. Collapse freely for a small project (a single `specs/spec.md`) — never create a file just to satisfy the list.
 
-The milestone-authoring + verification rules live in **`references/milestones-and-verification.md`** (shared with `spec-feature`). This skill *establishes* them (and wires the CI gate, below); `spec-feature` *applies* them.
+The milestone-authoring + verification rules live in **`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md`** (shared with `spec-feature`). This skill *establishes* them (and wires the CI gate, below); `spec-feature` *applies* them.
 
 ## `00-product.md` is a feature backlog, not a milestone list
 
@@ -101,12 +101,12 @@ Generate (or update) the project-level `CLAUDE.md` with:
   - Run `/verify-milestone` in a fresh session before opening the PR. The PR body quotes the done-conditions + verification evidence.
   - Spec updates and `decisions/` + `deferrals/` entries ride the same milestone branch as the work that caused them (file-per-entry, so parallel branches never collide).
   - **Michael reviews and merges; agents open PRs and merge only on his explicit per-merge instruction.** Be precise about server-enforced vs behavioral: branch protection (once provision's preflight verifies it's *live*) blocks direct pushes/force-pushes/deletion of `main` — but does not by itself stop the shared agent token from *merging*. So "never commit to main" is a server guarantee; "only Michael merges" is a behavioral rule. To make it server-true: a separate account without merge rights, or CODEOWNERS.
-  - **Adversarial review runs before the pin, type chosen by milestone kind** (see `references/milestones-and-verification.md` §3): implement → review → verify+pin, never pin-then-review (a Crelaunch RLS milestone was re-pinned ~5× because findings landed after the first pin).
+  - **Adversarial review runs before the pin, type chosen by milestone kind** (see `${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §3): implement → review → verify+pin, never pin-then-review (a Crelaunch RLS milestone was re-pinned ~5× because findings landed after the first pin).
   - **A review of a *stacked* PR is blind to its descendants** — treat every "remove/simplify this" finding as suspect until checked against descendants (an ultrareview called a `unique(org_id,user_id)` constraint redundant; it was the FK target the next stacked milestone depended on). Validate the reviewer's proposed *fix*, not just its finding.
 
 ## Repo setup
 
-If the project isn't a git repo yet, step zero is `git init` + GitHub remote, with minimal CI (typecheck, lint, test on PR), **the `verified-pin` job** (`scripts/check-verified-pin.sh`, per `references/milestones-and-verification.md` §5), **and branch protection on `main`** (require a PR, block direct pushes). Branch protection is what makes "the agent never commits to main / nothing autonomous crosses go-live" *server-enforced* rather than behavioral. The `specs/` folder lands as the first PR — the spec deserves its own review moment before any code.
+If the project isn't a git repo yet, step zero is `git init` + GitHub remote, with minimal CI (typecheck, lint, test on PR), **the `verified-pin` job** (`scripts/check-verified-pin.sh`, per `${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §5), **and branch protection on `main`** (require a PR, block direct pushes). Branch protection is what makes "the agent never commits to main / nothing autonomous crosses go-live" *server-enforced* rather than behavioral. The `specs/` folder lands as the first PR — the spec deserves its own review moment before any code.
 
 ## Local-only projects
 

@@ -15,12 +15,12 @@ The first-run UX walk in `verify-milestone` is autonomous and **mechanical-only*
 
 ## The pass
 
-1. **Render the feature.** Drive each of the feature's surfaces with **headless Playwright** (fresh context = true first-run state for empty/loading paths; programmatic/storage-state login for your own auth — Claude in Chrome only for third-party SSO or the user's live attended skim). Hit every route the feature owns (the route→milestone map in `specs/features/<feature>.md`), in each of its enumerated states (empty, loading, error, populated). Capture **console + network** to catch the hydration error behind a page that looks fine.
+1. **Render the feature.** Drive each of the feature's surfaces with the **stack profile's activation driver** (Q3 — e.g. a headless browser for a web UI; fresh context = true first-run state for empty/loading paths; programmatic/seeded login for your own auth — an interactive browser only for third-party SSO or the user's live attended skim). Hit every surface the feature owns (the surface→milestone map in `specs/features/<feature>.md`), in each of its enumerated states (empty, loading, error, populated). Capture **console + network** (or the stack's equivalent diagnostics) to catch the error behind a surface that looks fine.
 2. **Screenshot each distinct screen/state**, and lay each **side-by-side with that screen's mockup** (`design/mockups/<feature>/<screen>.html`). The mockup is the intent; the screenshot is the reality; the gap is the finding.
 3. **Judge with vision + the human.** A vision model looks first (catches "looks wrong" objectively); then present the side-by-side set to the user for the aesthetic + completeness call. Two distinct verdicts:
    - **Completeness** — is every state present and every interaction working? Missing empty states, dead-ended first-run paths, an interaction named in the spec but absent, the wrong/placeholder data — these make a feature feel thin and are objective.
    - **Fidelity-to-intent** — does it read as the feature we mocked? Not pixel parity (the real stack is more polished), but: the structure, hierarchy, density, and signature element of the mockup. Drift toward generic is the thing to catch.
-4. **Surface against a deployed artifact too** — run the feature's surfaces on the **branch/main Vercel preview** (HTTP 200 + no console/network errors), the cheap non-vision complement that catches what localhost can't (env vars, SSR-under-real-infra). The vision judgment stays on localhost; this just confirms the deployed thing works.
+4. **Surface against a deployed artifact too** — run the feature's surfaces on the **deployed verification surface** (Q10 of the stack profile — e.g. a branch preview URL; assert healthy + no console/network errors, passing any required bypass header), the cheap non-vision complement that catches what local can't (env vars, behavior under real infra). The vision judgment stays local; this just confirms the deployed thing works.
 
 ## Output — a refinement milestone, not a vibe
 
@@ -30,7 +30,7 @@ Findings are phrased as **checkable remediation conditions with route + screensh
 
 These become a **refinement milestone** for the feature (its own branch + PR + `verified:` pin, same gate as any milestone). **The feature is not done until that milestone closes.** Aesthetic notes that are genuinely taste ("nudge this spacing") are the user's call — record them, but distinguish them from objective completeness/fidelity gaps so the latter are never waved through as taste.
 
-**Every finding that reflects a defect *class* graduates into a no-fixture Playwright e2e** (the empty state renders, the create-from-empty action exists and works), so the class is regression-locked in CI where vision review can't go — the same discipline as the verify-milestone walk.
+**Every finding that reflects a defect *class* graduates into a no-fixture e2e in the stack's test driver** (Q3) (the empty state renders, the create-from-empty action exists and works), so the class is regression-locked in CI where vision review can't go — the same discipline as the verify-milestone walk.
 
 ## Relationship to the other gates
 

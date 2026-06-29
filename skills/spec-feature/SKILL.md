@@ -18,7 +18,7 @@ When some or all are **missing**, triage before bailing to kickoff:
 - **A genuinely fresh, multi-feature greenfield app** → you're not ready to spec a feature; run the kickoff sequence first (`kickoff` / `spec-foundation`). A global plan over many features is cheaper to decide once, up front, than to back-fill one feature at a time.
 - **One feature against an existing codebase, or a small/contained product that consumes an existing engine / app / platform** → don't run the full kickoff. Follow **`references/no-foundation.md`**: it satisfies each missing precondition by *discovering it from the existing code* (what kickoff would have authored), establishes the design referent Movement 2 needs, and seeds a minimal foundation as it goes — then returns you to the three movements below.
 
-The milestone-authoring + verification rules are in **`~/.claude/skills/spec-foundation/references/milestones-and-verification.md`** — read it; this skill *applies* those rules per feature and adds the per-feature design step. Do not restate them.
+The milestone-authoring + verification rules are in **`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md`** — read it; this skill *applies* those rules per feature and adds the per-feature design step. Do not restate them.
 
 ## The three movements (one session, in order)
 
@@ -45,7 +45,7 @@ Mock **this feature's** screens — not generic archetypes — composing from th
 
 ### 3. Author the feature's milestones
 
-Decompose the feature into 1–5 milestones (the build/verify unit) per `references/milestones-and-verification.md`. For this feature:
+Decompose the feature into 1–5 milestones (the build/verify unit) per `${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md`. For this feature:
 
 - **Done-conditions span all three dimensions** (§2 of the rules): logic/invariants, **UX completeness** (the enumerated states + interactions from movement 1), and **fidelity** (tokens/fonts/themed-components/icon-set/charts + **layout matches this feature's own mockup from movement 2**, by reference, not prose).
 - **Tag each done-condition `[auto]` / `[runtime]` / `[attended]`** (§2, §7) so every later session knows what it can close and what gates the pin. Anything that's "a route renders," "an action runs," "the live call works," or "the system was applied" is `[runtime]` — it does not get inferred from a passing unit test.

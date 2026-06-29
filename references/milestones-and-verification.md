@@ -2,11 +2,11 @@
 
 The single source of truth for **how a milestone is written and how its "done" is checked.** Two skills point here so the rules never drift: `spec-foundation` *establishes* them once at kickoff (and wires the CI gate); `spec-feature` *applies* them every time it authors a feature's milestones. Neither skill restates these rules — they reference this file.
 
-A **milestone** is the build/verify unit: one branch, one PR, one `verified:` pin, sized for one `/goal` run. A **feature** (the unit `spec-feature` plans) fans out into 1–5 milestones. Everything below is per-milestone.
+A **milestone** is the build/verify unit: one branch, one PR, one `verified:` pin, sized for one `implement-milestone` run. A **feature** (the unit `spec-feature` plans) fans out into 1–5 milestones. Everything below is per-milestone.
 
 ## 1. Every milestone's "done" is measurable
 
-Write each completion condition so that a verifier subagent (`${CLAUDE_PLUGIN_ROOT}/agents/verifier.md`) can check it against the actual code/outputs, **and** it can be used verbatim as a `/goal` completion condition.
+Write each completion condition so that a verifier subagent (`${CLAUDE_PLUGIN_ROOT}/agents/verifier.md`) can check it against the actual code/outputs, **and** it can be used verbatim as a `implement-milestone` completion condition.
 
 "Auth works" fails this test. "POST /api/login with valid credentials returns 200 and a session cookie; invalid credentials return 401; covered by passing tests in auth.test.ts" passes it.
 

@@ -17,7 +17,7 @@ The previous single `spec` skill authored *the complete milestone list in one pa
 2. **`spec-foundation`** (this skill) — product skeleton + architecture + environment contract + conventions + project CLAUDE.md. **Stop. Do not author milestones.**
 3. **Design *system* gate** (`app-design-directions`, attended) — explore directions → pick → build the **reviewable component gallery** + `specs/design.md`. Committed to main.
 4. **`provision`** (attended) — logins, dev resources, allowlist, spend cap, green preflight.
-5. **Kickoff ends.** Then the **per-feature loop** runs (see `spec-feature` / `review-feature`): for each feature, `spec-feature` → build via `/goal` → `/verify-milestone` → `review-feature`. Interleaved (recommended) or batched up-front — both work; the cadence is the user's call.
+5. **Kickoff ends.** Then the **per-feature loop** runs (see `spec-feature` / `review-feature`): for each feature, `spec-feature` → `implement-feature` → `land-feature` → `review-feature`. Interleaved (recommended) or batched up-front — both work; the cadence is the user's call.
 
 ## Structure
 

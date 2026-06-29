@@ -60,7 +60,7 @@ Write the deep feature spec to **`specs/features/<feature>.md`** (the interview 
 
 The session ends **attended**, on your sign-off of the mockups + the milestone list. Then:
 - **Open the plan PR** — a **plan-only** PR (only `specs/**` + `design/**`, no code) carrying the feature spec, the mockups, the milestone *specs* (done-conditions + `verification:`, **no** `verified:` pin yet), and any new `decisions/`/`deferrals/`. The verified-pin gate exempts a plan-only PR, so the milestone specs land without pins (each pin is appended later in its milestone's code PR). Merging it makes the plan canonical on `main` so the build reads it from there, not a floating branch — this matters most under batched / by-wave cadence. You open it; per the project's rules the human reviews + merges.
-- **Build in a fresh session** (`/goal` over the feature's milestones) — the spec + mockups carry it cold from `main`.
+- **Build in a fresh session** (`implement-feature` over the feature's milestones — it runs `implement-milestone` + `verify-milestone` per milestone) — the spec + mockups carry it cold from `main`.
 - **`/verify-milestone`** (fresh) per the pinned-record gate — appends each milestone's `verified:` pin in its own code PR.
 - **`review-feature`** — the human aesthetic/completeness gate, rendered-vs-mockup, before the feature counts as done.
 

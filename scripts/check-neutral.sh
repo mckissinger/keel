@@ -54,6 +54,34 @@ flag 'meridian|\bWave-[0-9]'                       'retained project name — ge
 # Editing scars from the anonymization pass.
 flag 'a an earlier|[[:space:]]run run[[:space:]]|harness harness|\bthe the\b' 'doubled-word / anonymization scar'
 
+# --- Design-neutrality: the SHARED NEUTRAL CORPUS must name no web hardcode. ------
+# The build/verify spine is framework-neutral by profile, so these exact spine paths
+# must never name a web-only design token/library (@theme, Lucide, Recharts) as if it
+# were THE way — those belong behind the stack profile's design verbs. This is a
+# DEDICATED SCOPED grep over just the spine paths below, NOT the blanket `flag` above,
+# precisely because the design-track files (skills/app-design-directions/**,
+# references/motion-cookbook.md) use these same names as LEGITIMATE web examples and
+# must stay exempt — they are deliberately left out of `spine` and never scanned here.
+spine=(
+  references/milestones-and-verification.md
+  references/profile-interface.md
+  skills/implement-milestone
+  skills/spec-feature
+  skills/spec-change
+  skills/verify-milestone
+)
+scope=()
+for p in "${spine[@]}"; do [ -e "$p" ] && scope+=("$p"); done
+if [ ${#scope[@]} -gt 0 ]; then
+  spine_hits="$(grep -rniE --include='*.md' --include='*.js' \
+    '@theme|\bLucide\b|\bRecharts\b' "${scope[@]}" 2>/dev/null || true)"
+  if [ -n "$spine_hits" ]; then
+    echo "check-neutral: FAIL — web hardcode (@theme/Lucide/Recharts) in the shared neutral corpus; route design tokens/libraries through the stack profile's design verbs (web-specific names stay in the design-track files only)" >&2
+    printf '%s\n' "$spine_hits" | sed 's/^/  /' >&2
+    fails=$((fails + 1))
+  fi
+fi
+
 if [ "$fails" -eq 0 ]; then
   echo "check-neutral: PASS — no retained stack/command language"
   exit 0

@@ -7,9 +7,11 @@
 keel is a Claude Code plugin — a set of skills, agents, and a workflow for building
 software autonomously. You stand up a durable foundation once, then build feature by
 feature; every milestone is gated by independent verification and a **commit-pinned
-record** before it can merge. The methodology is **stack-neutral**: each project derives
-its own verification profile from its actual stack, so keel works the same for a web app,
-a mobile app, a backend, or a CLI.
+record** before it can merge. The methodology is **framework-neutral by profile**: each
+project derives its own verification profile from its actual stack. **Web is the proven,
+tested path** (a backend, CLI, or library builds on the same spine today); **mobile is
+derivable through the profile** — the seams are neutral now and get hardened when a real
+mobile project runs.
 
 ## How it works — the grain ladder
 

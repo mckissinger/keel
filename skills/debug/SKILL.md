@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Disciplined root-cause loop — reproduce at runtime, isolate, find the true cause, fix it through the normal change gate, and regression-lock it. Consults the project's accumulated learnings first and records new ones. Use when something is broken and you need to find and fix why, not patch a symptom.
+description: Disciplined root-cause loop — reproduce at the cheapest layer that can see the failure class (runtime for runtime-class bugs), isolate, find the true cause, fix it through the normal change gate, and regression-lock it at the lowest layer that reproduces. Consults the project's accumulated learnings first and records new ones. Use when something is broken and you need to find and fix why, not patch a symptom.
 ---
 
 # Debug
@@ -14,11 +14,11 @@ Find and fix the *real* cause of a defect, and make sure it can't come back. Deb
 
 ## The loop
 
-1. **Reproduce — at runtime, not just in units.** The framework's worst bugs live precisely where the unit-test environment diverges from the real runtime (a component/module-boundary error, a build-transform error, a hydration mismatch — the profile's ⚠ Q3/Q6 divergences). So reproduce by **running the real thing** (the profile's activation driver against the actual build), not by trusting a green unit suite. A bug you can't reproduce, you can't verify you fixed.
+1. **Reproduce — at the cheapest layer that can see this failure class.** Route by the profile's ladder (Q11): a type/shape error reproduces at the static rung in a second; a logic bug in a unit test; a wiring/interaction bug in a component-render test; only a failure class in the stack's **escalation holes** needs the real runtime. Escalating past a rung that could have seen the bug wastes the cost gap (the e2e rung runs ~100× slower and flakier — the ⚠ Q11 scar); escalate deliberately, not by habit. **Runtime-class bugs still reproduce at runtime**: the framework's worst bugs live precisely where the test environment diverges from the real runtime (a component/module-boundary error, a build-transform error, a hydration mismatch — the profile's ⚠ Q3/Q6 divergences), so for those, reproduce by **running the real thing** (the profile's activation driver against the actual build), never by trusting a green lower rung. A bug you can't reproduce, you can't verify you fixed.
 2. **Isolate.** Narrow to the smallest input/code path that still triggers it. Bisect (git, or by disabling halves). Read the actual values, run the actual checks — don't reason from "the code looks like it would."
 3. **Root cause, not symptom.** Name the underlying cause and why it produces the symptom. A fix that makes the symptom disappear without explaining the cause is a patch, and it'll resurface.
 4. **Fix through the normal gate.** A fix substantial enough to need a spec rides a `spec-change` milestone (branch → `implement-milestone` → `verify-milestone` → pin); a trivial fix still gets its own branch + PR. Never patch `main` directly.
-5. **Regression-lock it.** Every fix that reflects a defect *class* graduates into a test that fails before the fix and passes after — a no-fixture e2e in the stack's test driver for a runtime bug, a unit test for a logic bug — so the class is locked in CI where it can't recur silently.
+5. **Regression-lock it — at the lowest layer that reproduces.** Every fix that reflects a defect *class* graduates into a test that fails before the fix and passes after, written at the **cheapest rung that can see it** (a unit test for a logic bug, a component-render test for a wiring bug, a no-fixture e2e only for a true runtime-class bug) — so the class is locked in CI where it can't recur silently, at the price of the rung it belongs on. This is the backfill rule: a defect that escaped to a higher rung *is* the evidence of missing coverage one rung down.
 6. **Record the learning.** If the root cause was non-obvious or stack-specific, write it where the project keeps durable learnings: a one-line `lessons/` entry, a `decisions/` note, or — if it's a stack gotcha future verification should always check — an update to `specs/stack-profile.md`. The next session inherits it instead of re-debugging.
 
 ## Boundaries

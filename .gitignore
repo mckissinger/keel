@@ -12,3 +12,4 @@ node_modules/
 *.log
 scratchpad/
 .env.local
+.playwright-mcp/

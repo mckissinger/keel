@@ -57,10 +57,12 @@ schema-valid; OR invoke + exit 0 + expected stdout, no stderr.)
 > runtime** — never infer "it runs" from a green unit suite. (This is the RSC-boundary / jsdom
 > scar: a Server Component passing a function as `children` to a Client Component, and an
 > `export type` in a server file, both reached green pins and were invisible until a real
-> render.)
+> render.) What a unit suite *can* cover is set by the tier ladder — see Q11.
 
 **Q4 — Drive action + assert effect.** How do you trigger a state-changing action and confirm
-its **effect** (a DB row, a written file, a response body, a state transition)?
+its **effect** (a DB row, a written file, a response body, a state transition)? The
+*deterministic core* of each such action should be asserted by a **committed test** in a Q11
+tier; the agent-driven walk proves the divergence/live remainder, not every enumerated action.
 
 **Q5 — Seed test state.** How do you obtain known-good, **authenticated/seeded state with no
 human and no email** (an admin-API-minted user + session captured once, a fixture loader, a
@@ -166,6 +168,30 @@ preview URL, a release build, a container), and does probing it need an **auth/b
 (Or "local-only — no deployed surface.")
 > ⚠ **Deployment protection can block a naïve smoke.** If the preview is auth-gated, the smoke
 > must pass the documented bypass; otherwise a healthy deploy reads as a failed one.
+
+**Q11 — Test tiers (the committed-test ladder).** For each tier, the **concrete, runnable
+command** on this stack — or **"n/a + why"** (a recorded reason, not an assumed gap):
+- **Unit** — pure logic, no rendering (e.g. a test runner over exported functions).
+- **Component-render** — mount a **real component/screen tree** in a fast headless harness and
+  drive interactions (e.g. a DOM-emulation environment with a component testing library on web;
+  a native preview/snapshot harness on mobile). This is the tier that catches deterministic
+  *interaction* bugs — render loops, focus ordering, an edit that doesn't commit — that pure
+  units structurally cannot see.
+- **End-to-end** — committed, scripted checks against the real runtime (e.g. a checked-in
+  browser-automation spec), runnable headlessly in CI.
+
+These commands are what `[auto]` done-conditions bind to and what `verify-milestone` runs before
+its walk; deriving a profile with only a unit tier **must** record why the other tiers are n/a.
+> ⚠ **A missing middle tier turns the agent walk into the regression harness.** On an earlier
+> run, two deterministic interaction bugs — an external-store snapshot-stability violation that
+> crashed a route on open, and an open-on-keypress that self-closed because keyboard activation
+> landed on the just-focused close control — passed every `[auto]` check (a green pure-logic
+> unit suite, typecheck, lint, a clean production build) because nothing below the walk ever
+> mounted a component. Both were caught only by agent-driven browser walks: expensive,
+> non-repeatable, and one could not deterministically isolate an intermittent recurrence. A
+> ~30-line component-render test would have caught both in under a second, on every future run.
+> The walk is an *acceptance* layer; the committed tiers are the *regression* harness — never
+> let the first substitute for the second.
 
 ---
 

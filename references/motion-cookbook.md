@@ -1,9 +1,18 @@
-# Motion cookbook — deep techniques (read on demand)
+# Motion cookbook — deep **web/CSS** techniques (read on demand)
 
-Implementation specifics for building a particular interaction well. Not the always-on floor
-(that's `interaction-craft.md`) — reach here when a feature actually needs gestures, reveals, or
-hand-tuned physics. Adapted from Emil Kowalski's design-engineering philosophy
+**These are web/CSS techniques**, not the platform-neutral floor. The always-on principles live in
+`interaction-craft.md`; this file is the hardened-web implementation layer — reach here when a
+feature on the web actually needs gestures, reveals, or hand-tuned physics. Everything below assumes
+CSS / the DOM / a browser motion library. Adapted from Emil Kowalski's design-engineering philosophy
 ([animations.dev](https://animations.dev/)). Conform to `specs/design.md`'s motion stance.
+
+> **Per-platform technique references are derived when a mobile stack appears.** Consistent with
+> "neutral seams now, web hardened": the neutral *principles* (in `interaction-craft.md`) already
+> apply to mobile; only the *techniques* are platform-shaped. When a project's profile (Q8.5)
+> names a non-web motion library, derive the equivalent cookbook then — e.g. a **Reanimated**
+> (React Native), **SwiftUI** (`withAnimation` / `Animation`), or **Jetpack Compose**
+> (`animate*AsState` / `AnimatedContent`) technique reference — rather than stubbing every platform
+> up front.
 
 ## clip-path reveals
 

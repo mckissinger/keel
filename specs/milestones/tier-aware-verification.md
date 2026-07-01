@@ -50,3 +50,5 @@ done-conditions. **Depends on:** none. **Parallelizable:** n/a (single milestone
 verifier subagent against this file (docs greps, cross-reference resolution, consistency
 sweep) + `scripts/check-neutral.sh` + both script self-tests. No surface/action change → no
 runtime walk; no hard invariant → no `/security-review`.
+
+verified: clean at d0736b5, 2026-07-01, via fresh-context verifier subagent ×2 — first pass verified Q11 + [auto] redefinition + hard coverage gate + narrowed walk + fold-in with 2 stale-phrasing discrepancies; remediation cleared both (+ aligned the verify-milestone no-pin restatement, scope note for workflow strings + gitignore); focused re-verify clean (zero stale hits, check-neutral PASS, 12+9 self-tests, workflow parses, scripts/ untouched vs main). (evidence: verifier reports in PR)

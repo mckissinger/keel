@@ -18,3 +18,5 @@ Split the craft layer into **platform-neutral principles** (the always-on floor)
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.sh`.
+
+verified: clean at 9201772, 2026-06-30, via verifier subagent against done-conditions + bash scripts/check-neutral.sh (all five DCs PASS; evidence in PR)

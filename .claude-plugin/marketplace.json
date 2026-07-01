@@ -5,15 +5,13 @@
     "email": "mckissinger@gmail.com"
   },
   "metadata": {
-    "description": "Foundation-first autonomous build workflow for Claude Code.",
-    "version": "0.1.0"
+    "description": "Foundation-first autonomous build workflow for Claude Code."
   },
   "plugins": [
     {
       "name": "keel",
       "source": "./",
       "description": "Stand up a durable foundation, then build feature-by-feature — each milestone gated by independent verification and a commit-pinned record before it can merge. Stack-neutral.",
-      "version": "0.1.0",
       "strict": true
     }
   ]

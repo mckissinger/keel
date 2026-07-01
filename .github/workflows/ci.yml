@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The verified-pin gate keel ships to projects — prove it still behaves.
+      - name: verified-pin gate self-test
+        run: bash scripts/check-verified-pin.test.sh
+
+      # The stack-neutral guard for keel's own corpus + its self-test.
+      - name: neutrality guard self-test
+        run: bash scripts/check-neutral.test.sh
+      - name: neutrality guard (this repo)
+        run: bash scripts/check-neutral.sh

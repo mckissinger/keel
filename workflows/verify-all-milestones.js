@@ -1,7 +1,7 @@
 export const meta = {
   name: 'verify-all-milestones',
-  description: 'Fan out independent verification across all milestones completed by a multi-milestone /goal run',
-  whenToUse: 'After a long /goal run completes several milestones — a fast [auto]-dimension triage. The parallel sweep verifies + pins milestones whose done-conditions are fully [auto] (schema/RLS/unit/logic). It CANNOT close [runtime] conditions (no browser, one shared local DB), so any milestone with a render/action/live condition comes back blocked and must be finished by a serial /verify-milestone <slug>. Pass slugs as args to limit scope.',
+  description: 'Fan out independent verification across all milestones completed by a multi-milestone build run',
+  whenToUse: 'After a long multi-milestone build run (implement-feature) completes several milestones — a fast [auto]-dimension triage. The parallel sweep verifies + pins milestones whose done-conditions are fully [auto] (schema/invariant/unit/logic). It CANNOT close [runtime] conditions (no browser, one shared local DB), so any milestone with a render/action/live condition comes back blocked and must be finished by a serial /verify-milestone <slug>. Pass slugs as args to limit scope.',
   phases: [
     { title: 'Discover', detail: 'map milestone specs to branches and PRs' },
     { title: 'Verify', detail: 'one fresh-context verifier per milestone, each in its own worktree' },
@@ -45,7 +45,7 @@ const VERDICT_SCHEMA = {
           requirement: { type: 'string', description: 'what the spec requires' },
           actual: { type: 'string', description: 'what actually exists' },
           evidence: { type: 'string', description: 'file:line for code claims, record-level identification for data claims' },
-          remediationCondition: { type: 'string', description: 'checkable condition phrased for a remediation /goal' },
+          remediationCondition: { type: 'string', description: 'checkable condition phrased for a remediation build (implement-milestone)' },
         },
       },
     },
@@ -96,9 +96,9 @@ Hard rules:
 - Fix nothing. Verification and remediation never share a session.
 - Every discrepancy needs evidence: file:line for code claims, record-level identification (which row, unit, record) for data claims.
 - Anything you could not check goes in unverified with the reason — never assumed passing.
-- **You can only close [auto] done-conditions** (schema/RLS/unit/logic/static). This is a parallel detached worktree with no browser and a SHARED local DB/dev server — you CANNOT run the [runtime] walk (render a route, drive a server action through the real runtime, make a live call). If this milestone touches a route (\`src/app/**\`) or a server action, OR carries any [runtime]/live done-condition, you MUST return verdict "blocked" with those conditions in unverified ("runtime walk not runnable in the parallel sweep — needs serial /verify-milestone"). Do NOT return "clean" for a UI/action milestone — that would let it be pinned without ever rendering, the exact failure this gate exists to stop. "clean" is only for a milestone whose conditions are entirely [auto] and all passed.
+- **You can only close [auto] done-conditions** (schema/invariant/unit/logic/static). This is a parallel detached worktree with no browser and a SHARED local DB/dev server — you CANNOT run the [runtime] walk (activate a surface, drive a state-changing action through the real runtime, make a live call). If this milestone adds or changes a surface (per the project's \`specs/stack-profile.md\` Q1 source roots / Q2 surfaces — a route/screen/endpoint/command) or a state-changing action, OR carries any [runtime]/live done-condition, you MUST return verdict "blocked" with those conditions in unverified ("runtime walk not runnable in the parallel sweep — needs serial /verify-milestone"). Do NOT return "clean" for a surface/action milestone — that would let it be pinned without ever running, the exact failure this gate exists to stop. "clean" is only for a milestone whose conditions are entirely [auto] and all passed.
 - This branch may contain earlier milestones' work underneath it (branches stack until PRs merge). Verify THIS milestone's done-conditions; attribute discrepancies to conditions, not to the branch.
-- Shared local services (databases, local Supabase, dev servers) carry the stack head's state, not this checkout's. When a schema- or state-dependent failure involves an artifact a later milestone introduces, and the head branch passes that check, classify it as environment skew in unverified — not a defect. Never reset or mutate shared state to get a pristine environment.
+- Shared local services (databases, local backend stacks, dev servers) carry the stack head's state, not this checkout's. When a schema- or state-dependent failure involves an artifact a later milestone introduces, and the head branch passes that check, classify it as environment skew in unverified — not a defect. Never reset or mutate shared state to get a pristine environment.
 - On any test failure, record the failing test identities (names/files) before re-running — a transient failure without identities is unreportable. Include them in the verdict even if the suite passes on retry.
 Return the structured verdict.`,
     { label: `verify:${m.slug}`, phase: 'Verify', schema: VERDICT_SCHEMA, agentType: 'verifier', isolation: 'worktree' }
@@ -151,6 +151,6 @@ return {
     remediationGoal: (r.discrepancies || []).map(d => d.remediationCondition).join('; '),
   })),
   recordsWritten: recordResult || 'No clean milestones — no verified: records written.',
-  mergeOrder: 'Records were written ONLY for fully-[auto] clean milestones, in stack order. Any milestone returned "blocked" because its [runtime] walk could not run in this parallel sweep has NO pin yet and is not failing — finish it with a serial `/verify-milestone <slug>` (which renders the routes, drives the actions, and runs any live call, then writes the pin). Milestones with real discrepancies also have no record and need a remediation /goal. Branches stack until PRs merge: merge bottom-up, and only merge a milestone once it and everything beneath it are pinned clean.',
+  mergeOrder: 'Records were written ONLY for fully-[auto] clean milestones, in stack order. Any milestone returned "blocked" because its [runtime] walk could not run in this parallel sweep has NO pin yet and is not failing — finish it with a serial `/verify-milestone <slug>` (which renders the routes, drives the actions, and runs any live call, then writes the pin). Milestones with real discrepancies also have no record and need a remediation build (implement-milestone). Branches stack until PRs merge: merge bottom-up, and only merge a milestone once it and everything beneath it are pinned clean.',
   runtimePending: failed.filter(r => r.verdict === 'blocked').map(r => r.slug),
 }

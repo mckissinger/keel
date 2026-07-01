@@ -24,7 +24,7 @@ The milestone-authoring + verification rules are in **`${CLAUDE_PLUGIN_ROOT}/ref
 
 ### 1. Interview the feature (deep)
 
-Apply the `interview` discipline — restate the goal, surface open decisions, default what's defaultable, ask only what can't be defaulted, batch into one round — but at **feature depth**, not app-skeleton breadth. For relentlessness on a fuzzy feature, lean on `grill-me`. Resolve:
+Apply the `interview` discipline — restate the goal, surface open decisions, default what's defaultable, ask only what can't be defaulted, batch into one round — but at **feature depth**, not app-skeleton breadth, interrogating harder wherever the feature is genuinely fuzzy. Resolve:
 
 - **Every screen/surface** this feature adds or touches, and what each shows.
 - **Every state** per surface: the empty/first-run (no-data) state, loading, error, partial, and the populated happy path. The empty state is the one most often skipped and most often what makes a feature feel half-built.
@@ -50,7 +50,7 @@ Decompose the feature into 1–5 milestones (the build/verify unit) per `${CLAUD
 - **Done-conditions span all three dimensions** (§2 of the rules): logic/invariants, **UX completeness** (the enumerated states + interactions from movement 1), and **fidelity** (tokens/fonts/themed-components/icon-set/charts + **layout matches this feature's own mockup from movement 2**, by reference, not prose).
 - **Tag each done-condition `[auto]` / `[runtime]` / `[attended]`** (§2, §7) so every later session knows what it can close and what gates the pin. Anything that's "a route renders," "an action runs," "the live call works," or "the system was applied" is `[runtime]` — it does not get inferred from a passing unit test.
 - **Every screen/route of the feature is owned by exactly one milestone** (§6) — including the obvious detail/utility ones. Carry the route→milestone map in the feature spec.
-- **Name the verification method** per milestone (§3): verifier subagent / dynamic workflow for `[auto]`, **plus the runtime walk for any milestone that adds/changes a route or server action** (render + action-through-the-real-runtime, dev + prod build; capped-key live variant for AI milestones), plus `/security-review` pre-pin for any milestone touching a hard invariant. The runtime walk gates the pin and runs from `/verify-milestone`, not the parallel sweep.
+- **Name the verification method** per milestone (§3): verifier subagent / dynamic workflow for `[auto]`, **plus the runtime walk for any milestone that adds/changes a surface or a state-changing action** (activate + action-through-the-real-runtime, dev + prod build; capped-key live variant for AI milestones), plus `/security-review` pre-pin for any milestone touching a hard invariant. The runtime walk gates the pin and runs from `/verify-milestone`, not the parallel sweep.
 - **Size + mark parallelizable** (§4); design any shared collector as file-per-entry; name the integration seams.
 - **Flag stop points** — any done-condition needing un-pre-authorizable spend/action halts the run attended; never silently defer.
 

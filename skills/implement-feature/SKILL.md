@@ -19,11 +19,13 @@ The milestones of a feature relate in one of three ways, and the choice changes 
 
 Read the feature's milestone specs for `parallelizable` markings (§4 of the rules) and **keep any stack as shallow as the genuine dependency chain requires** — prefer independent milestones off `main` (they merge independently, no cascade).
 
+The one exception a real dependency forces is a **diamond milestone (multi-parent)** — one that genuinely depends on *all* its siblings **and** carries an "after all land" whole-repo check (a terminal guard/cleanup over the assembled corpus). It can't be a single-parent stacked PR, so build + verify it on a conflict-free **integration branch** (a merge of its parent milestones — safe because disjoint file ownership makes the integration tree the same as the eventual `main`), base its PR on that branch, and keep it **last**. This is the exception, not license for deep stacks. The finish — rebasing it onto `main` and re-pinning — is `land-feature`'s.
+
 ## The orchestration
 
 For each milestone, in dependency order (bottom-up for a stack):
 
-1. **Build** — dispatch `implement-milestone` (its own branch; off `main` if independent, off the parent if it genuinely stacks).
+1. **Build** — dispatch `implement-milestone` (its own branch; off `main` if independent, off the parent if it genuinely stacks, off a conflict-free **integration branch** — merge of all its parents — if it's a multi-parent diamond).
 2. **Verify in a fresh context** — dispatch verification as a **subagent with its own context window** (this is the proven pattern — `verify-all-milestones` already spawns fresh-context `verifier` agents in worktrees; a worktree-isolated verifier *is* the "fresh session" the rule protects). Prompt it from the **spec's done-conditions + the checkout**, never from the builder's claims.
    - **`[auto]` conditions** → verifier subagents can run in **parallel** (worktrees).
    - **`[runtime]` conditions** → run **serially**, one at a time, because the runtime-proof needs sole access to the shared local services (the single backend stack, dev-server ports). Parallel runtime walks collide — this is exactly why the parallel sweep can't close `[runtime]`.

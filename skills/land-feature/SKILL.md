@@ -31,6 +31,17 @@ A behavioral fix to a mid-stack milestone changes its code SHA, so every descend
 - **Behavioral rebase**: it's a new state — **re-verify** (fresh `verify-milestone`), then re-pin.
 - Write each descendant's pin **after** rebasing that branch (the rebase moves the code tip; the pin must reference the post-rebase SHA). The pin commit itself is plan-only, so the gate sees no code drift after it.
 
+## A diamond milestone (multi-parent) — rebase before landing
+
+Not a linear stack: a milestone that genuinely depends on **all** its siblings **and** carries an "after all land" whole-repo done-condition (a terminal guard/cleanup that locks an invariant over the fully-assembled corpus). `implement-feature` built + verified it on a conflict-free **integration branch** (a merge of its parents), PR based on that branch, kept last. Landing it:
+
+1. **Land it only after all its parents are on `main`.** It's the last thing merged in the wave.
+2. **Rebase the diamond branch onto `main`** (dropping the integration parentage) so its multiple merge bases collapse to a single base — a clean own-files-only diff. **Why:** the integration merge leaves the branch with more than one merge base vs `main`, so the three-dot `git diff main...HEAD` that `check-verified-pin.sh` uses picks an older base and **falsely reports drift** on the already-verified sibling files. The rebase is what makes the pin gate verify cleanly.
+3. It's a **conflict-only rebase** — content is identical (disjoint file ownership made the integration tree the same as `main`). Apply the cascade rule above unchanged: **re-run the guard/suite green and re-pin to the new `HEAD^`** with a carry-forward note. Not a re-verification.
+4. **Then merge, and delete the integration scaffolding branch** once the diamond is on `main`.
+
+The post-wave consolidated check below still runs last.
+
 ## The post-wave consolidated check (mandatory, last)
 
 A wave isn't done until it's green on `main` **together**. Nothing on a branch proves the merged result. After the feature's PRs are all on `main`, run one consolidated check: **fresh state → all migrations in order → full suite** (+ the consolidated first-run walk for a UI feature). This is the only gate that catches cross-sibling integration bugs (a shared layout double-wrapped, two migrations that conflict only when combined).

@@ -57,6 +57,18 @@ Visual tells are surface. In apps, the deadlier slop is structural — "technica
 - **Copy that fits the frame but misses the job.** Labels named after how the system is built ("Webhook config") instead of what the person controls ("Notifications").
 - **Non-systematic values.** Arbitrary margins and one-off spacing that don't come from a scale — invisible in a static screenshot, fatal as the product grows.
 
+## Native / mobile slop (the platform-feel failure)
+
+When the platform target is **mobile or cross-platform** (Phase 0, from the profile's Q8.6 platform-convention set), a second family of defaults appears — the tell that a web design was pasted onto a native surface. These are banned **as defaults** exactly like the web list above: acceptable only if a deliberate, brief-justified reason is written down, unacceptable when they appear because a web look was the path of least resistance. The brand ports across platforms; the native feel does not — so imposing web conventions on native is the mobile equivalent of shipping stock shadcn.
+
+- **A web look forced onto native.** A desktop-style top nav bar, a hover-dependent affordance (native touch surfaces have no hover), dense pointer-scaled hit targets, or a fixed 1280–1440 canvas on a phone. If the layout only makes sense with a mouse, it is web slop on a native surface.
+- **Custom-drawn controls where the platform has its own.** Re-implementing a picker, date-picker, switch, segmented control, or share sheet from scratch instead of theming the platform's native control (iOS HIG / Android Material). Users expect the system control's behavior, accessibility, and muscle memory; a look-alike is uncanny and usually less accessible.
+- **Missing or wrong navigation model.** Ignoring the platform's navigation grammar — iOS back-swipe and navigation stack, Android's system back and Material navigation, the tab-bar vs. nav-drawer conventions — or inventing a bespoke one. Navigation is where "this doesn't feel native" is felt first.
+- **Absent or incorrect gestures.** No swipe-to-go-back, no pull-to-refresh where the platform implies it, or gestures wired against the platform's direction/semantics. Gestures are part of the native contract, not decoration.
+- **System affordances ignored.** Safe-area insets, the notch/dynamic-island, home indicator, keyboard avoidance, dark-mode and dynamic-type/text-scaling, and the accessibility reduce-motion flag not respected — the surface reads as a web page in a shell, not a native app.
+
+The inversion still holds: brand-universal choices (the token palette, type scale, iconography, information architecture) **should** carry across platforms unchanged — porting those is correct, not slop. It is only the **native-feel** layer (navigation, gestures, system controls) that must be native per platform.
+
 ## How to use this file
 
 In Phase 1, run every direction spec down this list. For each hit, either (a) replace it with a choice derived from the app's domain, or (b) write one sentence justifying it as a deliberate fit for *this* brief ("dark theme because this is a market-monitoring tool used on a second screen all day"). A justified pattern is fine. An unjustified one means the direction needs another pass.

@@ -1,6 +1,8 @@
-# Stack & Mockup Mechanics
+# Stack & Mockup Mechanics — the web instance
 
-## Mockup file rules (Phase 2)
+**Scope.** This file is the **web** mechanism for the exploration mockup (Phase 2) and the real workbench (Phase 4) — one concrete instance of the profile's design-surface verbs, not the universal one. The stack profile (`specs/stack-profile.md`, Q8.2–Q8.4) is what decides these for *this* project: the exploration medium, the workbench mechanism, and the screenshot/review driver. On the hardened web stack they are HTML mockups, a `/styleguide` route, and a headless-browser screenshot — spelled out below. For a **mobile or cross** target the same three verbs resolve to the platform's own mechanisms (a native preview harness, a simulator/emulator snapshot) and are derived against the profile when a real mobile project appears — they are not spelled out here. Read this file when the target is web; otherwise read the project's profile.
+
+## Mockup file rules (Phase 2 — web exploration medium)
 
 - One self-contained `.html` file per direction in `design/mockups/`, named after the direction (`ledger.html`, `operator.html`...). All CSS inline in a `<style>` block; fonts via Google Fonts `<link>`; no JS frameworks, no build step. Small vanilla JS is fine for a tab switch or hover demo.
 - Define the direction's tokens as CSS custom properties at the top of the style block, and use only the variables below — this makes the mockup a living token spec and makes Phase 4 translation mechanical:
@@ -43,9 +45,9 @@ Then *read each PNG* and critique against the quality-floor checklist: contrast,
 2. **Playwright/Chrome MCP** if connected: navigate, screenshot, also grab a narrow viewport.
 3. **No browser available**: re-read each file line-by-line against the checklist instead, and tell the user the review was static-only.
 
-In Phase 4, the same loop runs against the real app (`localhost` dev server): screenshot the converted screen, diff it visually against the chosen mockup, fix drift before moving to the next screen.
+In Phase 4, the same loop runs against the real **workbench** (on web, the `/styleguide` route on a `localhost` dev server): screenshot the workbench surface, diff it visually against the chosen mockup for directional fidelity, fix drift. On a mobile target this loop is the profile's screenshot driver (Q8.4 — a simulator/emulator snapshot) instead.
 
-## Wiring the winning tokens into real stacks (Phase 4)
+## Wiring the winning tokens into the real workbench (Phase 4 — web)
 
 **Tailwind CSS v4** (CSS-first config) — tokens go in the main CSS file:
 ```css

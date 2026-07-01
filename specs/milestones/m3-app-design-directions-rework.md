@@ -20,3 +20,5 @@ Rework the design-SYSTEM skill so exploration is cheap-throwaway, the chosen dir
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.sh`.
+
+verified: clean at cfd97af, 2026-06-30, via verifier subagent against done-conditions + bash scripts/check-neutral.sh (all seven DCs PASS; exploration-medium derived from Q8.3/Q8.4 ruled acceptable; evidence in PR)

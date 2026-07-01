@@ -18,3 +18,5 @@ Replace the Tailwind/web-hardcoded **fidelity** definition (the parked leak) wit
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.sh`.
+
+verified: clean at 9c90d68, 2026-06-30, via verifier subagent against done-conditions + bash scripts/check-neutral.sh (first pass BLOCKED on a §3↔§6 mockup-vs-workbench contradiction; remediated, re-verified CLEAN — all five DCs PASS; evidence in PR)

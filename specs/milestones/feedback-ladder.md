@@ -51,3 +51,5 @@ verifier subagent against this file (docs greps, cross-reference resolution, no-
 sweep, priors-file disclaimer/markers present) + `scripts/check-neutral.sh` + both script
 self-tests. No surface/action change → no runtime walk; no hard invariant → no
 `/security-review`.
+
+verified: clean at 16ea196, 2026-07-01, via fresh-context verifier subagent — Q11 extended in place (ordering/speeds/holes/routing-⚠, Q5–Q10 unrenumbered, no Q12), priors file complete (10 dated marked entries, only Next.js hardened, disclaimer + accretion loop), spec-foundation/debug/implement-milestone/provision edits confirmed, §3 split sentence present, NO weakening of walk/pin/coverage gates (verify-milestone not in diff; m-and-v diff a pure addition), check-neutral PASS + 12+9 self-tests + scripts/ untouched. Non-blocking note: Go/Rust entries lead with toolchain characterization rather than an explicit holes bullet (flat ladders). (evidence: verifier report in PR)

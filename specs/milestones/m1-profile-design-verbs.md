@@ -24,3 +24,5 @@ Expand the stack-profile interface so the *design* track is dispatched through p
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.sh`.
+
+verified: clean at 37c1681, 2026-06-30, via verifier subagent against done-conditions + bash scripts/check-neutral.sh (all five DCs PASS; evidence in PR)

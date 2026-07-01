@@ -71,6 +71,17 @@ fresh c9-scar
 echo "a an earlier run run asserted it while main was unprotected" > "$ROOT/skills/x/SKILL.md"
 check "doubled-word scar fails" 1
 
+# 10. Web hardcode in the SHARED NEUTRAL CORPUS (spine) fails — design-neutrality.
+fresh c10-spine-hardcode
+echo 'install the design tokens as Tailwind `@theme` variables' > "$ROOT/references/profile-interface.md"
+check "web hardcode (@theme) in shared corpus fails" 1
+
+# 11. The SAME web hardcode in a DESIGN-TRACK file passes — it's a legit web example.
+fresh c11-designtrack-ok
+mkdir -p "$ROOT/skills/app-design-directions"
+echo 'translate the winner into Tailwind `@theme` / shadcn CSS variables' > "$ROOT/skills/app-design-directions/SKILL.md"
+check "web hardcode (@theme) in design-track file passes" 0
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

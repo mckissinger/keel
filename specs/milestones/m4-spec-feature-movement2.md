@@ -18,3 +18,5 @@ Rework per-feature design (Movement 2) so a feature's screens are composed from 
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.sh`.
+
+verified: clean at 93209cd, 2026-06-30, via verifier subagent against done-conditions + bash scripts/check-neutral.sh (all five DCs PASS; plan-only handoff ruled coherent; evidence in PR)

@@ -21,7 +21,7 @@ For a no-UI change (the profile's has-UI? verb, Q8.1), skip this. For a UI chang
 
 - *"This change is [a novel layout archetype] / [pure composition of existing gallery components]. Generate a bespoke divergence sketch?"* — default **yes** for a novel archetype, **skip** for pure recomposition.
 - If generated: `design/mockups/<change>/<screen>.html` (real data, real states) — an **optional divergence sketch** that picks the direction cheaply and is **never re-implemented as the spec**: the moment the direction is chosen it converges into the real workbench composition, and *that* is the reference. Then *"review it now, or trust it and proceed?"* (open / capture it for review per Q8.4).
-- **Either way, keep a concrete fidelity reference — never nothing.** The fidelity done-condition points at the **real workbench composition or the named gallery components** it composes — **never a re-implemented static mockup, never nothing.** The build must have a fidelity target.
+- **Either way, keep a concrete fidelity reference — never nothing.** The fidelity done-condition points at the **real workbench composition or the named gallery components** it composes — **never a re-implemented static mockup, never nothing.** The build must have a fidelity target. **At spec time the reference is *named*, not built as code** — the composition is realized at build time, so the plan PR stays plan-only; a real composed preview, if genuinely wanted early, is design-gate infrastructure on `main`, never code in the plan PR (§6 of the shared rules).
 
 ### 3. Author the milestone
 

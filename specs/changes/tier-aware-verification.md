@@ -95,8 +95,14 @@ boundary and had to be re-homed to `main` as design infra.)
 
 ## Scope
 
-Docs-only: two references + three skills. No script changes (`check-verified-pin.sh` is
-untouched — the coverage gate is procedural in `verify-milestone`, like the existing no-pin-
+Docs-only: two references + three skills, plus the `[auto]`-enumeration strings in
+`workflows/verify-all-milestones.js` (run-discovered — the sweep restates the tag semantics, so
+leaving it stale would contradict the new definition). No script changes (`check-verified-pin.sh`
+is untouched — the coverage gate is procedural in `verify-milestone`, like the existing no-pin-
 while-unrun rule). `scripts/check-neutral.sh` must stay green: all tier examples are hedged
 ("e.g."), no framework hardcodes. One-owner rule holds: the rules change lives in
 `milestones-and-verification.md`; the skills reference it, they don't restate it.
+
+Run-discovered housekeeping riding this branch: `.gitignore` gains a browser-automation
+scratch dir (`.playwright-mcp/`) that verification sessions had been leaving untracked in the
+repo root.

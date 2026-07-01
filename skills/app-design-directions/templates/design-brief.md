@@ -24,8 +24,10 @@
 - **Sample real data for mockups:** [pull actual names/values from the codebase or seed data]
 - **Domain artifacts worth drawing from visually:** [e.g., rent rolls, plat maps, term sheets]
 
-## Stack
-- **Framework / CSS:** [e.g., Next.js 15, Tailwind v4, shadcn/ui]
+## Platform & stack
+- **Platform target:** [web / mobile / cross-platform] — from the stack profile (Q8.1 has-UI?, Q8.6 platform-convention verb)
+- **Native-feel conventions (mobile / cross only):** [what must be native per Q8.6 — navigation patterns, gestures, system controls (pickers, date-pickers, share sheets) — vs. brand-universal (palette, type, icons, IA). Or "n/a — web target."]
+- **Platform + stack:** [platform, UI framework/toolkit, styling/token approach — e.g. web: a component framework + a CSS/token layer such as Tailwind `@theme`; mobile: the platform's UI toolkit — whatever Phase 0 found]
 - **Existing tokens/theme:** [what exists today]
 - **Theme support:** [light / dark / both]
 

@@ -19,3 +19,5 @@ Land the parked cleanups and extend the neutrality guard to lock the new design-
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.test.sh + bash scripts/check-neutral.sh`.
+
+verified: clean at eb6c7c5, 2026-07-01, via verifier subagent against done-conditions + adversarial guard injection (in-corpus @theme→exit 1, design-track @theme→exit 0) + check-neutral.test.sh (12/12) + check-neutral.sh + node --check on both workflows (all six DCs PASS; evidence in PR). [carry-forward: originally verified clean at d1273b3 on the M1–M5 integration; conflict-only rebase onto main (identical content, guard suite re-run green) re-pinned to eb6c7c5]

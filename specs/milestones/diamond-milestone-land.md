@@ -20,3 +20,5 @@ Encode, in the build + land skills, how to handle a **diamond milestone (multi-p
 ## Verification
 
 `verification: verifier subagent against this milestone's done-conditions, + bash scripts/check-neutral.sh`.
+
+verified: clean at 8534f99, 2026-07-01, via verifier subagent against done-conditions + bash scripts/check-neutral.sh (all four DCs PASS; encoded mechanic cross-checked as technically sound against check-verified-pin.sh's three-dot diff; evidence in PR)

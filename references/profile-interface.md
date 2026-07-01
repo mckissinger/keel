@@ -170,18 +170,39 @@ preview URL, a release build, a container), and does probing it need an **auth/b
 > must pass the documented bypass; otherwise a healthy deploy reads as a failed one.
 
 **Q11 — Test tiers (the committed-test ladder).** For each tier, the **concrete, runnable
-command** on this stack — or **"n/a + why"** (a recorded reason, not an assumed gap):
-- **Unit** — pure logic, no rendering (e.g. a test runner over exported functions).
+command** on this stack — or **"n/a + why"** (a recorded reason, not an assumed gap) — answered
+**cheapest → dearest**, with a rough speed per rung and what it *uniquely* catches (the canonical
+split: **static catches shape, unit catches logic, component-scope catches wiring, end-to-end
+catches environment**):
+- **Static** — typecheck / lint / format-check (usually sub-seconds, amortized).
+- **Unit** — pure logic, no rendering (e.g. a test runner over exported functions; ~ms/test).
 - **Component-render** — mount a **real component/screen tree** in a fast headless harness and
   drive interactions (e.g. a DOM-emulation environment with a component testing library on web;
-  a native preview/snapshot harness on mobile). This is the tier that catches deterministic
-  *interaction* bugs — render loops, focus ordering, an edit that doesn't commit — that pure
-  units structurally cannot see.
+  a native preview/snapshot harness on mobile; ~10–1000ms/test). This is the tier that catches
+  deterministic *interaction* bugs — render loops, focus ordering, an edit that doesn't commit —
+  that pure units structurally cannot see.
 - **End-to-end** — committed, scripted checks against the real runtime (e.g. a checked-in
-  browser-automation spec), runnable headlessly in CI.
+  browser-automation spec), runnable headlessly in CI (~seconds/test + server boot; measurably
+  the flakiest rung — reserve it for what lower rungs can't see).
+
+Also answer the stack's **escalation holes**: the failure classes that *structurally cannot be
+seen below the runtime walk* on this stack (e.g. an async server-rendered boundary that no
+headless harness can mount, a native bridge everything below the device mocks away, an
+SSR/client compile split). Naming them makes escalating to the walk a **routed decision**, not
+a habit. Derivation priors for common stacks — dated, honesty-marked, and read only at
+derivation time — live in `references/feedback-ladders.md`; they seed this answer, the bounded
+research step verifies their currency.
 
 These commands are what `[auto]` done-conditions bind to and what `verify-milestone` runs before
 its walk; deriving a profile with only a unit tier **must** record why the other tiers are n/a.
+> ⚠ **The inner loop reproduces at the cheapest layer that can see the failure class; the walk
+> is the gate, not the debugger.** On an earlier run an agent hand-drove a browser to debug
+> failures a typecheck or unit test shows in a second — the e2e-class rung runs ~100× slower and
+> measurably flakier than the component rung, and browser-automation-via-MCP-snapshotting costs
+> ~4× the tokens of the same task driven via CLI/scripts (so when browser automation *is* the
+> right layer, prefer a scripted/CLI driver over snapshot-per-step). Escalate past a rung only
+> when the failure class is in its escalation holes — and when a defect *does* escape to a
+> higher rung, that's missing coverage one rung down (backfill it there).
 > ⚠ **A missing middle tier turns the agent walk into the regression harness.** On an earlier
 > run, two deterministic interaction bugs — an external-store snapshot-stability violation that
 > crashed a route on open, and an open-on-keypress that self-closed because keyboard activation

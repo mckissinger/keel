@@ -18,9 +18,9 @@ The milestone-authoring + verification rules it builds against live in `${CLAUDE
 
 1. **Branch first — before any code.** `git checkout -b <slug>` as the *first* step (off `main`, or off the parent milestone's branch when this one genuinely stacks). Writing code on the wrong branch is the most common recoverable mistake; branching first prevents it.
 
-2. **Read the milestone into context.** Its done-conditions (verbatim) + `verification:` line; the feature spec + its **route→milestone map**; for a UI milestone, **this milestone's own mockups** (the fidelity reference — `design.md` tokens, not generic defaults); the stack profile (how to build/run on this stack).
+2. **Read the milestone into context.** Its done-conditions (verbatim) + `verification:` line; the feature spec + its **route→milestone map**; for a UI milestone, **this feature's workbench composition** (the fidelity reference — the real themed primitives per the profile's workbench verb, Q8.3, and the `design.md` design tokens, not generic defaults); the stack profile (how to build/run on this stack).
 
-3. **Build to the done-conditions — all three dimensions.** Logic/invariants, UX completeness (the enumerated states + interactions), and — for a UI milestone — fidelity (the feature's mockup, `@theme` tokens, the design system's components/icons/charts, not defaults). The done-conditions are the contract; build to *them*, not to your own idea of "done."
+3. **Build to the done-conditions — all three dimensions.** Logic/invariants, UX completeness (the enumerated states + interactions), and — for a UI milestone — fidelity (design tokens per the profile, themed components, the `design.md` icon / chart / motion libraries, and a layout matching this feature's workbench composition, not platform defaults). The done-conditions are the contract; build to *them*, not to your own idea of "done."
 
 4. **Self-check the `[auto]` conditions as you go** — typecheck, lint, unit/integration tests green before you hand off. This is your own sanity loop, **not** the formal verification: you do not run the `[runtime]` walk to completion as proof here, and you **never write the `verified:` pin** — that is `verify-milestone`'s job, in a fresh context, so no claim is taken on trust.
 

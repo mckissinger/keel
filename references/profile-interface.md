@@ -2,9 +2,9 @@
 
 keel's methodology is stack-agnostic; the *mechanics* of proving a build actually runs are
 not. This file is the contract between the two: the questions every project answers about
-its own stack so the neutral skills (`verify-milestone`, `provision`, `spec-feature`,
-`review-feature`) can dispatch verification, provisioning, and design-token install
-**without naming a framework**.
+its own stack so the neutral skills (`verify-milestone`, `provision`, `app-design-directions`,
+`spec-feature`, `review-feature`) can dispatch verification, provisioning, and the whole
+**design surface** (tokens, workbench, motion, platform feel) **without naming a framework**.
 
 ## What a profile is, and where it lives
 
@@ -76,10 +76,83 @@ doesn't**? The runtime-proof runs against **both**.
 **capped real call** within a pre-authorized spend envelope, asserting invariants over
 nondeterministic output (never exact text)? (Or "n/a — no external calls.")
 
-**Q8 — Has UI? + design-token install.** Does this deliverable render a user interface? If
-**yes**, where/how do design tokens install (CSS variables, a theme file, native style
-tokens)? If **no**, the design track and the fidelity done-condition are skipped entirely (see
-below).
+**Q8 — Design surface (the verb cluster).** This is a *cluster*, not one question: it opens
+with the has-UI? gate and — when the answer is yes — continues through five design-surface
+verbs the neutral design skills (`app-design-directions`, `spec-feature`, `review-feature`)
+dispatch through, exactly as verification dispatches through Q1–Q7. Answer each concretely in
+`specs/stack-profile.md`. The web reference answers below are the **hardened** ones (keel's
+proven stack); the mobile answers are **derived-when-needed** against this interface the first
+time a real mobile project appears — neutral seams now, web hardened, no mobile toolchain built
+on spec. Expect the same ~80%-from-derivation, last-20%-from-running-it as every other verb.
+
+**Q8.1 — Has UI? (the gate).** Does this deliverable render a user interface? If **no**, the
+entire design track and the fidelity done-condition are skipped, Q8.2–Q8.6 answer "n/a — no
+UI," and done-conditions cover two dimensions, not three (see "Has UI? — what Q8 gates" below).
+If **yes**, answer the rest of the cluster.
+
+**Q8.2 — Token source + install.** Where do design tokens live, in what structure, and how do
+they install onto the surface? The rule is **native-vs-portable**: a **single-platform**
+deliverable installs **native tokens** (e.g. CSS custom properties / a theme file the framework
+already consumes); a **multi-platform** deliverable (web + mobile) authors **one portable
+source** (e.g. a DTCG token file compiled per platform by e.g. Style Dictionary) so the values
+port and each platform gets its native form. Tokens are **two-tier — primitive → semantic** (raw
+scale values, then role-named aliases the components read), and **interaction-states and motion
+are token-level, not per-component** (hover/pressed/focus/disabled deltas and easing/duration are
+named tokens every component inherits, never re-decided per widget).
+> ⚠ **A token the components don't actually read is decorative.** Declaring a token layer but
+> hardcoding raw values in the markup (a stray hex, a one-off duration) defeats the whole spine —
+> the redline can't retheme what isn't wired. The install answer must name the mechanism that
+> makes components **read** the semantic tier, and the fidelity check (has-UI milestones) asserts
+> no raw values bypass it. (The generalized form of the tokens-declared-but-not-read scar: a
+> token layer present in the sheet yet bypassed by raw values in the markup reaches green and
+> looks themed — until a retheme moves nothing.)
+- *Web reference:* CSS custom properties (primitive `--color-blue-600` → semantic `--color-accent`),
+  installed via the framework's theme layer; state + motion tokens declared in the same sheet.
+- *Mobile (derived-when-needed):* one portable DTCG source compiled to a native theme per platform.
+
+**Q8.3 — Workbench mechanism.** How does this stack render a **reviewable gallery of the real,
+themed primitives in every state** — the durable fidelity source of truth, not a throwaway
+mockup? Name the mechanism that mounts real components (themed, in default / hover / pressed /
+focus / disabled / loading / empty / error) on one reviewable surface.
+- *Web reference:* a `/styleguide` route (or e.g. Storybook) that imports the real primitives and
+  lays them out in every state.
+- *Mobile (derived-when-needed):* the platform's native preview harness — e.g. SwiftUI `#Preview`;
+  e.g. Jetpack Compose `@Preview` + a `@PreviewParameterProvider` to fan the states; e.g. Flutter
+  Widgetbook; e.g. React Native's Storybook.
+
+**Q8.4 — Design screenshot / review driver.** How is a themed surface **captured** as an image
+for the redline / vision diff — the mechanism that turns a rendered surface into the screenshot
+an agent or human diffs against the mockup?
+- *Web reference:* a headless-browser screenshot (e.g. Playwright; or e.g. Chromatic over the
+  gallery).
+- *Mobile (derived-when-needed):* a simulator + snapshot test (iOS); an emulator + e.g. a Compose
+  screenshot test (Android); e.g. Widgetbook goldens (Flutter).
+
+**Q8.5 — Motion + interaction mechanism.** What is the stack's **motion library**, how are the
+**motion tokens (easing / duration)** and the **interaction-state tokens** expressed, and what is
+the **reduce-motion signal**? Motion and states are behavioral — they live only in real code and
+are reviewed executably, never as a static image.
+> ⚠ **Reduce-motion is read once, at the token layer — not per-animation.** Wiring the
+> reduce-motion check into each component invites the one place that forgets it; a surface then
+> honors it everywhere but the one screen that ships motion-sick. Express it as a token/global the
+> motion layer consults, so honoring it is structural, not per-widget diligence.
+- *Web reference:* CSS transitions / a JS motion library (e.g. Framer Motion) driven by the
+  easing/duration tokens from Q8.2; interaction-state tokens applied on `:hover` / `:focus-visible`
+  / `[data-pressed]`; reduce-motion read from the `prefers-reduced-motion` media query at the token
+  layer.
+- *Mobile (derived-when-needed):* the platform's native animation API + its accessibility
+  reduce-motion flag, read once at the token layer.
+
+**Q8.6 — Platform-convention set (native feel).** Which platform's **interaction conventions**
+must this surface obey to feel native — web, iOS Human-Interface-Guidelines, or Android Material?
+Name what must be **native** (navigation patterns, gestures, system controls like
+pickers / date-pickers / share sheets) versus what is **brand-universal** (the token palette, type
+scale, iconography, information architecture). Define once, implement per platform: the brand
+ports, the native feel does not.
+- *Web reference:* web conventions — pointer + keyboard, browser-native focus order, standard form
+  controls themed through the tokens.
+- *Mobile (derived-when-needed):* the platform HIG / Material control set for navigation, gestures,
+  and system pickers.
 
 **Q9 — Schema/state versioning.** How are schema/data/state changes versioned, and is the scheme
 **collision-free under parallel branches**? (Or "n/a — no persistent schema.")
@@ -112,10 +185,24 @@ These rules are already stack-neutral and live in the spine. The profile only fe
 
 ## Has UI? — what Q8 gates
 
-Q8's answer is load-bearing across the methodology. **No UI** →
+Q8.1's has-UI? answer is load-bearing across the methodology, and it gates the rest of the
+cluster. **No UI** →
 - the **design-system gate** (`app-design-directions`) and **per-feature mockups** (`spec-feature`
-  Movement 2) are skipped;
+  Movement 2) are skipped, and Q8.2–Q8.6 all answer "n/a — no UI";
 - done-conditions cover **two** dimensions (logic + UX/behavioral completeness), not three — the
   **fidelity** dimension only exists when there's something to render.
 
-**Has UI** → the full design track and the three-dimension done-conditions apply, as written.
+**Has UI** → the full design track and the three-dimension done-conditions apply, and the rest of
+the cluster becomes load-bearing input to the design skills:
+- **Q8.2 (token source)** is the neutral spine the whole design system compiles from;
+- **Q8.3 (workbench)** is the reviewable component gallery `app-design-directions` installs as the
+  durable fidelity source of truth, and that `spec-feature` / `review-feature` compose and diff
+  against;
+- **Q8.4 (screenshot driver)** is how the vision diff / redline captures a surface;
+- **Q8.5 (motion + interaction)** and **Q8.6 (platform conventions)** are the behavioral +
+  native-feel contract those same skills build and review to.
+
+So the **design track and the fidelity dimension gate off has-UI? (Q8.1)**; the **workbench,
+screenshot, and motion verbs (Q8.3–Q8.5) feed `app-design-directions`, `spec-feature`, and
+`review-feature`** directly — the design track is dispatched through the profile exactly as
+verification is.

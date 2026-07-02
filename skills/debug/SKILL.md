@@ -1,6 +1,7 @@
 ---
 name: debug
-description: Disciplined root-cause loop — reproduce at the cheapest layer that can see the failure class (runtime for runtime-class bugs), isolate, find the true cause, fix it through the normal change gate, and regression-lock it at the lowest layer that reproduces. Consults the project's accumulated learnings first and records new ones. Use when something is broken and you need to find and fix why, not patch a symptom.
+description: Disciplined root-cause loop — reproduce at the cheapest layer that can see the failure class (runtime for runtime-class bugs), isolate, find the true cause, fix it through the normal change gate, and regression-lock it at the lowest layer that reproduces. Consults the project's accumulated learnings first and records new ones.
+when_to_use: When something is broken and you need to find and fix why, not patch a symptom.
 ---
 
 # Debug

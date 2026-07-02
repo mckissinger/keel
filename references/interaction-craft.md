@@ -139,6 +139,22 @@ workflow.)
 - **Layout changes and interruptions never steal the position.** Media loading, content
   expanding, history prepending above, stop/retry/regenerate, errors — none of them move what
   the reader is looking at.
+- **The streamed answer grows into the screen.** Once a response anchors below the reader's
+  message, it extends downward into open viewport — arriving content never pushes what the
+  reader already has away from them.
+- **Arbitrary navigation is a behavior set, not one button.** Jump-to-message, links to a
+  specific message, in-thread search, unread markers — jump-to-latest is the floor of this
+  set, not the whole of it.
+- **Long threads stay responsive while streaming.** Text, markdown, code, images, and deep
+  history all render live without the surface stuttering — responsiveness under streaming
+  load is an obligation of the surface, not a later tuning pass.
+- **Streaming never breaks assistive tech.** Keyboard focus is preserved while content
+  arrives (a growing answer never steals or resets it), and arrivals are announced at a
+  comfortable pace, not per token — the assistive-tech semantics floor (`product-ui-craft.md`)
+  holds *while* the surface is live, not just at rest.
+- **The default reopen position is the last user message.** On a conversation surface the
+  reader's last action is the message they sent — open there, with the response's beginning
+  in view.
 
 These rules are behavioral: they exist in the real build and its committed checks, never in a
 throwaway mockup. The *visual states* a live surface needs (streaming, unread boundary,
@@ -171,6 +187,26 @@ in nicely"), so the builder produces the intended motion and the verifier can ch
   then settles back — signaling an edge without a hard stop.
 - **retarget mid-flight** — an interrupted animation continues from its current value and
   velocity toward the new target; it never restarts from zero.
+- **pop-in** — an entrance that overshoots or bounces into place; distinct from a plain
+  scale-in, which settles without the overshoot.
+- **shared-element transition** — one element travels between two surfaces (a thumbnail
+  becoming the detail view's image); distinct from morph, which is in-place shape change.
+- **continuity transition** — visually connects the before and after states so the change
+  reads as one motion, not a swap.
+- **anticipation** — a small wind-up before the main motion, telegraphing what's about to
+  happen.
+- **follow-through** — elements settle after the main motion ends instead of stopping dead.
+- **perceptual duration** — how long a spring *feels* like it takes versus its nominal settle
+  time; tune to the feel, not the clock.
+- **mask** — a reveal through soft, fadeable edges; distinct from a clip-path reveal, whose
+  edge is hard.
+- **skeleton/shimmer** — a loading placeholder that mimics the coming layout so the swap to
+  real content doesn't jump.
+- **number ticker + tabular numbers** — animated numerals rolling to a new value need
+  fixed-width (tabular) digits so nothing around them jitters.
+- **parallax** — depth from layers scrolling at different speeds.
+- **page transition** — a choreographed navigation between routes or views, not an unstyled
+  swap.
 
 ## The review table (for review-feature)
 
@@ -185,6 +221,24 @@ form because the web is the hardened stack; translate the *finding* to the surfa
 | popover scaling from center | origin at the trigger | popovers scale from where they opened (modals stay centered) |
 | animation on a keyboard action | none | seen too often; movement makes it feel slow |
 | reduce-motion checked per screen | one branch at the token layer | one place to forget is one screen that ships motion-sick |
+
+### Review mechanics
+
+- **The cohesion standard.** Motion must match the product's personality — a playful bounce in
+  a dense pro tool is a finding even when well-built. When unsure whether a motion feels right,
+  the strongest move is usually to delete it.
+- **Hard flags** — always a finding, no judgment call needed: an entrance from `scale(0)` or a
+  pure fade; a UI duration over ~300ms with no stated reason; keyframed animation on a
+  rapidly-retriggered element (it restarts from zero instead of retargeting); hover effects not
+  gated behind an actual pointer; symmetric press/hold timing; an everything-at-once entrance
+  where a stagger belongs.
+- **The remedial hierarchy** — propose fixes in this order and stop at the first that resolves
+  the finding: **delete → reduce → fix easing → fix origin → make interruptible → move to GPU →
+  asymmetric timing → polish**. Deleting the motion is a fix, and often the best one.
+- **The verdict is explicit.** The review ends in **Block** or **Approve**, with the block
+  criteria stated — which findings block and why — never a trailing list of observations.
+- **Posture.** Default to flagging; approval is earned, not assumed. Every finding cites
+  `file:line` so the fix is one jump away.
 
 For deeper implementation techniques (clip-path reveals, gesture/drag physics, WAAPI, springs, 3D,
 Framer hardware-acceleration caveats) — the **web/CSS cookbook**, read on demand — see

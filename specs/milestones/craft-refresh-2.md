@@ -56,3 +56,5 @@ untouched, five reviewer mechanics, four live-surface rules + reopen default, co
 entries + resolved pointer, no-weakening sweep) + `scripts/check-neutral.sh` + both script
 self-tests. No surface/action change → no runtime walk; no hard invariant → no
 `/security-review`.
+
+verified: clean at 89d45ef, 2026-07-01, via fresh-context verifier subagent — all conditions pass: 11 vocabulary terms in house format with the pre-existing 8 untouched, all five reviewer mechanics incl. the exact 8-step remedial hierarchy and six hard flags, four live-surface rules + reopen-at-last-user-message default, cookbook curved-path/cross-container/3D entries resolving the dangling "3D" pointer, zero deletions across a 2-file diff, check-neutral PASS + 12/12 + 17/17 self-tests with scripts/ untouched; the disclosed reopen-bullet overlap is consistent (the new bullet specializes the existing "last meaningful position" rule for conversation surfaces) (evidence: verifier report in PR)

@@ -113,6 +113,34 @@ tooltip is open, adjacent ones should open instantly (skip the delay) so the too
 - **Gate hover affordances behind an actual pointer** — a hover-capable, fine pointer — so touch
   taps don't trigger phantom hovers.
 
+### 6. Live surfaces: never move the reader against their intent
+
+Any surface where content arrives while the user reads — a conversation (human or AI), an
+activity feed, a live log, an agent progress pane — obeys one law: **the reading position
+belongs to the reader.** (Distilled from shadcn's streaming-chat rules, rewritten for this
+workflow.)
+
+- **Follow the live edge only while the reader is at it.** At the bottom, keep the stream in
+  view; the moment they scroll away, leave them where they are. Auto-scroll is never the
+  default.
+- **Every interaction is intent.** Scrolling away, selecting text, using the keyboard, opening
+  a link — each says "I'm reading"; any of them stops the following.
+- **New content never moves the reading position.** A new turn starts near the top of the
+  viewport so it can be read from its beginning, with enough of the previous turn visible for
+  context; content arriving offscreen stays offscreen.
+- **Show what's happening out of view** — a response still streaming, new items arrived below —
+  with a jump-to-latest affordance that returns the reader and resumes following.
+- **Reopen at the last meaningful position** (usually the reader's last action), never the
+  absolute bottom.
+- **Layout changes and interruptions never steal the position.** Media loading, content
+  expanding, history prepending above, stop/retry/regenerate, errors — none of them move what
+  the reader is looking at.
+
+These rules are behavioral: they exist in the real build and its committed checks, never in a
+throwaway mockup. The *visual states* a live surface needs (streaming, unread boundary,
+jump-to-latest, reopen position) live in the design track's state grammar — see
+`product-ui-craft.md` in the app-design-directions skill.
+
 ## The motion vocabulary
 
 Fidelity done-conditions and review findings are only as precise as their words. Name motion

@@ -3,6 +3,12 @@ name: implement-milestone
 description: Build ONE milestone to its done-conditions — the atomic build verb. Branch first, build to the spec's done-conditions (honoring the [auto]/[runtime]/[attended] tags and the stack profile's runtime-proof), author the committed tests the conditions name, halt at stop-points, then hand off to verify-milestone. Never self-verifies, never commits to main, never merges.
 when_to_use: Use when exactly one milestone needs building and its spec (done-conditions + verification line) already exists on main — directly for a spec-change's single milestone, or invoked per-milestone by implement-feature. Not for a whole feature (that's implement-feature), not for checking completed work (that's verify-milestone), and not before the milestone spec exists (author it first).
 allowed-tools: Bash(git checkout -b *), Bash(git branch *), Bash(git add *), Bash(git commit *)
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/guard-branch-rules.sh"
 ---
 
 # Implement Milestone

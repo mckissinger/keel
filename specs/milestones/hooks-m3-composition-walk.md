@@ -8,9 +8,9 @@ and the observation the attended `/verify-milestone` session must record.
 
 ## Status
 
-- **NOT EXECUTED.** No live-session evidence exists yet. Do not treat this file as walk
-  evidence; the walk transcript is produced in the attended verify session and attached to the
-  PR (that transcript, not this plan, gates the pin).
+- **EXECUTED 2026-07-01 (attended).** Transcript: `hooks-m3-composition-walk-transcript.md` —
+  all five assertions (a–e) pass against the m3-branch scripts in a composed fixture with real
+  hook stdin. That transcript is the walk evidence that gates the pin.
 - **Headless probes already run on this branch (deterministic cores):** the assertions'
   deterministic cores live in the m1/m2 committed self-tests, all green on this branch —
   `merge-guard.test.sh` (29/29), `guard-branch-rules.test.sh` (16/16),

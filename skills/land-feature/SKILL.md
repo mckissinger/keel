@@ -48,6 +48,14 @@ The post-wave consolidated check below still runs last.
 
 A wave isn't done until it's green on `main` **together**. Nothing on a branch proves the merged result. After the feature's PRs are all on `main`, run one consolidated check: **fresh state → all migrations in order → full suite** (+ the consolidated first-run walk for a UI feature). This is the only gate that catches cross-sibling integration bugs (a shared layout double-wrapped, two migrations that conflict only when combined).
 
+## Reconcile the specs to merged reality (last, after the consolidated check is green)
+
+Once the wave is green on `main` together, the specs still describe the *plan*; `main` now describes what was *built*. Close that gap in **one plan-only commit** so the next `spec-feature` session reads reality, not intent:
+
+- **Update the living docs to merged reality** — `specs/features/<feature>.md` (the route→milestone map, any decisions the build changed), and `specs/00-product.md` / `specs/01-architecture.md` **only if the build changed a data shape or environment fact**. Per the spec-authority rule (`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §5), don't rewrite correct merged code to match a stale spec — update the doc to match the code.
+- **Archive the wave's completed milestone specs** to `specs/milestones/_landed/` (mirroring the `deferrals/_closed.md` archive precedent). A landed milestone's pin is history; moving it out of `specs/milestones/` keeps the active-plan surface honest without losing the record.
+- **This commit is plan-only by construction** — it touches only `specs/**` (feature/product/architecture edits + `_landed/` moves), so the verified-pin gate exempts it under the same plan-only exemption that covers a plan PR (§5), and `check-plan.sh` does not lint `_landed/` (its glob is non-recursive, `specs/milestones/*.md` only — the archive path is not an active milestone spec). Commit it directly as the reconciliation step; it carries no code and needs no pin.
+
 ## Boundaries
 
 - **The user merges.** This skill runs the mechanics around each merge the user has approved; it never merges on its own initiative. The PreToolUse merge guard makes this same per-merge approval harness-shaped — its `ask` on an approved, gate-passing merge — as a local backstop that never replaces branch protection + CI.

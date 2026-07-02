@@ -20,3 +20,9 @@ jobs:
         run: bash scripts/check-neutral.test.sh
       - name: neutrality guard (this repo)
         run: bash scripts/check-neutral.sh
+
+      # Plugin manifest/structure validation via the Claude Code CLI.
+      - name: install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - name: plugin validate
+        run: claude plugin validate --strict .

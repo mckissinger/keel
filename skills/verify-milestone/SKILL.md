@@ -1,7 +1,10 @@
 ---
 name: verify-milestone
-description: Independent verification of a completed milestone against the spec's stated verification method and ground truth. Run in a fresh session after an implement-milestone completes, before accepting the work. Usage - /verify-milestone <milestone>.
+description: Independent verification of a completed milestone against the spec's stated verification method and ground truth.
+when_to_use: In a fresh session after an implement-milestone completes, before accepting the work.
 argument-hint: <milestone>
+arguments: [milestone]
+allowed-tools: Bash(git rev-parse *), Bash(git status *), Bash(git diff *), Bash(git check-ignore *), Bash(git add specs/*), Bash(git commit *)
 ---
 
 # Verify milestone
@@ -12,7 +15,7 @@ For sweeping many milestones at once — e.g. after a multi-milestone implement-
 
 ## Dispatch
 
-1. Find the milestone named in the arguments in the project's `specs/`.
+1. Find the milestone `$milestone` in the project's `specs/`.
 2. Read its stated `verification:` line — the method and ground truth. **Dispatch accordingly; do not re-decide the method.** The spec already chose it.
    - `dynamic workflow over <source>, criteria <ref>` → run a Workflow that fans the check out over the independent units in the ground truth source, judging each unit against the cited criteria.
    - `verifier subagent against <ref>` → launch the `verifier` agent with the milestone's done-conditions and the cited spec section quoted in its prompt.

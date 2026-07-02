@@ -54,6 +54,8 @@ Plus the **`verifier`** agent, the **`verify-all-milestones`** + **`punch-list`*
 
 And a **hooks layer** (`hooks/hooks.json`): a SessionStart bootstrap — re-injected after compaction — that orients every session in a keel-managed project (grain ladder + standing invariants) and stays silent everywhere else, plus PreToolUse guards over merge-shaped and branch-rule commands. These hooks are a **local backstop** — project CI and branch protection remain the server-side gate, and nothing in this layer replaces them.
 
+keel also has two **autonomy modes** — `auto:feature` and `auto:run` — posture levels a human explicitly triggers (never the agent), under which merge authority is delegated to the server-side required checks. The scope and the trades are argued once, in [`decisions/2026-07-autonomy-modes.md`](./decisions/2026-07-autonomy-modes.md), not here.
+
 Two design principles worth calling out: the **design track is optional** (it runs only when the deliverable has a UI, so keel builds CLIs/backends/libraries too), and **every interview confirms its understanding with you before authoring anything**.
 
 ## Requirements

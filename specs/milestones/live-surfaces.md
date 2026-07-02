@@ -55,3 +55,5 @@ live-surface states + AI variant present and scoped, archetype registered with
 mandatory-when-present + behavior-vs-states note, no-weakening sweep) +
 `scripts/check-neutral.sh` + both script self-tests. No surface/action change → no runtime
 walk; no hard invariant → no `/security-review`.
+
+verified: clean at f28c6fa, 2026-07-01, via fresh-context verifier subagent — all 7 conditions pass: principle 6 with every intent rule + shadcn credit (interaction-craft.md:116–137), live-surface state set + model-in-the-loop variant correctly scoped (product-ui-craft.md:37), archetype registered + mandatory-when-present bullet mirroring data-viz + behavior-vs-states note with ~5 cap unchanged (SKILL.md:104–107), diff vs stack base purely additive (no weakening; keyboard rule orthogonal), numbering 1–6 intact, no spine files touched, credit placed once, check-neutral PASS + 12+9 self-tests + scripts/ untouched. (evidence: verifier report in PR)

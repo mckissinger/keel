@@ -34,6 +34,8 @@ Apps are not posters. A landing page is judged in 5 seconds once; an app screen 
 
 Every interactive component needs the full set, derived from the same tokens: default, hover, active/pressed, **focus-visible (keyboard)**, disabled, error. Every data view needs: loading (skeletons shaped like the content, not spinners-in-voids), empty (an invitation to act: what this is + the next step, not just "No data"), error (what went wrong + how to fix, never vague, never apologetic), and partial/degraded where relevant. Improvised per-component states are the structural signature of generated UI; a designed grammar is the difference between a mockup and a product.
 
+**Live surfaces** — any view where content arrives while the user reads (a conversation, feed, live log, or agent progress pane) — add their own state set: **streaming/in-flight** (visibly distinct from initial loading), **arrived-out-of-view** (a jump-to-latest affordance and an unread boundary), **held reading position** (history prepending, media loading, or content expanding never moves what the reader sees), and **reopen position** (the last meaningful turn, not the absolute bottom). When the surface fronts a model, add the variant states: in-progress rendering of a streaming reply, stop/regenerate/branch controls that never move the transcript, and expandable working/tool blocks. The scroll-intent *behavior* behind these states is the interaction floor's live-surfaces principle (`references/interaction-craft.md` at the plugin root).
+
 ## Forms
 
 - Labels above inputs (fastest scanning), left-aligned; placeholder text is a hint, never the label.

@@ -8,10 +8,11 @@
 # changed. A wholly PLAN-ONLY PR (the upfront feature plan PR) is EXEMPT.
 #
 # BOOTSTRAP WINDOW: until the first milestone or chore spec exists — judged at BOTH the
-# merge-base and HEAD, so the window is deletion-proof and never reopens — every PR is
-# exempt. Pre-first-milestone foundation work (the specs+CI+this-script PR, the design-gate
-# workbench, the scaffold) is attended by design and has nothing a pin could describe; the
-# gate arms itself permanently the moment the first milestone/chore spec lands.
+# base branch's tip and HEAD, so the window is deletion-proof and can never be re-entered
+# from an old branch root once a spec is on the base — every PR is exempt. Pre-first-milestone
+# foundation work (the specs+CI+this-script PR, the design-gate workbench, the scaffold) is
+# attended by design and has nothing a pin could describe; the gate arms itself permanently
+# the moment the first milestone/chore spec lands on the base branch.
 #
 # This is the canonical implementation. spec-foundation / adopt copy it into a project
 # and wire it as a CI job; it is never re-authored from prose.
@@ -48,15 +49,17 @@ if [ "$has_code" -eq 0 ]; then
   exit 0
 fi
 
-# 2.5 Bootstrap window: no milestone/chore spec exists at either the merge-base or HEAD →
-#     pre-first-milestone foundation work → exempt. Both ends checked so a deletion can
-#     never reopen the window; an unresolvable merge-base treats the window as closed.
+# 2.5 Bootstrap window: no milestone/chore spec exists at either the base branch's TIP or
+#     HEAD → pre-first-milestone foundation work → exempt. The base TIP (never the
+#     merge-base: a branch rooted at a pre-first-spec commit would make the merge-base
+#     predate the spec and re-enter the window) plus HEAD means neither a deletion nor an
+#     old branch root can reopen it. quotePath off so unusual spec filenames still close
+#     the window; `.+` (not `[^/]+`) so nested spec paths match step 3's glob semantics.
 has_specs() { # <rev>
-  git ls-tree -r --name-only "$1" -- specs/milestones specs/chores 2>/dev/null \
-    | grep -Eq '^specs/(milestones|chores)/[^/]+\.md$'
+  git -c core.quotePath=false ls-tree -r --name-only "$1" -- specs/milestones specs/chores 2>/dev/null \
+    | grep -Eq '^specs/(milestones|chores)/.+\.md$'
 }
-mb="$(git merge-base "$BASE_REF" "$HEAD_REF" 2>/dev/null || true)"
-if [ -n "$mb" ] && ! has_specs "$mb" && ! has_specs "$HEAD_REF"; then
+if ! has_specs "$BASE_REF" && ! has_specs "$HEAD_REF"; then
   echo "verified-pin: bootstrap window — no milestone or chore spec exists yet (pre-first-milestone foundation work); the gate arms when the first lands — pass"
   exit 0
 fi

@@ -12,18 +12,22 @@ today after that point.
 
 ### Logic / invariants
 - [auto] `scripts/check-verified-pin.sh` gains a bootstrap-window exemption: when no file
-  matching `specs/milestones/*.md` or `specs/chores/*.md` exists in the tree at **both** the
-  merge-base of `BASE_REF`/`HEAD_REF` **and** at `HEAD_REF`, the script exits 0 with an
-  explicit bootstrap-window message stating the reason and that the gate arms when the first
-  milestone/chore spec lands. Glob semantics identical to the step-3 spec matcher.
-- [auto] **Deletion-proof:** a PR whose merge-base contains any milestone/chore spec never
-  enters the window, regardless of what the PR deletes — a head that removes all milestone
-  specs still fails exactly as today.
+  matching `specs/milestones/**.md` or `specs/chores/**.md` exists in the tree at **both**
+  the tip of `BASE_REF` **and** at `HEAD_REF`, the script exits 0 with an explicit
+  bootstrap-window message stating the reason and that the gate arms when the first
+  milestone/chore spec lands. Glob semantics match the step-3 spec matcher, robust to git
+  path-quoting (unusual filenames must still close the window). *(Amended during build: the
+  plan said merge-base; the pre-pin security review reproduced a HIGH bypass — a branch
+  rooted at a pre-first-spec commit makes the merge-base predate the spec and re-enters the
+  window — so the window is judged at the base tip, which no branch root can influence.)*
+- [auto] **Deletion-proof and root-proof:** a PR whose base tip contains any milestone/chore
+  spec never enters the window — neither by deleting specs at HEAD nor by rooting the branch
+  at a pre-first-spec commit (the reproduced attack; asserted by a dedicated test case).
 - [auto] **HEAD-side closure:** a code PR that itself adds the first milestone/chore spec is
   validated by the normal pinned path (passes with a valid drift-free pin, fails without) —
   never exempted.
-- [auto] **Fail-safe:** if the merge-base cannot be computed, the window is treated as closed
-  (no exemption).
+- [auto] **Fail-safe:** an unresolvable `BASE_REF`/`HEAD_REF` never opens the window — the
+  script fails before the window check (the changed-files diff dies under `set -e`).
 - [auto] **Post-window behavior identical:** every pre-existing assertion in
   `scripts/check-verified-pin.test.sh` keeps its expected outcome, with one build-discovered
   fixture amendment: case 4 ("code PR touching no milestone spec fails") presumed a
@@ -38,7 +42,9 @@ today after that point.
   foundation-shaped PR (specs/ + `.github/workflows/` + `scripts/` + CLAUDE.md, no
   milestone/chore spec at either end) passes with the bootstrap-window message; (b) the
   deletion case fails; (c) the first-milestone code PR validates normally both with and
-  without a pin; (d) a `specs/chores/*.md` file also closes the window.
+  without a pin; (d) a `specs/chores/*.md` file also closes the window; (e) the pre-spec
+  branch-root attack fails post-bootstrap; (f) an unusual (non-ASCII) spec filename still
+  closes the window.
 - [auto] The script's header comment documents the window (it is the canonical
   copy-into-project artifact — its self-documentation is the spec downstream projects read).
 - [auto] `skills/spec-foundation/SKILL.md` Repo setup documents the window in ≤2 sentences

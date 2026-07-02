@@ -153,6 +153,22 @@ echo "code" > src/sneak.ts
 git add -A && git commit -qm "delete the only milestone spec + add code"
 check "deleting milestone specs does not reopen the window" 1 "$BASE2"
 
+# 13. Root-proof (the security-review attack): repo is PAST bootstrap (base tip = BASE2,
+#     which has m0.md), but the attacker roots their branch at the pre-spec BASE commit so
+#     the merge-base predates the first spec. The window must NOT reopen — judged at the
+#     base TIP, not the merge-base.
+fresh c13-prespec-root "$BASE"
+echo "evil" > src/evil.ts
+git add -A && git commit -qm "unverified code on a pre-first-spec root"
+check "pre-spec branch root does not re-enter the window post-bootstrap" 1 "$BASE2"
+
+# 14. Unusual spec filenames still close the window (git path-quoting must not hide them).
+fresh c14-quoted-spec
+echo "code" > src/q.ts
+echo "# spec with non-ascii name" > "specs/milestones/café.md"
+git add -A && git commit -qm "code + non-ascii-named milestone spec, no pin"
+check "non-ascii-named spec closes the window (fails without a pin)" 1
+
 # HEAD-side closure of the window (a PR that itself adds the first milestone spec is
 # validated normally, never exempted) is covered by cases 2 (with pin → pass) and
 # 3 (without pin → fail); chore specs closing the window by case 9.

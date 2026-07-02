@@ -26,19 +26,27 @@ what a scaffold or a workbench touches.
 ## The mechanic
 
 A **bootstrap window**, judged from tree state, not paths: the gate exempts a PR when **no
-file matching `specs/milestones/*.md` or `specs/chores/*.md` exists** — at **both** the
-merge-base of `BASE_REF`/`HEAD_REF` **and** at `HEAD_REF` — printing an explicit
-bootstrap-window pass message for auditability. The window closes permanently the moment the
-first milestone or chore spec lands anywhere; after that, behavior is byte-identical to
-today.
+file matching `specs/milestones/**.md` or `specs/chores/**.md` exists** — at **both** the
+tip of `BASE_REF` **and** at `HEAD_REF` — printing an explicit bootstrap-window pass message
+for auditability. The window closes permanently the moment the first milestone or chore spec
+lands on the base branch; after that, behavior is byte-identical to today.
+
+*(Amended during build: the plan judged the base end at the merge-base. The pre-pin security
+review reproduced a HIGH bypass — root a branch at a pre-first-spec commit and the merge-base
+predates the spec, re-entering the window post-bootstrap. The base **tip** is outside any
+branch author's control, so the window is judged there.)*
 
 Judging both ends is load-bearing:
 
-- **Merge-base side (deletion-proof):** a PR whose base already contains a milestone spec can
-  never re-enter the window by deleting specs — the base still has them.
+- **Base-tip side (deletion-proof and root-proof):** once the base branch carries a milestone
+  spec, no PR re-enters the window — not by deleting specs at HEAD, not by rooting the branch
+  at a pre-first-spec commit.
 - **HEAD side:** a code PR that itself adds the first milestone spec is validated by the
   normal pinned path, not exempted.
-- **Fail-safe:** if the merge-base cannot be computed, the window is treated as closed.
+- **Fail-safe:** an unresolvable ref never opens the window — the script dies at the
+  changed-files diff before the window check runs. `has_specs` reads tree entries with
+  path-quoting disabled so an unusual spec filename still closes the window (the review's
+  second finding).
 
 **Why exempting the whole window is safe:** everything pre-first-milestone is attended by
 design — kickoff, the design-system gate, and provision all run with the user present, every

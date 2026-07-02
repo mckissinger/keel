@@ -1,6 +1,17 @@
 ---
 name: interview
-description: Clarify a large or ambiguous request before building, when wrong assumptions would waste significant build time. Restates the goal, surfaces the decisions the request leaves open, and asks only the questions that can't be defaulted — in one batched round. For a brand-new project this is the app-skeleton kickoff gate: it resolves the goal, users, scope, FEATURE BACKLOG, services, and design direction at breadth (not per-feature depth), then hands off to spec-foundation. The deep per-feature interview lives in spec-feature, not here. Do not use for small fixes or well-specified tasks.
+description: >-
+  Clarify a large or ambiguous request before building. Restates the goal,
+  surfaces the decisions the request leaves open, and asks only the questions
+  that can't be defaulted — in one batched round. For a brand-new project this
+  is the app-skeleton kickoff gate: it resolves the goal, users, scope,
+  FEATURE BACKLOG, services, and design direction at breadth (not per-feature
+  depth), then hands off to spec-foundation.
+when_to_use: >-
+  When a request is large or ambiguous enough that wrong assumptions would
+  waste significant build time, or at a brand-new project's kickoff as the
+  app-skeleton gate. The deep per-feature interview lives in spec-feature,
+  not here. Do not use for small fixes or well-specified tasks.
 ---
 
 # Interview

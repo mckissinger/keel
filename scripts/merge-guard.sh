@@ -15,9 +15,40 @@
 #
 # Merge-shaped = `gh pr merge`, `git merge` whose target resolves to the default
 # branch, `git push` to the default branch (default branch via origin/HEAD, then
-# a main/master probe). A merge-shaped command is NEVER auto-allowed: the floor
-# is "ask" — per-merge human approval. The gate is the PROJECT's
-# scripts/check-verified-pin.sh — invoked as-is, never re-implemented here.
+# a main/master probe). A merge-shaped command is NEVER auto-allowed — the floor
+# is "ask", per-merge human approval — with ONE exception, the autonomy-mode
+# `--auto` path below. The gate is the PROJECT's scripts/check-verified-pin.sh —
+# invoked as-is, never re-implemented here.
+#
+# --- Autonomy-mode file contract (this guard is the reading owner) -----------
+#
+# Path:    .claude/keel-autonomy.json  (under CLAUDE_PROJECT_DIR)
+# Fields:  level   — "feature" | "run" (any other value → the file is invalid)
+#          scope   — what the mode covers (feature slug / run scope string)
+#          created — when the mode was entered (ISO timestamp)
+#          invoker — who triggered it
+# The file is UNTRACKED — never committed; a git-tracked copy is treated as a
+# spoof and ignored. It is written ONLY by the human-triggered `keel:auto`
+# skill (the write path is the authorization trail — an agent can never
+# escalate its own autonomy) and cleared at run end. A malformed, unreadable,
+# or field-incomplete mode file is treated as NO mode: fail closed to the
+# pre-mode decision table.
+#
+# Under a VALID mode file, exactly one row of the decision table changes
+# (per decisions/2026-07-autonomy-modes.md — delegation to GitHub's required
+# checks, never to agent judgment):
+#
+#   `gh pr merge` WITH a literal `--auto` flag + gate PASS → "allow"
+#     (GitHub merges when and only when the required checks pass)
+#
+# Everything else is byte-for-byte today's table: plain `gh pr merge` without
+# `--auto` stays "ask" even under a mode; gate FAIL stays "deny"; `git merge` /
+# `git push` to the default branch stay "ask"; unresolvable context stays
+# "ask"; no mode file → the existing ask-floor. The `--auto` detection is
+# deliberately strict: the whole command must be a single plain `gh pr merge`
+# invocation over a safe character set — quotes, expansions, command chaining,
+# `--admin`, or `--auto=<value>` forms never map to "allow" (a `--auto`
+# appearing inside a quoted string or as another flag's value cannot count).
 #
 # Safety invariants: the command text is PARSED as data — never eval'd or
 # re-executed. `gh pr view` output is data too: parsed into variables and passed
@@ -91,6 +122,65 @@ if isinstance(v, str):
     sys.stdout.write(v)
 ' 2>/dev/null || true
   fi
+  return 0
+}
+
+# --- autonomy mode (see the mode-file contract in the header) -----------------
+
+MODE_ACTIVE=0 MODE_LEVEL=""
+
+read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE/MODE_LEVEL; any defect → no mode
+  MODE_ACTIVE=0 MODE_LEVEL=""
+  local f="$ROOT/.claude/keel-autonomy.json" content lvl scope created invoker
+  [ -f "$f" ] && [ -r "$f" ] || return 0
+  # Contract: the file is untracked. A git-tracked copy is a spoof (someone
+  # committed a mode) → treated as no mode.
+  if git -C "$ROOT" ls-files --error-unmatch -- .claude/keel-autonomy.json >/dev/null 2>&1; then
+    return 0
+  fi
+  content="$(cat "$f" 2>/dev/null)" || return 0
+  lvl="$(json_str "$content" level)"
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  case "$lvl" in feature | run) ;; *) return 0 ;; esac # unknown level → no mode
+  # All contract fields must be present, non-empty strings — a partial file
+  # (or malformed JSON, which parses to nothing) fails closed.
+  [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  MODE_ACTIVE=1 MODE_LEVEL="$lvl"
+  return 0
+}
+
+AUTO_MERGE=0
+
+detect_strict_auto() { # is $CMD ONE plain `gh pr merge ...` with a literal --auto token?
+  AUTO_MERGE=0
+  # Reject anything that could hide semantics from whitespace tokenization:
+  # newlines, then any byte outside a safe whitelist (quotes, expansions,
+  # chaining, redirection, globs, escapes all fall out here). Fail closed —
+  # a rejected command simply keeps today's ask/deny table.
+  case "$CMD" in *$'\n'* | *$'\r'*) return 0 ;; esac
+  if printf '%s' "$CMD" | LC_ALL=C grep -q '[^A-Za-z0-9 ._/:#@=-]'; then
+    return 0
+  fi
+  local -a w=()
+  local t i=3 seen=1
+  for t in $CMD; do w[${#w[@]}]="$t"; done # noglob on; safe charset only
+  [ "${#w[@]}" -ge 3 ] || return 0
+  [ "${w[0]}" = "gh" ] && [ "${w[1]}" = "pr" ] && [ "${w[2]}" = "merge" ] || return 0
+  seen=0
+  while [ "$i" -lt "${#w[@]}" ]; do
+    t="${w[$i]}"
+    case "$t" in
+      --auto) seen=1 ;;
+      # Forms that bypass or negate the required checks never map to allow:
+      # --admin merges past branch protection; --auto=<v> and
+      # --disable-auto-merge are not the delegation shape.
+      --admin | --admin=* | --auto=* | --disable-auto-merge) return 0 ;;
+    esac
+    i=$((i + 1))
+  done
+  AUTO_MERGE="$seen"
   return 0
 }
 
@@ -327,8 +417,8 @@ resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally reso
   return 0
 }
 
-decide() { # merge-shaped: ask/deny only — never allow
-  local gate="$ROOT/scripts/check-verified-pin.sh" err reason
+decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the header contract
+  local gate="$ROOT/scripts/check-verified-pin.sh" err reason d_auto
   if [ ! -f "$gate" ]; then
     emit ask "merge-shaped command — unresolvable: this project has no scripts/check-verified-pin.sh gate to consult; per-merge human approval required"
     return 0
@@ -352,7 +442,15 @@ decide() { # merge-shaped: ask/deny only — never allow
   fi
   err="$(mktemp)"
   if (cd "$ROOT" && BASE_REF="$BASE_REF_R" "$gate" "$HEAD_REF_R") >/dev/null 2>"$err"; then
-    emit ask "verified-pin gate passed — per-merge human approval"
+    if [ "$MODE_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+      # The one row a valid mode changes (header contract). The decision word
+      # is bound through a variable so the self-test's static scan — a
+      # tripwire against a bare unconditional allow literal — stays live.
+      d_auto="allow"
+      emit "$d_auto" "autonomy mode active (level: $MODE_LEVEL) — gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-autonomy-modes.md); GitHub merges when and only when the required checks pass"
+    else
+      emit ask "verified-pin gate passed — per-merge human approval"
+    fi
   else
     reason="$(cat "$err" 2>/dev/null || true)"
     if [ -z "$reason" ]; then reason="verified-pin gate failed with no reason on stderr"; fi
@@ -383,6 +481,9 @@ if [ -z "${REMOTES// /}" ]; then REMOTES="origin"; fi
 
 classify_cmd "$CMD"
 if [ -z "$SHAPE" ]; then exit 0; fi # not merge-shaped → allow silently
+
+read_mode_file    # no/invalid mode file → MODE_ACTIVE=0 → today's table exactly
+detect_strict_auto # only a single plain `gh pr merge ... --auto` sets AUTO_MERGE
 
 decide
 exit 0

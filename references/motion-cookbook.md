@@ -51,6 +51,40 @@ gestures. Use for drag-with-momentum, "alive" elements, decorative mouse-trackin
 subtle (0.1–0.3) and avoid it in most product UI. Apple-style `{ duration, bounce }` is easier to
 reason about than raw stiffness/damping.
 
+## Curved paths
+
+When an element travels to a target — an item flying to a cart, a thumbnail to its slot — a
+curved trajectory often reads better than a straight translate: a straight line between two
+distant points looks mechanical, while a slight arc (with rotation following the path) reads as
+moved, not teleported. Arc-style path APIs do the math — e.g. Motion's
+`arc({ strength, peak, direction, rotate })` on the web — rather than hand-keyframing control
+points. Reserve it for genuine travel across the screen; short hops don't need the arc.
+
+## 3D & perspective
+
+Tilt and flip need a `perspective` value on the **parent** (or `transform: perspective(...)`
+first in the element's own transform) — without it, `rotateX`/`rotateY` flatten into a scale.
+Smaller values are more dramatic; ~500–1000px is a sane range. `transform-origin` drives where
+the rotation reads from — a card flipping about its left edge and one flipping about its center
+are different objects to the eye. `backface-visibility: hidden` hides the mirrored back of a
+flipped face.
+
+## Cross-container motion
+
+Motion that crosses container boundaries — an item dragged between panes, a card promoted from
+a list into a split view — wants **one flat layer**: nested scrollers and stacking contexts
+clip and re-coordinate anything that tries to cross them.
+
+- **Flatten the logical tree to a single coordinate space** for rendering and animation: keep
+  the nested tree as the model, but render the moving pieces in one flat layer so an element
+  can travel anywhere in the composition without being clipped at a divider.
+- **Transient affordances render as an overlay above the whole composition** — drag previews,
+  drop-target highlights, insertion markers live in one overlay layer, never intrinsic to each
+  container, so they can travel across dividers instead of being rebuilt inside every pane.
+- **Place a new container at full size, then slide it in.** Animating a pane's size while its
+  content lays out reflows every frame (resize jitter); mount it at its final size and
+  translate it into place.
+
 ## View transitions
 
 `document.startViewTransition(updateDOM)` snapshots the page, applies your DOM change, and

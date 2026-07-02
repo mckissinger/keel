@@ -45,3 +45,5 @@ corpus-clean run on the branch; one-owner sweep for the adversarial-pass rule; p
 untouched check) + all script self-tests. No surface/action change → no runtime walk. The
 lint is a new gate but adds strictness rather than loosening — no `/security-review`; the
 standard adversarial plan pass applies to this spec itself once landed.
+
+verified: clean at a66b9e0, 2026-07-01, via fresh-context verifier subagent — 18/18 self-test, corpus-clean (20 milestones + 1 chore), non-vacuity probe caught both injected breakages, all suites green on branch + merge preview, one-owner sweep clean, pin gate untouched (evidence: verifier report in PR)

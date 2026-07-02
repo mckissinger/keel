@@ -35,6 +35,8 @@ One milestone (rarely two) per the shared rules:
 
 Write the milestone spec to `specs/milestones/<slug>.md` (self-contained) and any change context to `specs/changes/<slug>.md` if useful.
 
+Then, still in-session, **run the adversarial plan pass** (§5 of the shared rules — dispatch the read-only verifier with the five plan-shaped questions) and fix its findings before the plan PR opens.
+
 ## Output + handoff
 
 Ends **attended**, on your sign-off. Then:

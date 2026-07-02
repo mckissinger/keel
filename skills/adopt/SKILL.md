@@ -38,6 +38,8 @@ For each thing a kickoff would have produced: **detect** → **discover from cod
 
 5. **Process + CI.** Reuse the repo's existing process. Bootstrap only what the rules depend on **and only if absent**: copy keel's shipped `${CLAUDE_PLUGIN_ROOT}/scripts/check-verified-pin.sh` + wire it as a CI job, branch protection, and file-per-entry `decisions/` + `deferrals/`. The CI-gate bootstrap is **code**, so land it as a small **one-time setup PR first** (it would break a later plan PR's plan-only status). If you're inside an existing host app, you inherit all of this.
 
+   **Also seed keel into the committed `.claude/settings.json`** (unlike a greenfield `provision`, adopt inherits the repo's allowlist/process, so this write is **scoped to the seeding only**): add `extraKnownMarketplaces` (keel's GitHub source, repo `mckissinger/keel`) + `enabledPlugins` (`keel@keel`) so every collaborator's session in this project has keel's skills and hooks without a manual install — the same shape `provision`'s step 4 seeds. Merge into an existing `settings.json` rather than clobbering it.
+
 ## Confirm, then hand off
 
 End the sitting **attended**, on the user's sign-off of the discovered foundation (the stack profile especially). Then the project runs the normal loop:

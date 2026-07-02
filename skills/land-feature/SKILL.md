@@ -50,7 +50,7 @@ A wave isn't done until it's green on `main` **together**. Nothing on a branch p
 
 ## Boundaries
 
-- **The user merges.** This skill runs the mechanics around each merge the user has approved; it never merges on its own initiative.
+- **The user merges.** This skill runs the mechanics around each merge the user has approved; it never merges on its own initiative. The PreToolUse merge guard makes this same per-merge approval harness-shaped — its `ask` on an approved, gate-passing merge — as a local backstop that never replaces branch protection + CI.
 - **External repos:** upstream repos actively trap undisclosed agent PRs, so any keel-driven contribution to an external repo must disclose agent authorship and keep the human-review step honest.
 - **Never merge with checks pending or red.** Confirm each PR's base is `main` and its checks are green first.
 - Then the feature goes to **`review-feature`** (the human aesthetic/completeness gate) before it counts as done.

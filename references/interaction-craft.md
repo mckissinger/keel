@@ -40,8 +40,8 @@ profile's **Q8.5 motion + interaction verb** and inherited everywhere, never re-
 ## When this is read
 
 - **`spec-feature` / `spec-change` Movement 2** — compose screens *with* interaction intent, and
-  turn the relevant principles below into **fidelity done-conditions** (so motion is specced and
-  checkable, not left to the builder's defaults).
+  turn the relevant principles below into **fidelity done-conditions**, named with the motion
+  vocabulary below (so motion is specced and checkable, not left to the builder's defaults).
 - **`review-feature`** — the rubric for the "does it sing" judgment. Phrase findings as a
   `| Before | After | Why |` table (one row per issue), so the aesthetic call is concrete.
 
@@ -93,6 +93,15 @@ tooltip is open, adjacent ones should open instantly (skip the delay) so the too
 - **Asymmetric enter/exit** — slow where the user is deciding (a hold-to-confirm), snappy where the
   system responds (release). Don't reuse one duration for both directions.
 - **Stagger** entering lists by 30–80ms per item; never block interaction while a stagger plays.
+- **Hold the exit after a selection** — when the user picks from a menu or list that then
+  dismisses, keep the selection visible ~200–400ms before it leaves (the delayed exit of a
+  native context menu) so the result registers. This is a held *exit*, not a slower response —
+  and the keyboard rule still wins: keyboard-initiated actions get no animation at all.
+- **Focus and scroll chrome are designed surfaces** — the focus indicator is designed like any
+  other state (shape and offset matched to the control, visible in both themes — on web,
+  `:focus-visible` with an offset that follows the control's radius), and scroll chrome on a
+  designed panel is deliberate rather than platform default (on web, thin token-colored
+  scrollbars). Chrome left at defaults reads as unfinished on an otherwise designed surface.
 
 ### 5. Performance & accessibility (non-negotiable)
 
@@ -103,6 +112,33 @@ tooltip is open, adjacent ones should open instantly (skip the delay) so the too
   tokens" above), fewer/gentler not zero: keep opacity/color that aids comprehension, drop movement.
 - **Gate hover affordances behind an actual pointer** — a hover-capable, fine pointer — so touch
   taps don't trigger phantom hovers.
+
+## The motion vocabulary
+
+Fidelity done-conditions and review findings are only as precise as their words. Name motion
+with these terms — in Movement 2 conditions ("rows enter with a 40ms stagger", "paging is
+direction-aware") and in review-table findings — instead of describing it loosely ("animates
+in nicely"), so the builder produces the intended motion and the verifier can check it.
+(Vocabulary follows Emil Kowalski's animations.dev usage.)
+
+- **stagger** — offset each item's start in an entering group (30–80ms per item) so the group
+  reads as a sequence, not a block.
+- **direction-aware** — enter/exit reflects where the element came from or is going: paging
+  forward slides content one way, paging back reverses it; an indicator travels toward the
+  newly selected item.
+- **layout animation** — when layout changes (reorder, insert, remove, resize), the surviving
+  elements animate to their new position/size instead of teleporting.
+- **morph** — one element continuously transforms into another (position, size, and shape
+  together) so the eye reads a single persistent object, not a swap.
+- **crossfade** — the old state fades out as the new fades in, in place; the cheapest
+  transition when the two states share no spatial relationship.
+- **spatial consistency** — an element keeps one spatial identity across states: it exits the
+  way it entered, returns along the same path, and anchors where it originated (a popover at
+  its trigger).
+- **rubber-banding** — resistance past a boundary: motion continues but progressively damped,
+  then settles back — signaling an edge without a hard stop.
+- **retarget mid-flight** — an interrupted animation continues from its current value and
+  velocity toward the new target; it never restarts from zero.
 
 ## The review table (for review-feature)
 

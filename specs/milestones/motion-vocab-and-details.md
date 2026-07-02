@@ -58,3 +58,5 @@ verifier subagent against this file (docs greps: term list present + one-line de
 usage rule present, ⚠ present in scroll-driven section, checklist unchanged, no-weakening
 sweep on the named rules) + `scripts/check-neutral.sh` + both script self-tests. No
 surface/action change → no runtime walk; no hard invariant → no `/security-review`.
+
+verified: clean at cf93468, 2026-07-01, via fresh-context verifier subagent — all 9 conditions pass: vocabulary section with all 8 terms + usage rule + animations.dev credit (interaction-craft.md:116–141), exit-delay + designed-chrome bullets in §4 with keyboard-rule subordination, cookbook view-transitions (:54–68) + scroll-driven with ⚠ (:70–83) + detail chrome (:106–111), product-ui-craft single bullet with checklist untouched, NO weakening (frequency table / keyboard rule / duration budgets / token-layer rules / precedence unchanged in diff), no spine files touched, credits placed once, check-neutral PASS + 12+9 self-tests + scripts/ untouched. (evidence: verifier report in PR)

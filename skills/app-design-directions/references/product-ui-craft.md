@@ -46,6 +46,9 @@ Every interactive component needs the full set, derived from the same tokens: de
 - Visible keyboard focus everywhere (`:focus-visible` ring tied to the accent token); logical tab order.
 - Motion budget for apps: 120–200ms ease-out transitions on state changes; nothing animates that doesn't communicate a state change; `prefers-reduced-motion` respected. Scattered effects read as AI-generated; one orchestrated moment (if the direction calls for any) reads as design.
 - Hit targets ≥ 40px even in dense UIs (visual element can be smaller than its target).
+- Overflow surfaces styled deliberately: thin scrollbars colored from the neutral tokens
+  (`scrollbar-width`/`scrollbar-color`) — default scrollbar chrome on a designed panel reads
+  as unfinished.
 - Microcopy: name things by what the user controls, in their domain vocabulary ("Rent roll", "Close date" — not "Data records"). Verbs on buttons say exactly what happens ("Save changes", not "Submit"); the same action keeps the same name through the whole flow.
 
 ## The quality floor checklist (run in Phase 2 self-review and Phase 4)

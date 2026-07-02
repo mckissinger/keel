@@ -26,8 +26,12 @@ today after that point.
 - [auto] **HEAD-side closure:** a code PR that itself adds the first milestone/chore spec is
   validated by the normal pinned path (passes with a valid drift-free pin, fails without) —
   never exempted.
-- [auto] **Fail-safe:** an unresolvable `BASE_REF`/`HEAD_REF` never opens the window — the
-  script fails before the window check (the changed-files diff dies under `set -e`).
+- [auto] **Fail-safe:** an unresolvable `BASE_REF`/`HEAD_REF` fails the gate closed — explicit
+  `git rev-parse --verify` guards on both refs run before any diff, covered by test cases.
+  *(Amended after the first verification bounced this condition: the plan claimed `set -e`
+  kills the script at the diff, but the failure hides inside a process substitution and the
+  empty diff read as "no changes — pass" — a fail-open the verifier reproduced. The guards
+  make the claimed property actually true.)*
 - [auto] **Post-window behavior identical:** every pre-existing assertion in
   `scripts/check-verified-pin.test.sh` keeps its expected outcome, with one build-discovered
   fixture amendment: case 4 ("code PR touching no milestone spec fails") presumed a

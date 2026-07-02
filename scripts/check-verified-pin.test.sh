@@ -169,6 +169,16 @@ echo "# spec with non-ascii name" > "specs/milestones/café.md"
 git add -A && git commit -qm "code + non-ascii-named milestone spec, no pin"
 check "non-ascii-named spec closes the window (fails without a pin)" 1
 
+# 15/16. Fail closed on unresolvable refs: a misconfigured CI must never read as
+#        "no changes — pass".
+fresh c15-bad-base
+echo "code" > src/r.ts
+git add -A && git commit -qm "any change"
+check "unresolvable BASE_REF fails closed" 1 "no-such-ref"
+got=0; BASE_REF="$BASE" bash "$SCRIPT" no-such-head >/dev/null 2>&1 || got=$?
+if [ "$got" -ne 0 ]; then echo "ok   - unresolvable HEAD_REF fails closed"; pass=$((pass+1));
+else echo "FAIL - unresolvable HEAD_REF fails closed (got exit 0)"; failc=$((failc+1)); fi
+
 # HEAD-side closure of the window (a PR that itself adds the first milestone spec is
 # validated normally, never exempted) is covered by cases 2 (with pin → pass) and
 # 3 (without pin → fail); chore specs closing the window by case 9.

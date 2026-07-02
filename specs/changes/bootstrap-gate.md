@@ -43,10 +43,11 @@ Judging both ends is load-bearing:
   at a pre-first-spec commit.
 - **HEAD side:** a code PR that itself adds the first milestone spec is validated by the
   normal pinned path, not exempted.
-- **Fail-safe:** an unresolvable ref never opens the window — the script dies at the
-  changed-files diff before the window check runs. `has_specs` reads tree entries with
-  path-quoting disabled so an unusual spec filename still closes the window (the review's
-  second finding).
+- **Fail-safe:** an unresolvable ref fails the gate closed via explicit `rev-parse --verify`
+  guards before any diff (the first verification caught that the diff's failure hides inside
+  a process substitution and read as "no changes — pass"). `has_specs` reads tree entries
+  with path-quoting disabled so an unusual spec filename still closes the window (the
+  review's second finding).
 
 **Why exempting the whole window is safe:** everything pre-first-milestone is attended by
 design — kickoff, the design-system gate, and provision all run with the user present, every

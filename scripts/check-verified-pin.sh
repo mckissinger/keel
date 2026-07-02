@@ -31,6 +31,14 @@ HEAD_REF="${1:-HEAD}"
 is_plan_path() { case "$1" in specs/*|design/*) return 0 ;; *) return 1 ;; esac; }
 fail() { echo "verified-pin: FAIL — $1" >&2; exit 1; }
 
+# 0. Fail closed on unresolvable refs. A misconfigured CI (missing fetch, deleted stack
+#    parent) must never read as "no changes — pass": the diff's failure would otherwise
+#    hide inside the process substitution below and the gate would exit 0.
+git rev-parse --verify --quiet "$BASE_REF^{commit}" >/dev/null \
+  || fail "BASE_REF '$BASE_REF' does not resolve to a commit"
+git rev-parse --verify --quiet "$HEAD_REF^{commit}" >/dev/null \
+  || fail "HEAD_REF '$HEAD_REF' does not resolve to a commit"
+
 # 1. What does this PR change (vs the merge-base with BASE_REF)?
 changed=()
 while IFS= read -r f; do [ -n "$f" ] && changed+=("$f"); done \

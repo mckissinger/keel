@@ -38,17 +38,22 @@
 # (per decisions/2026-07-autonomy-modes.md — delegation to GitHub's required
 # checks, never to agent judgment):
 #
-#   `gh pr merge` WITH a literal `--auto` flag + gate PASS → "allow"
+#   the canonical `gh pr merge ... --auto` shape + gate PASS → "allow"
 #     (GitHub merges when and only when the required checks pass)
 #
 # Everything else is byte-for-byte today's table: plain `gh pr merge` without
 # `--auto` stays "ask" even under a mode; gate FAIL stays "deny"; `git merge` /
 # `git push` to the default branch stay "ask"; unresolvable context stays
-# "ask"; no mode file → the existing ask-floor. The `--auto` detection is
-# deliberately strict: the whole command must be a single plain `gh pr merge`
-# invocation over a safe character set — quotes, expansions, command chaining,
-# `--admin`, or `--auto=<value>` forms never map to "allow" (a `--auto`
-# appearing inside a quoted string or as another flag's value cannot count).
+# "ask"; no mode file → the existing ask-floor. The shape test is a
+# whole-command WHITELIST, default-deny to ask: the command must be a single
+# line over a safe character set and match exactly
+#   gh pr merge <PR-number-or-safe-ref> --auto [--squash|--merge|--rebase]
+# (those flags in any order, one positional, no other tokens). Anything
+# outside that closed set — quotes, expansions, chaining, clustered short
+# flags, the `--` separator, `--admin`, `--delete-branch`, any value-taking,
+# unknown, or renamed flag — is not the shape and keeps today's table, so a
+# `--auto` inside a quoted string or consumed as another flag's value can
+# never count, and gh flag-table drift cannot widen the allow row.
 #
 # Safety invariants: the command text is PARSED as data — never eval'd or
 # re-executed. `gh pr view` output is data too: parsed into variables and passed
@@ -155,41 +160,46 @@ read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE/MODE_LEVEL; any 
 
 AUTO_MERGE=0
 
-detect_strict_auto() { # is $CMD ONE plain `gh pr merge ...` with a literal --auto token?
+detect_strict_auto() { # WHITELIST: does $CMD exactly match the canonical delegation shape?
   AUTO_MERGE=0
-  # Reject anything that could hide semantics from whitespace tokenization:
-  # newlines, then any byte outside a safe whitelist (quotes, expansions,
-  # chaining, redirection, globs, escapes all fall out here). Fail closed —
-  # a rejected command simply keeps today's ask/deny table.
+  # The shape is a CLOSED SET — default deny to ask:
+  #   gh pr merge <PR-number-or-safe-ref> --auto [--squash|--merge|--rebase]
+  # (flags in any order; exactly one positional; NOTHING else). Any token
+  # outside the set — clustered short flags, the `--` separator, value-taking
+  # flags, unknown or renamed flags, `--admin`, `--delete-branch` — is not
+  # the shape. Enumerating bad flags is structurally fragile (flag clustering
+  # and gh's flag table drift); the closed set makes value-position
+  # consumption fall to today's ask/deny table by construction, with no
+  # knowledge of gh's flag table needed.
+  #
+  # Preconditions first: single line, then a safe byte whitelist (quotes,
+  # expansions, chaining, redirection, globs, escapes all fall out here).
   case "$CMD" in *$'\n'* | *$'\r'*) return 0 ;; esac
   if printf '%s' "$CMD" | LC_ALL=C grep -q '[^A-Za-z0-9 ._/:#@=-]'; then
     return 0
   fi
   local -a w=()
-  local t i=3 seen=1
+  local t i=3 pos="" auto=0
   for t in $CMD; do w[${#w[@]}]="$t"; done # noglob on; safe charset only
   [ "${#w[@]}" -ge 3 ] || return 0
   [ "${w[0]}" = "gh" ] && [ "${w[1]}" = "pr" ] && [ "${w[2]}" = "merge" ] || return 0
-  seen=0
   while [ "$i" -lt "${#w[@]}" ]; do
     t="${w[$i]}"
     case "$t" in
-      # Value-taking flags consume their next token (the same list
-      # classify_gh skips): a `--auto` sitting in that value position is the
-      # flag's VALUE — real gh would run a PLAIN merge — so it never counts.
-      --repo | -R | --hostname | -t | --subject | -b | --body | -A | --author-email | --match-head-commit)
-        i=$((i + 2))
-        continue
+      --auto) auto=1 ;;
+      --squash | --merge | --rebase) : ;; # the merge-method flags, allowed
+      -*) return 0 ;; # ANY other dash token (`--` itself included) → not the shape
+      *)
+        [ -z "$pos" ] || return 0 # a second positional → not the shape
+        printf '%s' "$t" | LC_ALL=C grep -qE '^[0-9]+$|^[A-Za-z0-9][A-Za-z0-9._/-]*$' \
+          || return 0 # a PR number or a conservative branch-name charset only
+        pos="$t"
         ;;
-      --auto) seen=1 ;;
-      # Forms that bypass or negate the required checks never map to allow:
-      # --admin merges past branch protection; --auto=<v> and
-      # --disable-auto-merge are not the delegation shape.
-      --admin | --admin=* | --auto=* | --disable-auto-merge) return 0 ;;
     esac
     i=$((i + 1))
   done
-  AUTO_MERGE="$seen"
+  [ -n "$pos" ] && [ "$auto" -eq 1 ] || return 0
+  AUTO_MERGE=1
   return 0
 }
 
@@ -240,7 +250,7 @@ classify_gh() { # after `gh`: skip flags (value-taking ones skip their value)
   while [ "$I" -lt "$N" ]; do
     w="${TOKS[$I]}"
     case "$w" in
-      --repo | -R | --hostname | -t | --subject | -b | --body | -A | --author-email | --match-head-commit)
+      --repo | -R | --hostname | -t | --subject | -b | --body | -F | --body-file | -A | --author-email | --match-head-commit)
         I=$((I + 2))
         continue
         ;;

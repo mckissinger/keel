@@ -200,7 +200,7 @@ expect_decision "no mode file: gh pr merge --auto + passing gate → ask (ask-fl
 write_mode "$R5" "$MODE_JSON"
 run_guard "$R5" 'gh pr merge 123 --auto --squash'
 expect_decision "valid mode + gh pr merge --auto + passing gate → allow, delegating to required checks" allow "required checks"
-run_guard "$R5" 'gh pr merge --auto 123 --delete-branch'
+run_guard "$R5" 'gh pr merge --auto 123'
 expect_decision "flag order does not matter: --auto before the PR arg still allows" allow "required checks"
 write_mode "$R5" '{"level":"feature","scope":"autonomy-modes","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
 run_guard "$R5" 'gh pr merge 123 --auto'
@@ -243,9 +243,25 @@ run_guard "$R5" 'gh pr merge 123 --body --auto'
 expect_decision "mode: --auto as the --body value → ask" ask "verified-pin gate passed"
 run_guard "$R5" 'gh pr merge 123 -A --auto'
 expect_decision "mode: --auto as the -A value → ask" ask "verified-pin gate passed"
-# Positive control: the genuine delegation shape still allows.
+run_guard "$R5" 'gh pr merge 123 --body-file --auto'
+expect_decision "mode: --auto as the --body-file value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 -F --auto'
+expect_decision "mode: --auto as the -F value → ask" ask "verified-pin gate passed"
+
+# The whitelist shape is a CLOSED SET: any token outside it falls to ask —
+# clustered short flags, the `--` separator, flags not in the safe set.
+run_guard "$R5" 'gh pr merge 123 -s -dt --auto'
+expect_decision "mode: clustered short flags (-dt consumes --auto as -t's value) → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge -- --auto'
+expect_decision "mode: post-`--` --auto is positional, not a flag → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 --auto --delete-branch'
+expect_decision "mode: --delete-branch is outside the safe set → ask" ask "verified-pin gate passed"
+
+# Positive controls: the genuine delegation shapes still allow.
 run_guard "$R5" 'gh pr merge 123 --auto'
 expect_decision "mode: genuine flag-position --auto still allows (positive control)" allow "required checks"
+run_guard "$R5" 'gh pr merge 123 --auto --rebase'
+expect_decision "mode: --auto with a merge-method flag still allows (positive control)" allow "required checks"
 
 # Fail-closed rows 3-5: malformed JSON / unknown level / missing contract field.
 write_mode "$R5" '{"level":"run","scope":'

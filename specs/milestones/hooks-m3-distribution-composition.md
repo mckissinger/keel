@@ -41,3 +41,5 @@ verifier subagent against this file (seeding + docs greps, one-owner sweep, self
 the [runtime]/[attended] composition walk above, run serially in the verify session (it
 gates the pin — the walk's transcript is the evidence). No new hard invariant beyond m2's →
 no separate `/security-review`.
+
+verified: clean at 2dc2c8e, 2026-07-01, via fresh-context verifier subagent — [auto] conditions clean (seeding, 3 backstop docs one-owner, validate + 5 suites green: check-neutral 17/17, check-verified-pin 17/17, session-bootstrap 14/14 incl. case 2b, merge-guard 29/29, guard-branch-rules 16/16); composition walk EXECUTED + user-APPROVED, transcript covers a–e (pass→ask, fail→deny verbatim, pin-write on-branch vs main-blocked, flagged skills named+flagged, non-keel silent) (evidence: walk transcript + verifier report in PR)

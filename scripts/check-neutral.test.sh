@@ -82,6 +82,25 @@ mkdir -p "$ROOT/skills/app-design-directions"
 echo 'translate the winner into Tailwind `@theme` / shadcn CSS variables' > "$ROOT/skills/app-design-directions/SKILL.md"
 check "web hardcode (@theme) in design-track file passes" 0
 
+# 12. A denylisted hardcode in a hook file (hooks/**) is caught.
+fresh c12-hook-leak
+mkdir -p "$ROOT/hooks"
+echo '{"comment": "guard edits under src/app/ routes"}' > "$ROOT/hooks/hooks.json"
+check "denylisted hardcode in a hook file fails" 1
+
+# 12b. A clean hook file passes — hooks/ scanning is not overbroad.
+fresh c12b-hook-clean
+mkdir -p "$ROOT/hooks"
+echo '{"hooks": {"SessionStart": [{"matcher": "startup|compact"}]}}' > "$ROOT/hooks/hooks.json"
+check "clean hook file passes" 0
+
+# 13. A denylisted hardcode in the shipped session-bootstrap script is caught
+#     (the one scripts/ file that ships prose into sessions).
+fresh c13-bootstrap-leak
+mkdir -p "$ROOT/scripts"
+echo 'echo "the sweep can close schema/RLS checks"' > "$ROOT/scripts/session-bootstrap.sh"
+check "denylisted hardcode in session-bootstrap.sh fails" 1
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

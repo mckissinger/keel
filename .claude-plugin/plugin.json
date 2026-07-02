@@ -10,6 +10,7 @@
   "homepage": "https://github.com/mckissinger/keel",
   "repository": "https://github.com/mckissinger/keel",
   "license": "MIT",
+  "hooks": "./hooks/hooks.json",
   "keywords": [
     "workflow",
     "verification",

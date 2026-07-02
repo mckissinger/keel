@@ -22,11 +22,14 @@ set -uo pipefail
 ROOT="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 cd "$ROOT"
 
-# Scan the methodology corpus only. scripts/ is excluded on purpose — this guard
-# and its self-test legitimately contain the banned strings as test data.
+# Scan the methodology corpus plus the shipped hook layer. scripts/ is excluded
+# on purpose — this guard and its self-tests legitimately contain the banned
+# strings as test data — EXCEPT session-bootstrap.sh, which ships prose into
+# every keel-managed session and must meet the same neutrality bar.
 targets=()
-for d in skills references agents workflows; do [ -d "$d" ] && targets+=("$d"); done
+for d in skills references agents workflows hooks; do [ -d "$d" ] && targets+=("$d"); done
 [ -f README.md ] && targets+=("README.md")
+[ -f scripts/session-bootstrap.sh ] && targets+=("scripts/session-bootstrap.sh")
 if [ ${#targets[@]} -eq 0 ]; then
   echo "check-neutral: nothing to scan under $ROOT — pass"
   exit 0
@@ -35,7 +38,7 @@ fi
 fails=0
 flag() { # pattern  human-reason
   local hits
-  hits="$(grep -rniE --include='*.md' --include='*.js' "$1" "${targets[@]}" 2>/dev/null || true)"
+  hits="$(grep -rniE --include='*.md' --include='*.js' --include='*.sh' --include='*.json' "$1" "${targets[@]}" 2>/dev/null || true)"
   if [ -n "$hits" ]; then
     echo "check-neutral: FAIL — $2" >&2
     printf '%s\n' "$hits" | sed 's/^/  /' >&2

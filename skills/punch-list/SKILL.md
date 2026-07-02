@@ -1,6 +1,7 @@
 ---
 name: punch-list
-description: Resolve a batch of tiny, independent changes in one pass — gather a laundry list (typos, lint nits, renames, missing aria-labels, stale comments, dep bumps), turn each into a checkable done-condition, then fan out one focused subagent per item and land a single verified chore PR. The sub-milestone lane: for changes too small to each warrant their own milestone. NOT for anything needing design, a new surface, or cross-item reasoning (that's spec-change or a feature).
+description: Resolve a batch of tiny, independent changes in one pass — gather a laundry list (typos, lint nits, renames, missing aria-labels, stale comments, dep bumps), turn each into a checkable done-condition, then fan out one focused subagent per item and land a single verified chore PR.
+when_to_use: The sub-milestone lane — for changes too small to each warrant their own milestone. NOT for anything needing design, a new surface, or cross-item reasoning (that's spec-change or a feature).
 ---
 
 # Punch List

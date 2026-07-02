@@ -58,6 +58,8 @@ Decompose the feature into 1–5 milestones (the build/verify unit) per `${CLAUD
 
 Write the deep feature spec to **`specs/features/<feature>.md`** (the interview outcome, the workbench composition + any divergence sketches + redline notes, the route→milestone map) and the per-milestone files to **`specs/milestones/<slug>.md`** (self-contained: goal, done-conditions, verification). Commit on the feature's spec branch.
 
+Then, still in-session, **run the adversarial plan pass** (§5 of the shared rules): dispatch the read-only verifier with the five plan-shaped questions against the drafted specs and fix its findings before the plan PR opens.
+
 ## Output + handoff
 
 The session ends **attended**, on your sign-off of the composed feature story / preview + the milestone list. Then:

@@ -21,6 +21,12 @@ jobs:
       - name: neutrality guard (this repo)
         run: bash scripts/check-neutral.sh
 
+      # The plan lint keel ships to projects — prove it, and lint keel's own specs.
+      - name: plan lint self-test
+        run: bash scripts/check-plan.test.sh
+      - name: plan lint (this repo)
+        run: bash scripts/check-plan.sh
+
       # Plugin manifest/structure validation via the Claude Code CLI.
       - name: install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code

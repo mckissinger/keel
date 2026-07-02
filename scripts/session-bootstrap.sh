@@ -41,9 +41,11 @@ is_keel_managed || exit 0
 
 MODE_ACTIVE=0 MODE_LEVEL="" MODE_SCOPE=""
 
-mode_json_str() { # <json> <key> → the string value, or nothing (jq → python3 → nothing)
+mode_json_str() { # <json> <key> → the value ONLY if a string (jq → python3 → nothing)
+  # Both encoder paths enforce the string type — a wrong-typed field reads
+  # the same, absent, under either (parity with merge-guard.sh's json_str).
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$1" | jq -r --arg k "$2" '.[$k] // empty' 2>/dev/null || true
+    printf '%s' "$1" | jq -r --arg k "$2" '.[$k] | select(type=="string")' 2>/dev/null || true
   elif command -v python3 >/dev/null 2>&1; then
     printf '%s' "$1" | K="$2" python3 -c '
 import json, os, sys

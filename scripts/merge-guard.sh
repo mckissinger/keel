@@ -107,9 +107,11 @@ print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
   return 0
 }
 
-json_str() { # <json> <key> → prints the string value, or nothing
+json_str() { # <json> <key> → prints the value ONLY if it is a string, or nothing
+  # Both encoder paths enforce the string type (jq select(type)/python3
+  # isinstance): a wrong-typed field reads the same — absent — under either.
   if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$1" | jq -r --arg k "$2" '.[$k] // empty' 2>/dev/null || true
+    printf '%s' "$1" | jq -r --arg k "$2" '.[$k] | select(type=="string")' 2>/dev/null || true
   elif command -v python3 >/dev/null 2>&1; then
     printf '%s' "$1" | K="$2" python3 -c '
 import json, os, sys
@@ -172,6 +174,13 @@ detect_strict_auto() { # is $CMD ONE plain `gh pr merge ...` with a literal --au
   while [ "$i" -lt "${#w[@]}" ]; do
     t="${w[$i]}"
     case "$t" in
+      # Value-taking flags consume their next token (the same list
+      # classify_gh skips): a `--auto` sitting in that value position is the
+      # flag's VALUE — real gh would run a PLAIN merge — so it never counts.
+      --repo | -R | --hostname | -t | --subject | -b | --body | -A | --author-email | --match-head-commit)
+        i=$((i + 2))
+        continue
+        ;;
       --auto) seen=1 ;;
       # Forms that bypass or negate the required checks never map to allow:
       # --admin merges past branch protection; --auto=<v> and

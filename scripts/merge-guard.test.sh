@@ -233,6 +233,20 @@ expect_decision "mode: newline-split command never allows → ask" ask
 run_guard "$R5" 'gh pr merge 123 `echo --auto`'
 expect_decision "mode: expansion-carried --auto never allows → ask" ask
 
+# --auto in a VALUE position: real gh consumes the next token as the flag's
+# value, so each of these is a PLAIN merge — none may reach allow.
+run_guard "$R5" 'gh pr merge 123 --subject --auto'
+expect_decision "mode: --auto as the --subject value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 -t --auto'
+expect_decision "mode: --auto as the -t value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 --body --auto'
+expect_decision "mode: --auto as the --body value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 -A --auto'
+expect_decision "mode: --auto as the -A value → ask" ask "verified-pin gate passed"
+# Positive control: the genuine delegation shape still allows.
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "mode: genuine flag-position --auto still allows (positive control)" allow "required checks"
+
 # Fail-closed rows 3-5: malformed JSON / unknown level / missing contract field.
 write_mode "$R5" '{"level":"run","scope":'
 run_guard "$R5" 'gh pr merge 123 --auto'
@@ -243,6 +257,9 @@ expect_decision "unknown mode level → no mode → ask" ask "verified-pin gate 
 write_mode "$R5" '{"level":"run","scope":"x","created":"2026-07-02"}'
 run_guard "$R5" 'gh pr merge 123 --auto'
 expect_decision "mode file missing a contract field (invoker) → no mode → ask" ask "verified-pin gate passed"
+write_mode "$R5" '{"level":"run","scope":5,"created":"2026-07-02","invoker":"human"}'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "wrong-typed scope (JSON number) → no mode → ask (jq/python3 parity)" ask "verified-pin gate passed"
 
 # Unresolvable PR context under a valid mode → still ask.
 write_mode "$R5" "$MODE_JSON"

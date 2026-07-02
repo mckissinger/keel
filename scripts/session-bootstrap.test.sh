@@ -139,6 +139,16 @@ for defect in \
   else bad "mode file $name → no mode, today's text byte-identical (rc=$RC)"; fi
 done
 
+# Wrong-typed field: a JSON-number scope is not a string → no mode, under
+# EITHER encoder path (jq/python3 parity in mode_json_str).
+d="$TMP/mode-wrong-type"
+mkdir -p "$d/specs/milestones" "$d/.claude"
+printf '%s' '{"level":"run","scope":5,"created":"c","invoker":"i"}' > "$d/.claude/keel-autonomy.json"
+run_in "$d"
+if [ "$RC" -eq 0 ] && [ "$OUT" = "$BASELINE" ]; then
+  ok "mode file wrong-typed scope (number) → no mode, today's text byte-identical"
+else bad "mode file wrong-typed scope (number) → no mode, today's text byte-identical (rc=$RC)"; fi
+
 # Spoof: a git-TRACKED mode file violates the untracked contract → no mode.
 d="$TMP/mode-tracked"
 mkdir -p "$d/specs/milestones" "$d/.claude"

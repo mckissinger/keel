@@ -1,6 +1,7 @@
 ---
 name: provision
-description: Execute environment setup for a project from its spec's environment contract — CLI logins, dev-resource provisioning, keys into the host env store, permission allowlist seeding, dry-run — ending only when the preflight passes. Run attended, at the end of the kickoff sitting after spec-foundation + the design-system gate, or in miniature when a later feature adds a new service.
+description: Execute environment setup for a project from its spec's environment contract — CLI logins, dev-resource provisioning, keys into the host env store, permission allowlist seeding, dry-run — ending only when the preflight passes.
+when_to_use: Run attended, at the end of the kickoff sitting after spec-foundation + the design-system gate, or in miniature when a later feature adds a new service. NOT a milestone — its job is draining every would-be mid-run stall (logins, keys, permission prompts) while the user is at the keyboard.
 ---
 
 # Provision

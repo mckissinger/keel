@@ -30,6 +30,7 @@ One milestone (rarely two) per the shared rules:
 - **Done-conditions span the applicable dimensions** — logic/invariants, UX completeness (the enumerated states/interactions), and — for a UI change — fidelity (tokens/fonts/themed components + **motion + interaction-states as tokens** per the profile's motion verb Q8.5, matched to the **real workbench composition** *or* the named gallery components — not a re-implemented static mockup).
 - **Tag each `[auto]`/`[runtime]`/`[attended]`** so the build/verify sessions know what gates the pin.
 - **Name the verification method** (verifier subagent / dynamic workflow; + the runtime walk for any surface/action change; + `/security-review` pre-pin for a hard-invariant change).
+- **Check every done-condition against §1's three authoring anti-patterns** (owned by the shared rules, not restated here) — they are what produces false bounces and false pins.
 - **Own every surface the change touches**; flag any stop-point.
 
 Write the milestone spec to `specs/milestones/<slug>.md` (self-contained) and any change context to `specs/changes/<slug>.md` if useful.

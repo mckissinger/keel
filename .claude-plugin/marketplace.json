@@ -12,6 +12,8 @@
       "name": "keel",
       "source": "./",
       "description": "Stand up a durable foundation, then build feature-by-feature — each milestone gated by independent verification and a commit-pinned record before it can merge. Stack-neutral.",
+      "category": "development",
+      "tags": ["workflow", "verification", "spec-driven", "milestones"],
       "strict": true
     }
   ]

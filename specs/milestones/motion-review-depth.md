@@ -45,3 +45,5 @@ review-feature scrub + fallback + table phrasing present, Q8.4 extended in place
 tools and no renumbering, no-weakening sweep) + `scripts/check-neutral.sh` + both script
 self-tests. No surface/action change → no runtime walk; no hard invariant → no
 `/security-review`.
+
+verified: clean at f7f97dc, 2026-07-01, via fresh-context verifier subagent — all 6 conditions pass: choreography bullet in §4 with consistent credit (interaction-craft.md:96–99), review-feature interaction-feel gains choreography check + frame-by-frame scrub + fallback + table phrasing (SKILL.md:25), Q8.4 extended in place with hedged tools and Q8.5/Q8.6 un-renumbered (profile-interface.md:132–136), still-capture contract unchanged + no [auto] reclassification, cross-refs resolve (motion-cookbook debugging section confirmed), check-neutral PASS + 12+9 self-tests + scripts/ untouched, no scope creep. (evidence: verifier report in PR)

@@ -1,6 +1,8 @@
 ---
 name: land-feature
-description: Drive the merge of a feature's reviewed PRs — the stacked-PR choreography (merge bottom-up, retarget before delete, close+reopen to re-fire CI, recreate closed children, re-pin after a forced rebase) plus the post-wave consolidated check on main. Human-triggered, per-merge approval preserved — agents never merge without the user's explicit instruction.
+description: Drive the merge of a feature's reviewed PRs into main — the stacked-PR choreography (merge bottom-up, retarget before delete, close+reopen to re-fire CI, recreate closed children, re-pin after a forced rebase) plus the post-wave consolidated check on main.
+when_to_use: Human-triggered only, after the feature's milestones are built, verified, pinned, and reviewed by the user — per-merge approval is preserved, and agents never merge without the user's explicit instruction. NOT for building or verifying milestones (that's implement-feature / verify-milestone), and NOT the aesthetic/completeness gate (review-feature runs after landing).
+disable-model-invocation: true
 ---
 
 # Land Feature
@@ -49,5 +51,6 @@ A wave isn't done until it's green on `main` **together**. Nothing on a branch p
 ## Boundaries
 
 - **The user merges.** This skill runs the mechanics around each merge the user has approved; it never merges on its own initiative.
+- **External repos:** upstream repos actively trap undisclosed agent PRs, so any keel-driven contribution to an external repo must disclose agent authorship and keep the human-review step honest.
 - **Never merge with checks pending or red.** Confirm each PR's base is `main` and its checks are green first.
 - Then the feature goes to **`review-feature`** (the human aesthetic/completeness gate) before it counts as done.

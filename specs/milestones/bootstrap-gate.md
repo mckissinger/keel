@@ -64,3 +64,5 @@ one-owner sweep) + both script self-tests. **`/security-review` pre-pin** — th
 gate itself (hard invariant); the adversarial questions: can the window be entered after
 bootstrap, reopened by deletion or history manipulation, or widened beyond
 no-milestones-exist? No surface/action change → no runtime walk.
+
+verified: clean at 534e22a, 2026-07-01, via fresh-context verifier subagent — all conditions pass after one bounce (fail-open on unresolvable refs, fixed by rev-parse guards): 17/17 self-test incl. window cases with only case 4 re-based and no expectation weakened, window judged at base tip + HEAD confirmed in script text, pre-spec-root attack repro fails and foundation PR passes in an independent throwaway repo, unresolvable-ref probes now fail closed, quotePath-off + nested-path glob parity probed, header + spec-foundation Repo setup document the window with the one-owner sweep clean, check-neutral PASS + 12/12 self-test. (evidence: verifier report in PR)

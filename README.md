@@ -52,6 +52,8 @@ hardcoded to any framework.
 
 Plus the **`verifier`** agent, the **`verify-all-milestones`** + **`punch-list`** workflows, the canonical **`scripts/check-verified-pin.sh`** gate (copy into your project; its chore-lane accepts a `specs/chores/` batch pin), and shared references: the **profile interface**, the **milestone/verification rules**, and the **interaction-craft** + **motion-cookbook** craft layer.
 
+And a **hooks layer** (`hooks/hooks.json`): a SessionStart bootstrap — re-injected after compaction — that orients every session in a keel-managed project (grain ladder + standing invariants) and stays silent everywhere else.
+
 Two design principles worth calling out: the **design track is optional** (it runs only when the deliverable has a UI, so keel builds CLIs/backends/libraries too), and **every interview confirms its understanding with you before authoring anything**.
 
 ## Install

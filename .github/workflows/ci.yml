@@ -21,6 +21,14 @@ jobs:
       - name: neutrality guard (this repo)
         run: bash scripts/check-neutral.sh
 
+      # The session/merge/branch hook guards keel ships to projects — prove they still behave.
+      - name: session bootstrap self-test
+        run: bash scripts/session-bootstrap.test.sh
+      - name: merge guard self-test
+        run: bash scripts/merge-guard.test.sh
+      - name: branch rules guard self-test
+        run: bash scripts/guard-branch-rules.test.sh
+
       # The plan lint keel ships to projects — prove it, and lint keel's own specs.
       - name: plan lint self-test
         run: bash scripts/check-plan.test.sh

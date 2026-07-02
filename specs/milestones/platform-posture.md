@@ -38,3 +38,5 @@ verifier subagent against this file (prose greps for each of the four notes + th
 one-owner sweep) + `scripts/check-neutral.sh` (with explicit attention to the goal-condition
 denylist) + `check-plan.sh` + all script self-tests. No surface/action change → no runtime
 walk; no hard invariant loosened (optional wirings only) → no `/security-review`.
+
+verified: clean at 02f7467, 2026-07-01, via verifier subagent (evidence in PR #57)

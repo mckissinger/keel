@@ -53,6 +53,32 @@ Every interactive component needs the full set, derived from the same tokens: de
   as unfinished.
 - Microcopy: name things by what the user controls, in their domain vocabulary ("Rent roll", "Close date" — not "Data records"). Verbs on buttons say exactly what happens ("Save changes", not "Submit"); the same action keeps the same name through the whole flow.
 
+## Semantics for assistive tech (the scoped floor)
+
+The rendering floor above (contrast, visible focus, reduced motion) is what a sighted user
+perceives; this is the contract with assistive tech — what a screen reader can *name*, where
+focus *goes*, what gets *announced*. Four failure classes cover most of what generated UI gets
+wrong, and all four are deterministic and testable:
+
+- **Every icon-only control has an accessible name** — the label assistive tech speaks (on
+  web, `aria-label` or visually-hidden text; the platform's accessibility label elsewhere).
+  A toolbar that reads "button, button, button" is unshippable.
+- **Interactive things are real controls, not styled containers.** The platform's own
+  button/link/input carries its role, name, focusability, and keyboard behavior for free; a
+  clickable styled container carries none of them. Role-patching a container is the fallback
+  for a genuinely custom widget, never the default.
+- **Overlays manage focus.** Opening a dialog/drawer/popover moves focus into it; focus stays
+  contained while it's open; dismissal returns focus to the element that opened it; the
+  platform's dismiss gesture (Escape on web) works.
+- **Content that arrives without user action is announced** at a comfortable pace (on web, a
+  polite live region). A streaming reply announces its completion — not every token; a feed
+  or log announces that new items arrived. This is the assistive-tech half of the
+  live-surfaces state set above.
+
+**Scope line:** this is the floor, not a curriculum. Full composite-widget semantics (grids,
+trees, comboboxes, custom listboxes) are a per-feature concern, specced when a feature
+genuinely needs such a widget.
+
 ## The quality floor checklist (run in Phase 2 self-review and Phase 4)
 
 - [ ] AA contrast on all text and stateful UI elements
@@ -64,3 +90,5 @@ Every interactive component needs the full set, derived from the same tokens: de
 - [ ] Reduced motion respected; no decoration-only animation
 - [ ] Responsive: load-bearing screen sane at 1280 and at narrow width
 - [ ] Copy uses the domain's vocabulary; buttons name their action
+- [ ] Icon-only controls have accessible names; interactive elements are real controls, not styled containers
+- [ ] Overlays contain and return focus; self-arriving content is announced

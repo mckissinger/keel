@@ -63,10 +63,10 @@ as a plugin so its hooks are live. A second plain (non-keel) directory for (e).
   grain ladder); the harness will **not** let the model auto-invoke a `disable-model-invocation:
   true` skill, but the human can still invoke it explicitly. The two mechanisms don't collide —
   naming a skill in orientation is not model-invoking it.
-- **Headless probe (executed, this branch):** `adopt` and `land-feature` frontmatter both carry
-  `disable-model-invocation: true`; the bootstrap output (keel-managed dir) names both. The
-  live half — that the harness actually blocks model-invocation while allowing human invocation
-  — is the attended part.
+- **Deterministic core (committed):** `session-bootstrap.test.sh` case 2b — each flagged skill
+  (`kickoff`, `adopt`, `land-feature`) carries `disable-model-invocation: true` in frontmatter
+  AND is named in the emitted bootstrap. The live half — that the harness actually blocks
+  model-invocation while allowing human invocation — is the attended part.
 
 ### (e) a non-keel directory session shows zero keel hook output
 - **Do:** open a session in the plain (non-keel) directory; observe SessionStart; run an

@@ -43,3 +43,5 @@ verifier subagent against this file (prose greps for each step + the authority c
 `_landed/` structure note + the extended drift rule; one-owner sweep) + `check-plan.sh` corpus
 run + all script self-tests. No surface/action change → no runtime walk; no hard invariant
 loosened → no `/security-review` (the plan-only exemption is reasoned, not modified).
+
+verified: clean at 4922029, 2026-07-01, via verifier subagent (evidence in PR #56)

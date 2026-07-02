@@ -31,6 +31,7 @@ specs/
     <feature>.md         # one per feature — the DEEP feature spec (interview outcome + screen mockups + its milestone list). Written by spec-feature, NOT here.
   milestones/
     m1-<slug>.md         # one file per milestone (the build/verify unit). Written by spec-feature.
+    _landed/             # completed milestone specs, archived by land-feature after a wave lands (mirrors deferrals/_closed.md); not an active spec — the pin is history. check-plan's glob is non-recursive, so archived specs aren't linted.
   decisions/             # file-per-entry log of material decisions + reasoning (YYYY-MM-DD-<slug>.md + README)
   deferrals/             # file-per-entry list of what's outstanding before production is real (<slug>.md + _closed.md + README)
 ```
@@ -90,11 +91,12 @@ The tracked list of everything outstanding before production is real. Make it a 
 Generate (or update) the project-level `CLAUDE.md` with:
 
 - Brief project context: what this is, who it's for.
-- The governing rule: "All work is governed by `specs/` — resolve implementation choices in favor of the spec, and flag conflicts rather than improvising."
+- The governing rule: "All work is governed by `specs/` — resolve implementation choices in favor of the spec, and flag conflicts rather than improvising. **Carve-out for shipped work:** once a milestone's `verified:` pin is on `main`, its merged code is authoritative — don't rewrite correct merged code to match a stale spec; the living doc is reconciled to reality instead (the spec-authority rule, `references/milestones-and-verification.md` §5). 'Favor the spec' governs unbuilt plan, not code history has already overtaken."
 - **The feedback ladder** (from the profile's Q11): the exact commands for each declared rung, cheapest → dearest, plus the two inner-loop rules — **single-test-first** (run the affected tests, not the whole suite) and **the routing rule** (reproduce/check at the cheapest rung that can see the failure class; the runtime walk is the gate, not the debugger). CLAUDE.md is the one artifact every later session reads — this is the ladder's delivery mechanism.
 - The verification approach: milestone completion is checked by the verifier subagent (or a dynamic workflow per the milestone's `verification:` line) against the spec's measurable done-conditions; a feature is not done until its `review-feature` gate passes.
 - **The run preflight** (authorization-completeness): "Before a milestone run, confirm every milestone in scope can complete autonomously. (1) Services: one cheap read-only command per service where available, bare env-var-name existence otherwise — never read values. (2) Spend/real-resource gates: any done-condition needing live spend must be pre-authorized (spend-capped key + allowlisted command), not gated per-use. (3) Deferrals: read `specs/deferrals/` — drain any open item whose closing condition falls inside this run's scope. Surface anything missing/dead/unauthorized in one batch before starting; if a gate can't be pre-authorized, treat that milestone as a stop point."
 - **Derived status, never recorded status:** "Current state is derived — read the `verified:` lines in specs/milestones/ and `gh pr list`." Never add a current-phase paragraph (it lives on main while work advances on branches — stale by construction).
+- **The build start protocol** (orient before building): "Before writing code for a milestone, orient: derive state (the `verified:` pins + `gh pr list` + recent `git log`), re-read that milestone's spec + `specs/stack-profile.md` from `main` (the plan may have moved under batched/by-wave cadence), and run the cheapest committed rung once to confirm a green baseline. A pre-existing red is a stop-point — route it to `debug`, never build on top of it. Then branch."
 - **The GitHub process:**
   - One branch + one PR per milestone, named after the slug.
   - Checkpoint commits are fine. Independent milestones squash-merge (one commit per milestone on main). **Stacked milestones merge bottom-up with merge commits titled with the slug** — squashing a stacked PR orphans descendants' `verified:` records.

@@ -101,6 +101,17 @@ mkdir -p "$ROOT/scripts"
 echo 'echo "the sweep can close schema/RLS checks"' > "$ROOT/scripts/session-bootstrap.sh"
 check "denylisted hardcode in session-bootstrap.sh fails" 1
 
+# 14. Same bar for the shipped guard scripts (m2): their prose reaches sessions too.
+fresh c14-guard-leak
+mkdir -p "$ROOT/scripts"
+echo 'echo "blocked: this route lives under src/app/" >&2' > "$ROOT/scripts/merge-guard.sh"
+check "denylisted hardcode in merge-guard.sh fails" 1
+
+fresh c14b-branch-rules-leak
+mkdir -p "$ROOT/scripts"
+echo 'echo "run the /goal build first" >&2' > "$ROOT/scripts/guard-branch-rules.sh"
+check "denylisted hardcode in guard-branch-rules.sh fails" 1
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

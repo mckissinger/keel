@@ -24,12 +24,15 @@ cd "$ROOT"
 
 # Scan the methodology corpus plus the shipped hook layer. scripts/ is excluded
 # on purpose — this guard and its self-tests legitimately contain the banned
-# strings as test data — EXCEPT session-bootstrap.sh, which ships prose into
-# every keel-managed session and must meet the same neutrality bar.
+# strings as test data — EXCEPT the shipped hook scripts (session-bootstrap.sh,
+# merge-guard.sh, guard-branch-rules.sh), which ship prose/decisions into
+# keel-managed sessions and must meet the same neutrality bar.
 targets=()
 for d in skills references agents workflows hooks; do [ -d "$d" ] && targets+=("$d"); done
 [ -f README.md ] && targets+=("README.md")
-[ -f scripts/session-bootstrap.sh ] && targets+=("scripts/session-bootstrap.sh")
+for s in session-bootstrap.sh merge-guard.sh guard-branch-rules.sh; do
+  [ -f "scripts/$s" ] && targets+=("scripts/$s")
+done
 if [ ${#targets[@]} -eq 0 ]; then
   echo "check-neutral: nothing to scan under $ROOT — pass"
   exit 0

@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+#
+# merge-guard.sh — keel's PreToolUse hook on Bash (wired in hooks/hooks.json).
+#
+# Reads the hook's stdin JSON (tool_input.command per
+# https://code.claude.com/docs/en/hooks), classifies the command, and turns
+# merge-shaped commands into harness decisions via hookSpecificOutput:
+#
+#   not merge-shaped                        → exit 0, no output (allow silently)
+#   merge-shaped + gate present + gate PASS → permissionDecision "ask"
+#   merge-shaped + gate present + gate FAIL → permissionDecision "deny",
+#                                             the gate's stderr reason verbatim
+#   merge-shaped + gate/context unresolvable→ permissionDecision "ask",
+#                                             naming what was unresolvable
+#
+# Merge-shaped = `gh pr merge`, `git merge` whose target resolves to the default
+# branch, `git push` to the default branch (default branch via origin/HEAD, then
+# a main/master probe). A merge-shaped command is NEVER auto-allowed: the floor
+# is "ask" — per-merge human approval. The gate is the PROJECT's
+# scripts/check-verified-pin.sh — invoked as-is, never re-implemented here.
+#
+# Safety invariants: the command text is PARSED as data — never eval'd or
+# re-executed. `gh pr view` output is data too: parsed into variables and passed
+# only as quoted argv/env, never interpolated into shell as code. Decision JSON
+# is encoded by jq (python3 fallback, m1's pattern), never by interpolation.
+
+set -euo pipefail
+set -f # no globbing: command text is tokenized as data
+
+ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
+cd "$ROOT" 2>/dev/null || true
+
+# --- hook input --------------------------------------------------------------
+
+CMD="" CMD_PARSED=0 RAW=""
+read_hook_command() { # stdin JSON → CMD (tool_input.command), CMD_PARSED
+  local input
+  input="$(cat 2>/dev/null || true)"
+  if command -v jq >/dev/null 2>&1; then
+    CMD="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
+    CMD_PARSED=1
+  elif command -v python3 >/dev/null 2>&1; then
+    CMD="$(printf '%s' "$input" | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+c = (d.get("tool_input") or {}).get("command") or ""
+sys.stdout.write(c if isinstance(c, str) else "")
+' 2>/dev/null || true)"
+    CMD_PARSED=1
+  else
+    RAW="$input"
+  fi
+  return 0
+}
+
+# --- decision output ---------------------------------------------------------
+
+emit() { # <allow|deny|ask> <reason> — JSON-encoded, never interpolated
+  local d="$1" r="$2"
+  if command -v jq >/dev/null 2>&1; then
+    jq -n --arg d "$d" --arg r "$r" \
+      '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: $d, permissionDecisionReason: $r}}'
+  elif command -v python3 >/dev/null 2>&1; then
+    PD="$d" PR="$r" python3 -c '
+import json, os
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+  "permissionDecision": os.environ["PD"],
+  "permissionDecisionReason": os.environ["PR"]}}))'
+  else
+    # No JSON encoder at all: a static, uninterpolated "ask" (never allow).
+    printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "keel merge-guard: no jq or python3 available to encode a decision - defaulting to ask"}}'
+  fi
+  return 0
+}
+
+json_str() { # <json> <key> → prints the string value, or nothing
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$1" | jq -r --arg k "$2" '.[$k] // empty' 2>/dev/null || true
+  elif command -v python3 >/dev/null 2>&1; then
+    printf '%s' "$1" | K="$2" python3 -c '
+import json, os, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+v = d.get(os.environ["K"])
+if isinstance(v, str):
+    sys.stdout.write(v)
+' 2>/dev/null || true
+  fi
+  return 0
+}
+
+# --- default branch ----------------------------------------------------------
+
+detect_default_branch() { # origin/HEAD → main/master probe → "main"
+  local ref b
+  if ref="$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null)"; then
+    printf '%s\n' "${ref#refs/remotes/origin/}"
+    return 0
+  fi
+  for b in main master; do
+    if git show-ref --verify --quiet "refs/heads/$b" 2>/dev/null \
+      || git show-ref --verify --quiet "refs/remotes/origin/$b" 2>/dev/null; then
+      printf '%s\n' "$b"
+      return 0
+    fi
+  done
+  printf 'main\n'
+  return 0
+}
+
+is_default_ref() { # <token> — does it name the default branch?
+  local t="$1" r
+  if [ -z "$t" ]; then return 1; fi
+  t="${t#refs/heads/}"
+  t="${t#refs/remotes/}"
+  if [ "$t" = "$DEFAULT_BRANCH" ]; then return 0; fi
+  for r in $REMOTES; do
+    if [ "$t" = "$r/$DEFAULT_BRANCH" ]; then return 0; fi
+  done
+  return 1
+}
+
+# --- classification (parse only; never executed) ------------------------------
+# Classification sees only the literal command text and strips a single outer
+# quote layer per token. Like any text-level hook it cannot see through shell
+# reassembly (`git "me""rge"`, `m=merge; git $m`, aliases, `sh -c`, `xargs`) —
+# that is the documented inherent limit; this guard is defense-in-depth under
+# branch protection + the skill-scoped branch guard + human merge approval.
+
+SHAPE="" GH_PR_ARG=""
+TOKS=()
+N=0 I=0
+
+classify_gh() { # after `gh`: skip flags (value-taking ones skip their value)
+  local w w1="" w2="" w3=""
+  while [ "$I" -lt "$N" ]; do
+    w="${TOKS[$I]}"
+    case "$w" in
+      --repo | -R | --hostname | -t | --subject | -b | --body | -A | --author-email | --match-head-commit)
+        I=$((I + 2))
+        continue
+        ;;
+      -*)
+        I=$((I + 1))
+        continue
+        ;;
+    esac
+    if [ -z "$w1" ]; then w1="$w"; elif [ -z "$w2" ]; then w2="$w"; elif [ -z "$w3" ]; then w3="$w"; fi
+    I=$((I + 1))
+  done
+  if [ "$w1" = "pr" ] && [ "$w2" = "merge" ]; then
+    SHAPE="gh-pr-merge"
+    GH_PR_ARG="$w3"
+  fi
+  return 0
+}
+
+classify_git_merge() {
+  local w
+  while [ "$I" -lt "$N" ]; do
+    w="${TOKS[$I]}"
+    case "$w" in
+      --abort | --continue | --quit) # sequencer control, not a merge
+        SHAPE=""
+        return 0
+        ;;
+      -m | --message | -F | --file | -s | --strategy | -X | --strategy-option | --into-name)
+        I=$((I + 2))
+        continue
+        ;;
+      -*)
+        I=$((I + 1))
+        continue
+        ;;
+    esac
+    if is_default_ref "$w"; then SHAPE="git-merge"; fi
+    I=$((I + 1))
+  done
+  return 0
+}
+
+classify_git_push() {
+  local w pos=0 spec dst cur
+  while [ "$I" -lt "$N" ]; do
+    w="${TOKS[$I]}"
+    case "$w" in
+      -o | --push-option | --receive-pack | --repo | --exec)
+        I=$((I + 2))
+        continue
+        ;;
+      -*)
+        I=$((I + 1))
+        continue
+        ;;
+    esac
+    pos=$((pos + 1))
+    if [ "$pos" -ge 2 ]; then # refspecs (first positional is the remote)
+      spec="${w#+}"
+      dst="${spec##*:}"
+      dst="${dst#refs/heads/}"
+      if [ "$dst" = "HEAD" ]; then
+        dst="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+      fi
+      if [ -n "$dst" ] && [ "$dst" = "$DEFAULT_BRANCH" ]; then
+        SHAPE="git-push"
+        return 0
+      fi
+    fi
+    I=$((I + 1))
+  done
+  if [ "$pos" -le 1 ]; then # bare `git push` [remote]: implicit current branch
+    cur="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [ -n "$cur" ] && [ "$cur" = "$DEFAULT_BRANCH" ]; then SHAPE="git-push"; fi
+  fi
+  return 0
+}
+
+classify_git() { # after `git`: skip global flags, then dispatch on the subcommand
+  local w sub
+  while [ "$I" -lt "$N" ]; do
+    w="${TOKS[$I]}"
+    case "$w" in
+      -C | -c | --git-dir | --work-tree | --namespace | --exec-path)
+        I=$((I + 2))
+        continue
+        ;;
+      -*)
+        I=$((I + 1))
+        continue
+        ;;
+      *) break ;;
+    esac
+  done
+  if [ "$I" -ge "$N" ]; then return 0; fi
+  sub="${TOKS[$I]}"
+  I=$((I + 1))
+  case "$sub" in # `merge-base` etc. fall through: exact match only
+    merge) classify_git_merge ;;
+    push) classify_git_push ;;
+    commit) GIT_COMMIT=1 ;;
+  esac
+  return 0
+}
+
+classify_tokens() {
+  N=${#TOKS[@]}
+  I=0
+  local head
+  while [ "$I" -lt "$N" ]; do
+    head="${TOKS[$I]}"
+    case "$head" in
+      [A-Za-z_]*=*) # leading VAR=val assignments
+        I=$((I + 1))
+        continue
+        ;;
+      command | exec | env | nohup) # transparent wrappers
+        I=$((I + 1))
+        continue
+        ;;
+    esac
+    break
+  done
+  if [ "$I" -ge "$N" ]; then return 0; fi
+  head="${TOKS[$I]}"
+  head="${head##*/}" # /usr/bin/git → git
+  I=$((I + 1))
+  case "$head" in
+    gh) classify_gh ;;
+    git) classify_git ;;
+  esac
+  return 0
+}
+
+classify_cmd() { # <command text> → SHAPE, GH_PR_ARG (+ GIT_COMMIT)
+  SHAPE="" GH_PR_ARG=""
+  local line t
+  while IFS= read -r line; do
+    if [ -z "${line//[[:space:]]/}" ]; then continue; fi
+    TOKS=()
+    for t in $line; do # noglob is on; whitespace tokenization of DATA
+      t="${t#\"}"
+      t="${t%\"}"
+      t="${t#\'}"
+      t="${t%\'}"
+      if [ -n "$t" ]; then TOKS[${#TOKS[@]}]="$t"; fi
+    done
+    classify_tokens
+    if [ -n "$SHAPE" ]; then return 0; fi
+  done < <(printf '%s\n' "$1" | tr '|;&' '\n\n\n') # each pipeline/list segment scanned
+  return 0
+}
+
+# --- decision ----------------------------------------------------------------
+
+BASE_REF_R="" HEAD_REF_R=""
+
+resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally resolvable refs
+  command -v gh >/dev/null 2>&1 || return 1
+  local json b h
+  if [ -n "$GH_PR_ARG" ]; then
+    json="$(gh pr view "$GH_PR_ARG" --json baseRefName,headRefName 2>/dev/null)" || return 1
+  else
+    json="$(gh pr view --json baseRefName,headRefName 2>/dev/null)" || return 1
+  fi
+  b="$(json_str "$json" baseRefName)" # DATA: quoted argv/env only from here on
+  h="$(json_str "$json" headRefName)"
+  if [ -z "$b" ] || [ -z "$h" ]; then return 1; fi
+  if git rev-parse --verify --quiet "refs/remotes/origin/$b^{commit}" >/dev/null 2>&1; then
+    BASE_REF_R="origin/$b"
+  elif git rev-parse --verify --quiet "refs/heads/$b^{commit}" >/dev/null 2>&1; then
+    BASE_REF_R="refs/heads/$b"
+  else
+    return 1
+  fi
+  if git rev-parse --verify --quiet "refs/remotes/origin/$h^{commit}" >/dev/null 2>&1; then
+    HEAD_REF_R="origin/$h"
+  elif git rev-parse --verify --quiet "refs/heads/$h^{commit}" >/dev/null 2>&1; then
+    HEAD_REF_R="refs/heads/$h"
+  else
+    return 1
+  fi
+  return 0
+}
+
+decide() { # merge-shaped: ask/deny only — never allow
+  local gate="$ROOT/scripts/check-verified-pin.sh" err reason
+  if [ ! -f "$gate" ]; then
+    emit ask "merge-shaped command — unresolvable: this project has no scripts/check-verified-pin.sh gate to consult; per-merge human approval required"
+    return 0
+  fi
+  if [ "$SHAPE" = "gh-pr-merge" ]; then
+    if ! resolve_gh_context; then
+      emit ask "merge-shaped command (gh pr merge) — unresolvable: PR context (gh pr view --json baseRefName,headRefName failed, or its base/head refs are not present locally); per-merge human approval required"
+      return 0
+    fi
+  else
+    if git rev-parse --verify --quiet "refs/remotes/origin/$DEFAULT_BRANCH^{commit}" >/dev/null 2>&1; then
+      BASE_REF_R="origin/$DEFAULT_BRANCH"
+    elif git rev-parse --verify --quiet "refs/heads/$DEFAULT_BRANCH^{commit}" >/dev/null 2>&1; then
+      BASE_REF_R="refs/heads/$DEFAULT_BRANCH"
+    fi
+    HEAD_REF_R="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    if [ -z "$BASE_REF_R" ] || [ -z "$HEAD_REF_R" ]; then
+      emit ask "merge-shaped command — unresolvable: local merge context (default-branch ref '$DEFAULT_BRANCH' or the current branch); per-merge human approval required"
+      return 0
+    fi
+  fi
+  err="$(mktemp)"
+  if (cd "$ROOT" && BASE_REF="$BASE_REF_R" "$gate" "$HEAD_REF_R") >/dev/null 2>"$err"; then
+    emit ask "verified-pin gate passed — per-merge human approval"
+  else
+    reason="$(cat "$err" 2>/dev/null || true)"
+    if [ -z "$reason" ]; then reason="verified-pin gate failed with no reason on stderr"; fi
+    emit deny "$reason"
+  fi
+  rm -f "$err"
+  return 0
+}
+
+# --- main ---------------------------------------------------------------------
+
+GIT_COMMIT=0 # set by the classifier; unused here (guard-branch-rules.sh consumes it)
+
+read_hook_command
+if [ "$CMD_PARSED" -ne 1 ]; then
+  # No jq AND no python3: we cannot extract the command. Never auto-allow a
+  # possibly merge-shaped one — crude data-only scan of the raw input, static ask.
+  if printf '%s' "$RAW" | grep -qiE '\bmerge\b|\bpush\b'; then
+    emit ask "keel merge-guard: cannot parse the hook input (neither jq nor python3 is available) and the raw input mentions merge/push — defaulting to ask; merge-shaped commands are never auto-allowed"
+  fi
+  exit 0
+fi
+if [ -z "$CMD" ]; then exit 0; fi # not a Bash command payload
+
+DEFAULT_BRANCH="$(detect_default_branch)"
+REMOTES="$(git remote 2>/dev/null | tr '\n' ' ' || true)"
+if [ -z "${REMOTES// /}" ]; then REMOTES="origin"; fi
+
+classify_cmd "$CMD"
+if [ -z "$SHAPE" ]; then exit 0; fi # not merge-shaped → allow silently
+
+decide
+exit 0

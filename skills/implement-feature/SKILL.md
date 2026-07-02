@@ -2,6 +2,12 @@
 name: implement-feature
 description: Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge. Spawns fresh-context verifier subagents ([auto] parallel, [runtime] serial). Defaults to interleaved cadence but ALWAYS asks. Never merges.
 when_to_use: After spec-feature has authored a whole feature's milestone specs, to build and verify them end-to-end. NOT for a single milestone (that's implement-milestone), NOT for checking one completed milestone (that's verify-milestone), and NOT for merging the reviewed PRs (that's land-feature, under the user's per-merge approval).
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/guard-branch-rules.sh"
 ---
 
 # Implement Feature

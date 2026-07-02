@@ -56,6 +56,10 @@ And a **hooks layer** (`hooks/hooks.json`): a SessionStart bootstrap — re-inje
 
 Two design principles worth calling out: the **design track is optional** (it runs only when the deliverable has a UI, so keel builds CLIs/backends/libraries too), and **every interview confirms its understanding with you before authoring anything**.
 
+## Requirements
+
+**Claude Code ≥ 2.1.** keel relies on plugin hooks (the `SessionStart` bootstrap with a `compact` matcher and the PreToolUse guards), `disable-model-invocation` skill frontmatter, and the Workflow tool — all present from the 2.1 line. Older versions load the skills but silently drop the hooks layer and the human-triggered-only guards.
+
 ## Install
 
 ```

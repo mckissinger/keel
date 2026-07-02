@@ -37,6 +37,10 @@ Clarify what the user actually wants before significant build work begins. The c
 
 After the round, **synthesize the resolved understanding — the goal, the decisions made, the defaults you're taking, and (for anything with a stack) the proposed stack — and get the user's explicit confirmation before authoring anything** (docs, mockups, milestones). Do **not** auto-advance from interview to authoring; the synthesis-and-confirm is a hard gate. Once confirmed, don't re-open settled decisions.
 
+## Under an active autonomy mode
+
+Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the question round and the synthesis-and-confirm gate become **ledgered defaults**: default every open decision from the recorded context, write the synthesis to the run ledger per `keel:auto`'s ledger contract, and proceed; the user adjudicates at the debrief. Outside a mode, the attended gates above hold exactly.
+
 ## Greenfield kickoff: you are the app-skeleton gate
 
 For a brand-new project (greenfield, no existing spec), one round is usually not enough, and the interview is **the first attended kickoff gate.** Continue until the app-level open decisions — goal, users, scope, **feature backlog, spine journey, high-level data shapes**, external services, and **design direction** — are resolved enough to write the foundation. Stay at *breadth*: the whole app's shape, not the inside of any one feature.

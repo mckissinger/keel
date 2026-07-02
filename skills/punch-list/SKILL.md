@@ -47,6 +47,10 @@ Run the saved workflow `punch-list` with `{ slug, items: [{ id, condition, files
 - **Dropped items are not failures** — an item the workflow couldn't apply cleanly is reported, not half-done; re-run it or route a stubborn one to `spec-change`.
 - **No drive-bys.** The batch contains exactly the confirmed items; "while I was in there" changes are scope creep — capture them as new items, don't bundle them.
 
+## Under an active autonomy mode
+
+Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the step-3 confirm gate becomes a **ledgered default**: record the scoped list (conditions + files + what was routed out) to the run ledger per `keel:auto`'s ledger contract and launch; the user adjudicates at the debrief. The scope-discipline guard and the batch-pin gate are unchanged.
+
 ## Where this sits
 
 ```

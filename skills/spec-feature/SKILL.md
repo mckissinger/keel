@@ -68,6 +68,10 @@ The session ends **attended**, on your sign-off of the composed feature story / 
 - **`/verify-milestone`** (fresh) per the pinned-record gate — appends each milestone's `verified:` pin in its own code PR.
 - **`review-feature`** — the human aesthetic/completeness gate, rendered-vs-workbench-composition, before the feature counts as done.
 
+## Under an active autonomy mode
+
+Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the confirm-before-author gate and the redline become a **ledgered synthesis**: take the recorded defaults, write the synthesis and the composed reference (the artifact each gate would have shown) to the run ledger per `keel:auto`'s ledger contract, and proceed; the user adjudicates at the debrief. The done-condition standard, the plan pass, and the plan PR are unchanged. Outside a mode, the attended gates above hold exactly.
+
 ## Cadence — interleaved or batched, both valid
 
 - **Interleaved (recommended):** spec one feature → build → review → spec the next, so each feature's spec is informed by the rendered reality of the prior ones. This is where the feedback loop the redesign restores actually lives.

@@ -41,3 +41,7 @@ These become a **refinement milestone** for the feature (its own branch + PR + `
 - **`verify-milestone`** (per milestone, autonomous) — invariants + logic + mechanical design-application. Runs first, per milestone.
 - **`review-feature`** (per feature, human) — completeness + aesthetic fidelity-to-intent. Runs after the feature's milestones are merged. Sits above verify-milestone; never replaces it.
 - A feature that is `verify-milestone`-clean but `review-feature`-failed is **not done** — it has an open refinement milestone. Don't mark the feature complete until that's closed and re-reviewed.
+
+## Under an active autonomy mode
+
+Under an active `keel:auto` mode (per `decisions/2026-07-autonomy-modes.md`), this gate is **scheduled, not skipped**: `keel:auto`'s debrief mandate batches it per feature — `auto:feature` at feature end, `auto:run` at run end, one sitting per feature in scope — and the sitting also adjudicates the run's ledger entries. Until it happens, a landed feature is *built-verified-merged*, never *feature-done*. The gate's content above is unchanged.

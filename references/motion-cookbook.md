@@ -4,7 +4,9 @@
 `interaction-craft.md`; this file is the hardened-web implementation layer — reach here when a
 feature on the web actually needs gestures, reveals, or hand-tuned physics. Everything below assumes
 CSS / the DOM / a browser motion library. Adapted from Emil Kowalski's design-engineering philosophy
-([animations.dev](https://animations.dev/)). Conform to `specs/design.md`'s motion stance.
+([animations.dev](https://animations.dev/)); the view-transition, scroll-driven, and detail-chrome
+notes also draw on public breakdowns by Rauno Freiberg and Jhey Tompkins. Conform to
+`specs/design.md`'s motion stance.
 
 > **Per-platform technique references are derived when a mobile stack appears.** Consistent with
 > "neutral seams now, web hardened": the neutral *principles* (in `interaction-craft.md`) already
@@ -49,6 +51,37 @@ gestures. Use for drag-with-momentum, "alive" elements, decorative mouse-trackin
 subtle (0.1–0.3) and avoid it in most product UI. Apple-style `{ duration, bounce }` is easier to
 reason about than raw stiffness/damping.
 
+## View transitions
+
+`document.startViewTransition(updateDOM)` snapshots the page, applies your DOM change, and
+animates old → new — the platform's native crossfade/morph between two states, no library.
+
+- **Element morphs:** give the element a `view-transition-name` present in both states and the
+  browser morphs position/size between them; customize via
+  `::view-transition-old(name)` / `::view-transition-new(name)`.
+- **Where it shines:** state swaps that would otherwise need FLIP math — list reorders,
+  card → detail expansions, theme switches, image → lightbox morphs.
+- **Overlay caveat:** the transition renders in a top-layer snapshot. Fixed navs and overlays
+  need their own `view-transition-name` or the root transition drags them through the morph —
+  and paint order during the transition follows the snapshot tree, not your stacking contexts.
+- **Fallback is free:** `if (!document.startViewTransition) { updateDOM(); return; }` — the
+  state change still happens, just untransitioned.
+
+## Scroll-driven animations
+
+`animation-timeline: view()` / `scroll()` binds a CSS animation's progress to an element's
+visibility in the viewport or a scroller's position — scroll reveals with no JS and no
+IntersectionObserver.
+
+- **Reveal-on-enter:** a keyframed fade/translate with `animation-timeline: view()` plus an
+  `animation-range` (e.g. `entry 0% entry 100%`) plays as the element enters the viewport.
+- **Progressive enhancement:** gate with `@supports (animation-timeline: view())`; unsupported
+  browsers show the element static. For fire-once semantics, IntersectionObserver remains the
+  tool — scroll-driven timelines scrub in both directions.
+- ⚠ **The frequency table still governs.** Scroll-driven motion suits marketing/landing
+  surfaces read once; app work surfaces are seen tens of times a day and rarely
+  scroll-animate. Don't let the mechanism's cheapness argue the motion in.
+
 ## Performance specifics
 
 - **CSS animations beat JS under load** — they run off the main thread; `requestAnimationFrame`-based
@@ -70,6 +103,12 @@ reason about than raw stiffness/damping.
 - **Blur to mask an imperfect crossfade** — a subtle `filter: blur(2px)` during a state swap blends
   the two states so the eye reads one transformation, not two overlapping objects. Keep under ~20px
   (expensive, especially in Safari).
+- **Scrollbar chrome** — `scrollbar-width: thin; scrollbar-color: <thumb-token> transparent`
+  restyles overflow chrome to the design in two lines; color the thumb from a neutral token,
+  never a raw gray.
+- **Designed focus rings** — `:focus-visible { outline: 2px solid <focus-token>; outline-offset: 2px }`
+  with the offset following the control's `border-radius`; the default UA outline hugging a
+  rounded control is the tell of an unstyled state.
 
 ## Debugging motion
 

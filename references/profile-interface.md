@@ -129,6 +129,11 @@ an agent or human diffs against the mockup?
   gallery).
 - *Mobile (derived-when-needed):* a simulator + snapshot test (iOS); an emulator + e.g. a Compose
   screenshot test (Android); e.g. Widgetbook goldens (Flutter).
+- *Optional — recording capability:* the driver may also declare how a rendered **interaction**
+  is captured as video or a frame sequence (*web:* e.g. a headless-browser video/trace recording;
+  *mobile:* e.g. a simulator screen recording). `review-feature`'s frame-by-frame motion review
+  consumes it when present and degrades to a slowed live replay when absent — still capture
+  remains the required contract.
 
 **Q8.5 — Motion + interaction mechanism.** What is the stack's **motion library**, how are the
 **motion tokens (easing / duration)** and the **interaction-state tokens** expressed, and what is

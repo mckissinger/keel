@@ -93,6 +93,10 @@ tooltip is open, adjacent ones should open instantly (skip the delay) so the too
 - **Asymmetric enter/exit** — slow where the user is deciding (a hold-to-confirm), snappy where the
   system responds (release). Don't reuse one duration for both directions.
 - **Stagger** entering lists by 30–80ms per item; never block interaction while a stagger plays.
+- **Choreograph entrances by importance** — when several elements enter together, sequence by
+  what matters most (heading → primary content → secondary chrome), not by document position;
+  an element that sits higher on the page but matters less enters later (an animations.dev
+  practice).
 - **Hold the exit after a selection** — when the user picks from a menu or list that then
   dismisses, keep the selection visible ~200–400ms before it leaves (the delayed exit of a
   native context menu) so the result registers. This is a held *exit*, not a slower response —

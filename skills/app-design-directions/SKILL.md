@@ -23,7 +23,7 @@ Phase 4  APPLY      → converge the winner into the real workbench (the profile
 
 **The governing principle: diverge cheap, converge real.** Phases 2 and 3.5 are *throwaway* — cheap mockups that pick a direction on **look alone** and are then discarded, **never re-implemented as a spec**. Phase 4 is the *convergence*: the chosen direction is rebuilt as real, themed components — the **workbench** — which becomes the durable fidelity source of truth. Motion, interaction, and native feel are behavioral: they exist only in that real code, never in the throwaway mockup.
 
-Copy this checklist into your working notes and check items off as you go:
+The phase is complete when each of these holds — treat them as the exit conditions, not a form to transcribe:
 
 - [ ] Phase 0: codebase explored, platform target + native-feel conventions recorded, design brief written, brief confirmed by user
 - [ ] Phase 1: 3–5 directions specced, each passed the anti-slop check and the distinctness check, each implementable on the platform target

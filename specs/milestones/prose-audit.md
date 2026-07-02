@@ -45,3 +45,5 @@ confirm the ledger's not-prunable marking and honest figures; `check-neutral.sh`
 + all self-tests. No surface/action change → no runtime walk; no hard invariant loosened (the
 whole point is that none were) → no `/security-review`, but the invariant-preservation greps are
 the load-bearing check.
+
+verified: clean at d57ede9, 2026-07-02, via verifier subagent — heavy invariant-preservation pass (evidence in PR #58)

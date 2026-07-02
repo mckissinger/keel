@@ -161,6 +161,17 @@ if [ "$RC" -eq 0 ] && [ "$OUT" = "$BASELINE" ]; then
   ok "git-tracked mode file is a spoof → no mode, today's text byte-identical"
 else bad "git-tracked mode file is a spoof → no mode, today's text byte-identical (rc=$RC)"; fi
 
+# 5c. The keel:auto verb is named in BOTH orientation variants (m4: the modes
+#     are drivable, so every session — mode or no mode — knows the verb exists).
+run_in "$TMP/m1"
+if printf '%s' "$OUT" | grep -q 'keel:auto'; then
+  ok "no-mode orientation names keel:auto among the verbs"
+else bad "no-mode orientation names keel:auto among the verbs"; fi
+run_in "$TMP/mode1"
+if printf '%s' "$OUT" | grep -q 'keel:auto'; then
+  ok "mode orientation names keel:auto among the verbs"
+else bad "mode orientation names keel:auto among the verbs"; fi
+
 # 6. The shipped script carries its executable bit.
 if [ -x "$SCRIPT" ]; then ok "session-bootstrap.sh is executable"
 else bad "session-bootstrap.sh is executable"; fi

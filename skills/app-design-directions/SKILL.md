@@ -136,6 +136,10 @@ The workbench verb is **profile-driven**. On the hardened web stack it is a **`/
 | `references/product-ui-craft.md` | Phase 2 and 4. App-specific craft: density, hierarchy, tables, forms, states, color-as-meaning, typography for data, accessibility floor. |
 | `references/stack-and-mockups.md` | Phase 2 and 4. The **web** mockup + workbench mechanics — one instance of the profile's exploration/workbench verbs: mockup file rules, web token wiring, screenshot self-review. Mobile is derivable against the stack profile (Q8.2–Q8.4), not spelled out here. |
 
+## Under an active autonomy mode
+
+Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md` §(c) — an explicitly accepted trade), the Phase 3 pick is the agent's: pick a direction and **ledger the rationale plus the comparison artifact** (the compare gallery and the direction specs) to the run ledger per `keel:auto`'s ledger contract, then proceed; the user adjudicates at the debrief, and a possible redesign pass is the accepted cost of zero interrupts. Every other phase runs unchanged.
+
 ## Tone with the user
 
 The user is the client and the decider. Bring opinions — recommend a direction and say why — but never railroad. When they push toward something on the anti-slop list, distinguish: if they *chose* it for this app, it's a choice and you execute it excellently; the list bans defaults, not options. Keep updates brief; let the mockups do the talking.

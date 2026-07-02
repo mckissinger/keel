@@ -62,3 +62,7 @@ Once the wave is green on `main` together, the specs still describe the *plan*; 
 - **External repos:** upstream repos actively trap undisclosed agent PRs, so any keel-driven contribution to an external repo must disclose agent authorship and keep the human-review step honest.
 - **Never merge with checks pending or red.** Confirm each PR's base is `main` and its checks are green first.
 - Then the feature goes to **`review-feature`** (the human aesthetic/completeness gate) before it counts as done.
+
+## Under an active autonomy mode
+
+Under an active `keel:auto` mode (per `decisions/2026-07-autonomy-modes.md`), this choreography is invoked by the `keel:auto` orchestration with `gh pr merge --auto` on each gate-passing PR — GitHub's required checks decide each merge, never agent judgment. Every rule above (bottom-up ordering, retarget-before-delete, close+reopen, re-pin after a rebase, the consolidated check, the reconciliation) is unchanged; only who fires the merge command changes. Outside a mode, the attended per-merge flow above holds exactly as written.

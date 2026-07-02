@@ -48,3 +48,5 @@ not re-derived; skill-frontmatter greps; no-eval/quoting review of both scripts)
 into shell decisions (hard-invariant surface; adversarial questions: can a crafted PR
 title/branch name or command string flip a deny into allow, inject into the gate invocation,
 or smuggle a merge past classification?).
+
+verified: clean at d1fd4cd, 2026-07-01, via fresh-context verifier subagent; /security-review PROCEED (no blocking findings) — merge-guard.test.sh 29/29 + guard-branch-rules.test.sh 16/16 (+ check-neutral 17/17, check-verified-pin 17/17, session-bootstrap 11/11, plugin validate --strict pass, check-neutral corpus scan pass); decision floor is ask (no code path emits allow), gate invoked as the project's scripts/check-verified-pin.sh (never re-implemented), gh pr view output handled as quoted data; d1fd4cd's delta vs security-reviewed 6c0f352 is comment-only (5 classifier-comment lines in merge-guard.sh, tests unchanged); [runtime] live-session probe deferred to m3's composition walk per spec (deterministic core covered by merge-guard.test.sh) (evidence: verifier + security reports in PR)

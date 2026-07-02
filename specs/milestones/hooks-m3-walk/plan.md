@@ -8,7 +8,7 @@ and the observation the attended `/verify-milestone` session must record.
 
 ## Status
 
-- **EXECUTED 2026-07-01 (attended).** Transcript: `hooks-m3-composition-walk-transcript.md` —
+- **EXECUTED 2026-07-01 (attended).** Transcript: `transcript.md` (this directory) —
   all five assertions (a–e) pass against the m3-branch scripts in a composed fixture with real
   hook stdin. That transcript is the walk evidence that gates the pin.
 - **Headless probes already run on this branch (deterministic cores):** the assertions'

@@ -1,6 +1,8 @@
 ---
 name: kickoff
-description: Orchestrate a greenfield project kickoff in the one correct order — app-skeleton interview → spec-foundation (product skeleton + architecture) → design-system gate → provision — pausing at each attended gate, and ending at a green foundation + a feature backlog (NOT a milestone list). Use at the very start of a brand-new project to stand up the durable foundation. Per-feature specs and builds run AFTER, one feature at a time, via spec-feature → build → verify → review-feature. For a mid-project feature, invoke spec-feature; for a redesign, app-design-directions.
+description: Orchestrate a greenfield project kickoff in the one correct order — app-skeleton interview → spec-foundation (product skeleton + architecture) → design-system gate → provision — pausing at each attended gate, and ending at a green foundation + a feature backlog (NOT a milestone list). The one attended sitting that stands up a brand-new project's durable foundation.
+when_to_use: Use at the very start of a brand-new project to stand up the durable foundation. Per-feature specs and builds run AFTER, one feature at a time, via spec-feature → build → verify → review-feature. NOT for a mid-project feature (invoke spec-feature) or a redesign (that's app-design-directions).
+disable-model-invocation: true
 ---
 
 # Kickoff

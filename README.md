@@ -2,7 +2,7 @@
 
 **Foundation-first autonomous build workflow for Claude Code.**
 
-> **v1.** The methodology is distilled from real autonomous build runs and revised as it's dogfooded.
+> **v1.** The methodology is distilled from real autonomous build runs and revised as it's dogfooded. keel versions with semver starting at 1.0.0 (the `version` field in plugin.json); releases ship to installed users on version bumps via release tags, not on every merge to main.
 
 keel is a Claude Code plugin — a set of skills, agents, and a workflow for building
 software autonomously. You stand up a durable foundation once, then build feature by

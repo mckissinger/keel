@@ -27,3 +27,5 @@ verification: fresh-context verifier subagent against this file + the diff (vers
 `1.0.0`→`1.1.0` in `plugin.json` and nowhere else; no code/skill/script behavior change) +
 `claude plugin validate --strict .` + `scripts/check-neutral.sh` + `scripts/check-plan.sh`.
 No runtime surface → no walk; no mechanism touched → no `/security-review`.
+
+verified: clean at be6d8fb, 2026-07-02, via fresh-context verifier subagent — plugin.json version bumped 1.0.0→1.1.0 and nowhere else (diff vs main is the single version line), marketplace.json unchanged (no version field), only three files changed vs main (plugin.json + this chore spec + the marketplace-ref deferral) with no skills/scripts/hooks/reference touched, `claude plugin validate --strict .` passed, check-neutral + check-plan + all 7 script self-tests green, semver valid and minor (additive, no breaking change). (evidence: verifier report in PR)

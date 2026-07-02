@@ -43,3 +43,5 @@ verifier subagent against this file (prose greps for a–e, the by-reference rul
 one-owner sweep) + `scripts/check-neutral.sh` + `scripts/check-plan.sh` + all script
 self-tests. No surface/action change → no runtime walk. No mechanism loosened in this
 milestone (prose only) → no `/security-review`.
+
+verified: clean at ab4ff6a, 2026-07-02, via fresh-context verifier subagent — all conditions pass: decisions entry states a–e explicitly (scope :12–16, ~17% trade + required-checks compensation :20–26, design-pick trade :30–33, never-auto list :35–41, --auto-only delegation :43–50), ledger byte-identical to main and amended by reference (quotes its "The human merge gate + branch protection" line at :46), README one paragraph pointing at the entry, §5 exactly one appended sentence with pin gate unchanged, one-owner sweep clean across the repo, scripts/ untouched vs main, check-neutral PASS + check-plan PASS (28+2 specs) + all 6 self-test suites green (17/18/17/16/29/14) (evidence: verifier report in PR)

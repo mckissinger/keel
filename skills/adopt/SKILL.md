@@ -1,6 +1,8 @@
 ---
 name: adopt
-description: Brownfield kickoff — point keel at an EXISTING project that never ran a greenfield kickoff. A one-time retrofit that discovers the foundation from the code (stack, data model, design language, seams, invariants), derives the stack profile, seeds thin foundation specs, and wires the verified-pin gate + branch protection once — then hands off to the per-feature loop. Use instead of kickoff when there's already code.
+description: Brownfield kickoff — stand up keel's durable foundation on an EXISTING codebase. A one-time attended retrofit that discovers the foundation from the code (stack, data model, design language, seams, invariants), derives the stack profile, seeds thin foundation specs, and wires the verified-pin gate + branch protection once — then hands off to the per-feature loop.
+when_to_use: Use instead of kickoff when there's already code — an existing project that never ran a greenfield kickoff, a feature against an existing codebase, or a small/contained product consuming an existing engine/host-app/platform whose stack and design language are already real. NOT for a genuinely fresh, multi-feature greenfield app with nothing to discover — use kickoff for that.
+disable-model-invocation: true
 ---
 
 # Adopt

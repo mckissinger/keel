@@ -1,6 +1,7 @@
 ---
 name: review-feature
-description: The human aesthetic + completeness gate for a built feature — drive the rendered feature on a preview (or local build), screenshot each surface side-by-side with the feature's own mockups, and present it for the user's judgment, turning gaps into a refinement milestone. Run after a feature's milestones are built, verified, and merged, before the feature counts as done. This is the per-feature checkpoint the autonomous verifier can't make; it sits ABOVE verify-milestone, not instead of it.
+description: The human aesthetic + completeness gate for a built feature — drive the rendered feature on a preview (or local build), screenshot each surface side-by-side with the feature's own mockups, and present it for the user's judgment, turning gaps into a refinement milestone.
+when_to_use: After a feature's milestones are built, verified, and merged, before the feature counts as done. This is the per-feature checkpoint the autonomous verifier can't make; it sits ABOVE verify-milestone, not instead of it.
 ---
 
 # Feature Review

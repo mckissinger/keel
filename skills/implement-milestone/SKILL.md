@@ -1,9 +1,18 @@
 ---
 name: implement-milestone
-description: Build ONE milestone to its done-conditions — the atomic build verb. Branch first, build to the spec's done-conditions (honoring the [auto]/[runtime]/[attended] tags and the stack profile's runtime-proof), halt at stop-points, then hand off to verify-milestone. Never self-verifies, never commits to main, never merges. Used directly for a spec-change's single milestone, or invoked per-milestone by implement-feature.
+description: Build ONE milestone to its done-conditions — the atomic build verb. Branch first, build to the spec's done-conditions (honoring the [auto]/[runtime]/[attended] tags and the stack profile's runtime-proof), author the committed tests the conditions name, halt at stop-points, then hand off to verify-milestone. Never self-verifies, never commits to main, never merges.
+when_to_use: Use when exactly one milestone needs building and its spec (done-conditions + verification line) already exists on main — directly for a spec-change's single milestone, or invoked per-milestone by implement-feature. Not for a whole feature (that's implement-feature), not for checking completed work (that's verify-milestone), and not before the milestone spec exists (author it first).
+allowed-tools: Bash(git checkout -b *), Bash(git branch *), Bash(git add *), Bash(git commit *)
 ---
 
 # Implement Milestone
+
+## Git ground truth (this session, injected at invocation)
+
+- Current branch: !`git branch --show-current`
+- Working tree: !`git status --porcelain`
+
+This is the session's actual state for step 1 (**Branch first**): if the branch above is `main` — or any branch that isn't this milestone's — branch before touching any code. If the injected values are missing or stale, fall back to the prose rule in step 1 and run the commands yourself.
 
 Build **one milestone** — the atomic build/verify unit (one branch, one PR, one `verified:` pin). This is the workflow's build verb. It does **not** verify its own work (that's `verify-milestone`, in a separate fresh context) and it does **not** merge (the user does). Its job ends at *built to the done-conditions, handed off to verification*.
 

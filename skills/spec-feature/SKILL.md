@@ -1,6 +1,7 @@
 ---
 name: spec-feature
-description: Deeply spec ONE feature before building it — a single attended session that interviews the feature (every screen, state, interaction, edge), composes its screens from the already-decided design system's real workbench components, and authors its milestones with logic + UX-completeness + fidelity done-conditions. Use per feature, after the kickoff foundation + design system exist, right before that feature is built (or in a batch of per-feature sessions before a build run). NOT for the app-level skeleton (that's spec-foundation), NOT for exploring a design direction (that's app-design-directions, done once).
+description: Deeply spec ONE feature before building it — a single attended session that interviews the feature (every screen, state, interaction, edge), composes its screens from the already-decided design system's real workbench components, and authors its milestones with logic + UX-completeness + fidelity done-conditions.
+when_to_use: Once per feature, after the kickoff foundation + design system exist, right before that feature is built (or in a batch of per-feature sessions before a build run). NOT for the app-level skeleton (that's spec-foundation), NOT for exploring a design direction (that's app-design-directions, done once).
 ---
 
 # Feature Spec

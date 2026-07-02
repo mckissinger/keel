@@ -24,9 +24,14 @@ today after that point.
   never exempted.
 - [auto] **Fail-safe:** if the merge-base cannot be computed, the window is treated as closed
   (no exemption).
-- [auto] **Post-window behavior byte-identical:** every pre-existing test case in
-  `scripts/check-verified-pin.test.sh` passes unmodified — no existing assertion edited or
-  deleted.
+- [auto] **Post-window behavior identical:** every pre-existing assertion in
+  `scripts/check-verified-pin.test.sh` keeps its expected outcome, with one build-discovered
+  fixture amendment: case 4 ("code PR touching no milestone spec fails") presumed a
+  post-bootstrap repo but sat on a base with no milestone specs — inside the window it never
+  anticipated — so its fixture re-bases onto a window-closed base while its expectation
+  stands unweakened. (Its original shape, pure code off a spec-less base, is the scaffold PR
+  the window exists to pass, asserted as a new case.) No other case's fixture or expectation
+  changes.
 
 ### Behavioral completeness
 - [auto] New test cases in `scripts/check-verified-pin.test.sh` cover, minimum: (a) a

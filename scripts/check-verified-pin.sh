@@ -7,6 +7,12 @@
 # HEAD, and between that SHA and HEAD only PLAN files (specs/**, design/**) may have
 # changed. A wholly PLAN-ONLY PR (the upfront feature plan PR) is EXEMPT.
 #
+# BOOTSTRAP WINDOW: until the first milestone or chore spec exists — judged at BOTH the
+# merge-base and HEAD, so the window is deletion-proof and never reopens — every PR is
+# exempt. Pre-first-milestone foundation work (the specs+CI+this-script PR, the design-gate
+# workbench, the scaffold) is attended by design and has nothing a pin could describe; the
+# gate arms itself permanently the moment the first milestone/chore spec lands.
+#
 # This is the canonical implementation. spec-foundation / adopt copy it into a project
 # and wire it as a CI job; it is never re-authored from prose.
 #
@@ -39,6 +45,19 @@ has_code=0
 for f in "${changed[@]}"; do is_plan_path "$f" || has_code=1; done
 if [ "$has_code" -eq 0 ]; then
   echo "verified-pin: plan-only PR (specs/** + design/** only) — exempt, pass"
+  exit 0
+fi
+
+# 2.5 Bootstrap window: no milestone/chore spec exists at either the merge-base or HEAD →
+#     pre-first-milestone foundation work → exempt. Both ends checked so a deletion can
+#     never reopen the window; an unresolvable merge-base treats the window as closed.
+has_specs() { # <rev>
+  git ls-tree -r --name-only "$1" -- specs/milestones specs/chores 2>/dev/null \
+    | grep -Eq '^specs/(milestones|chores)/[^/]+\.md$'
+}
+mb="$(git merge-base "$BASE_REF" "$HEAD_REF" 2>/dev/null || true)"
+if [ -n "$mb" ] && ! has_specs "$mb" && ! has_specs "$HEAD_REF"; then
+  echo "verified-pin: bootstrap window — no milestone or chore spec exists yet (pre-first-milestone foundation work); the gate arms when the first lands — pass"
   exit 0
 fi
 

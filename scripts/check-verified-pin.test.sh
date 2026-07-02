@@ -18,18 +18,34 @@ mkdir -p specs/milestones src
 echo "# product" > specs/00-product.md
 git add -A && git commit -qm base
 BASE="$(git rev-parse HEAD)"
+# BASE has no milestone/chore spec → PRs off it sit in the BOOTSTRAP WINDOW unless they
+# add one themselves. BASE2 has a landed milestone spec → the window is closed.
+git checkout -qb base2
+echo "# m0" > specs/milestones/m0.md
+printf 'verified: clean at %s, 2026-06-29, via verifier (evidence in PR #0)\n' "$(git rev-parse --short HEAD)" >> specs/milestones/m0.md
+git add -A && git commit -qm "first milestone landed (window closed)"
+BASE2="$(git rev-parse HEAD)"
 
 pass=0 failc=0
-check() { # desc  expected_exit
-  local desc="$1" exp="$2" got
-  BASE_REF="$BASE" bash "$SCRIPT" HEAD >/dev/null 2>&1 && got=0 || got=$?
+check() { # desc  expected_exit  [base_ref]
+  local desc="$1" exp="$2" base="${3:-$BASE}" got
+  BASE_REF="$base" bash "$SCRIPT" HEAD >/dev/null 2>&1 && got=0 || got=$?
   if [ "$got" -eq "$exp" ]; then
     echo "ok   - $desc"; pass=$((pass+1))
   else
     echo "FAIL - $desc (got exit $got, want $exp)"; failc=$((failc+1))
   fi
 }
-fresh() { git checkout -q -b "$1" "$BASE"; mkdir -p src specs/milestones; }
+check_msg() { # desc  expected_substring  [base_ref]
+  local desc="$1" want="$2" base="${3:-$BASE}" out
+  out="$(BASE_REF="$base" bash "$SCRIPT" HEAD 2>&1)" || true
+  if printf '%s' "$out" | grep -q "$want"; then
+    echo "ok   - $desc"; pass=$((pass+1))
+  else
+    echo "FAIL - $desc (output lacked \"$want\")"; failc=$((failc+1))
+  fi
+}
+fresh() { git checkout -q -b "$1" "${2:-$BASE}"; mkdir -p src specs/milestones; }
 
 # 1. Plan-only PR → exempt.
 fresh c1-plan-only
@@ -55,10 +71,12 @@ git add -A && git commit -qm "m2 code, no pin"
 check "code PR without a verified: line fails" 1
 
 # 4. Code PR with code but no milestone spec at all → fail.
-fresh c4-no-spec
+#    (Off BASE2: post-bootstrap. Off BASE this shape is the scaffold PR and legitimately
+#    passes via the bootstrap window — see case 11.)
+fresh c4-no-spec "$BASE2"
 echo "code" > src/orphan.ts
 git add -A && git commit -qm "code with no milestone spec"
-check "code PR touching no milestone spec fails" 1
+check "code PR touching no milestone spec fails (window closed)" 1 "$BASE2"
 
 # 5. Pinned sha not an ancestor → fail.
 fresh c5-bad-sha
@@ -108,6 +126,36 @@ echo "fix" > src/c.ts
 echo "# chore batch, unpinned" > specs/chores/unpinned.md
 git add -A && git commit -qm "chore: unpinned"
 check "chore batch without a pin fails" 1
+
+# 10. Bootstrap window: foundation-shaped PR (specs + CI + gate script + CLAUDE.md), no
+#     milestone/chore spec at either end → exempt, with the explicit window message.
+fresh c10-foundation
+mkdir -p .github/workflows scripts
+echo "more" >> specs/00-product.md
+echo "jobs: {}" > .github/workflows/ci.yml
+echo "#!/bin/sh" > scripts/check-verified-pin.sh
+echo "# project instructions" > CLAUDE.md
+git add -A && git commit -qm "foundation: specs + CI + gate + CLAUDE.md"
+check "foundation PR passes via the bootstrap window" 0
+check_msg "bootstrap window pass names itself" "bootstrap window"
+
+# 11. Bootstrap window: pure-code PR (the scaffold shape) before any milestone → exempt.
+fresh c11-scaffold
+echo "code" > src/scaffold.ts
+git add -A && git commit -qm "scaffold, pre-first-milestone"
+check "pre-first-milestone code PR passes via the bootstrap window" 0
+
+# 12. Deletion-proof: base has a milestone spec; head deletes it and adds code → still fails
+#     (the window never reopens).
+fresh c12-delete "$BASE2"
+git rm -q specs/milestones/m0.md
+echo "code" > src/sneak.ts
+git add -A && git commit -qm "delete the only milestone spec + add code"
+check "deleting milestone specs does not reopen the window" 1 "$BASE2"
+
+# HEAD-side closure of the window (a PR that itself adds the first milestone spec is
+# validated normally, never exempted) is covered by cases 2 (with pin → pass) and
+# 3 (without pin → fail); chore specs closing the window by case 9.
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

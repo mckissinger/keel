@@ -171,6 +171,141 @@ expect_decision "master-default repo: push to master triggers (probe fallback)" 
 run_guard "$R4" 'git push origin main'
 expect_silent "master-default repo: push to a 'main' branch does not trigger"
 
+# ---- autonomy mode: the --auto allow path + the fail-closed matrix -----------
+# Contract under test (documented in merge-guard.sh's header): ONLY a valid
+# .claude/keel-autonomy.json + a single plain `gh pr merge ... --auto` + gate
+# PASS maps to allow. Every defect — file missing / malformed / unknown level /
+# --auto absent or evaded / gate FAIL — yields the pre-mode behavior.
+
+MODE_JSON='{"level":"run","scope":"whole-project","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+write_mode() { # <repo> <json>
+  mkdir -p "$1/.claude"
+  printf '%s' "$2" > "$1/.claude/keel-autonomy.json"
+}
+
+# R5: main default, feature branch, PASSING gate, resolvable PR context (gh stub).
+make_repo r5 main symref; R5="$REPO"
+git -C "$R5" checkout -q -b feat/work
+git -C "$R5" checkout -q -b feat-1 && git -C "$R5" checkout -q feat/work
+mkdir -p "$R5/scripts"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$R5/scripts/check-verified-pin.sh"
+chmod +x "$R5/scripts/check-verified-pin.sh"
+STUB_PATH="$TMP/bin-ok"
+
+# Fail-closed row 1: NO mode file — --auto changes nothing, ask-floor holds.
+run_guard "$R5" 'gh pr merge 123 --auto --squash'
+expect_decision "no mode file: gh pr merge --auto + passing gate → ask (ask-floor)" ask "verified-pin gate passed"
+
+# The one allow row: valid mode + --auto + gate PASS.
+write_mode "$R5" "$MODE_JSON"
+run_guard "$R5" 'gh pr merge 123 --auto --squash'
+expect_decision "valid mode + gh pr merge --auto + passing gate → allow, delegating to required checks" allow "required checks"
+run_guard "$R5" 'gh pr merge --auto 123'
+expect_decision "flag order does not matter: --auto before the PR arg still allows" allow "required checks"
+write_mode "$R5" '{"level":"feature","scope":"autonomy-modes","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "feature-level mode allows and names its level" allow "level: feature"
+write_mode "$R5" "$MODE_JSON"
+
+# Fail-closed row 2: plain gh pr merge (no --auto) stays ask even under a mode.
+run_guard "$R5" 'gh pr merge 123 --squash'
+expect_decision "valid mode, no --auto → ask even under mode" ask "verified-pin gate passed"
+
+# Under a mode, the other merge shapes and non-triggers are byte-for-byte today's table.
+run_guard "$R5" 'git merge main'
+expect_decision "valid mode: git merge <default> stays ask" ask
+run_guard "$R5" 'git push origin main'
+expect_decision "valid mode: git push <default> stays ask" ask
+run_guard "$R5" 'git status'
+expect_silent "valid mode: non-merge command stays silent"
+
+# --auto string evasion: none of these may reach allow.
+run_guard "$R5" 'gh pr merge 123 --auto --admin'
+expect_decision "mode: --admin alongside --auto (branch-protection bypass) → ask" ask
+run_guard "$R5" 'gh pr merge 123 --auto=false'
+expect_decision "mode: --auto=false is not the delegation shape → ask" ask
+run_guard "$R5" 'gh pr merge 123 --subject "ship it --auto"'
+expect_decision "mode: --auto inside a quoted string does not count → ask" ask
+run_guard "$R5" 'gh pr merge 123 --auto && git push origin main'
+expect_decision "mode: chained command never allows → ask" ask
+run_guard "$R5" "$(printf 'gh pr merge 123 --auto\ngit push origin main')"
+expect_decision "mode: newline-split command never allows → ask" ask
+run_guard "$R5" 'gh pr merge 123 `echo --auto`'
+expect_decision "mode: expansion-carried --auto never allows → ask" ask
+
+# --auto in a VALUE position: real gh consumes the next token as the flag's
+# value, so each of these is a PLAIN merge — none may reach allow.
+run_guard "$R5" 'gh pr merge 123 --subject --auto'
+expect_decision "mode: --auto as the --subject value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 -t --auto'
+expect_decision "mode: --auto as the -t value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 --body --auto'
+expect_decision "mode: --auto as the --body value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 -A --auto'
+expect_decision "mode: --auto as the -A value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 --body-file --auto'
+expect_decision "mode: --auto as the --body-file value → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 -F --auto'
+expect_decision "mode: --auto as the -F value → ask" ask "verified-pin gate passed"
+
+# The whitelist shape is a CLOSED SET: any token outside it falls to ask —
+# clustered short flags, the `--` separator, flags not in the safe set.
+run_guard "$R5" 'gh pr merge 123 -s -dt --auto'
+expect_decision "mode: clustered short flags (-dt consumes --auto as -t's value) → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge -- --auto'
+expect_decision "mode: post-`--` --auto is positional, not a flag → ask" ask "verified-pin gate passed"
+run_guard "$R5" 'gh pr merge 123 --auto --delete-branch'
+expect_decision "mode: --delete-branch is outside the safe set → ask" ask "verified-pin gate passed"
+
+# Positive controls: the genuine delegation shapes still allow.
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "mode: genuine flag-position --auto still allows (positive control)" allow "required checks"
+run_guard "$R5" 'gh pr merge 123 --auto --rebase'
+expect_decision "mode: --auto with a merge-method flag still allows (positive control)" allow "required checks"
+
+# Fail-closed rows 3-5: malformed JSON / unknown level / missing contract field.
+write_mode "$R5" '{"level":"run","scope":'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "malformed mode JSON → no mode → ask" ask "verified-pin gate passed"
+write_mode "$R5" '{"level":"total","scope":"x","created":"2026-07-02","invoker":"human"}'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "unknown mode level → no mode → ask" ask "verified-pin gate passed"
+write_mode "$R5" '{"level":"run","scope":"x","created":"2026-07-02"}'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "mode file missing a contract field (invoker) → no mode → ask" ask "verified-pin gate passed"
+write_mode "$R5" '{"level":"run","scope":5,"created":"2026-07-02","invoker":"human"}'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "wrong-typed scope (JSON number) → no mode → ask (jq/python3 parity)" ask "verified-pin gate passed"
+
+# Unresolvable PR context under a valid mode → still ask.
+write_mode "$R5" "$MODE_JSON"
+STUB_PATH="$TMP/bin-fail"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "valid mode but unresolvable PR context → ask" ask "PR context"
+STUB_PATH="$TMP/bin-ok"
+
+# Spoof: a git-TRACKED mode file violates the untracked contract → no mode.
+git -C "$R5" add -f .claude/keel-autonomy.json
+git -C "$R5" -c user.email=t@keel.test -c user.name=t commit -qm spoof
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "git-tracked mode file is a spoof → no mode → ask" ask "verified-pin gate passed"
+
+# Fail-closed row 6: gate FAIL under a valid mode stays deny (R6, failing gate).
+make_repo r6 main symref; R6="$REPO"
+git -C "$R6" checkout -q -b feat/work
+git -C "$R6" checkout -q -b feat-1 && git -C "$R6" checkout -q feat/work
+mkdir -p "$R6/scripts"
+cat > "$R6/scripts/check-verified-pin.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "verified-pin: FAIL — synthetic-reason-a2m (pin drift)" >&2
+exit 1
+EOF
+chmod +x "$R6/scripts/check-verified-pin.sh"
+write_mode "$R6" "$MODE_JSON"
+run_guard "$R6" 'gh pr merge 123 --auto'
+expect_decision "valid mode + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-a2m"
+STUB_PATH=""
+
 # ---- shipped shape ------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "merge-guard.sh is executable"
 else bad "merge-guard.sh is executable"; fi
@@ -183,6 +318,11 @@ else bad "hooks.json wires PreToolUse (matcher Bash) to merge-guard.sh"; fi
 if grep -qE 'permissionDecision.*"allow"|--arg d "allow"|emit allow' "$SCRIPT"; then
   bad "merge-guard.sh never emits an explicit allow for merge-shaped commands"
 else ok "merge-guard.sh never emits an explicit allow for merge-shaped commands"; fi
+
+if grep -q 'keel-autonomy.json' "$SCRIPT" && grep -qi 'fail closed' "$SCRIPT" \
+   && grep -q 'keel:auto' "$SCRIPT"; then
+  ok "mode-file contract is documented in the guard header (path, writer, fail-closed)"
+else bad "mode-file contract is documented in the guard header (path, writer, fail-closed)"; fi
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

@@ -46,6 +46,17 @@ if printf '%s' "$OUT" | grep -q 'implement-milestone' \
   ok "bootstrap carries the grain ladder + invariants"
 else bad "bootstrap carries the grain ladder + invariants"; fi
 
+# 2b. The disable-model-invocation skills stay discoverable: each flagged skill's
+#     frontmatter carries the flag AND the bootstrap still names it (the [auto] half
+#     of composition-walk assertion (d); the live block-vs-allow behavior is attended).
+SKILLS_DIR="$(cd "$(dirname "$SCRIPT")/../skills" && pwd)"
+for s in kickoff adopt land-feature; do
+  if grep -q '^disable-model-invocation: true' "$SKILLS_DIR/$s/SKILL.md" \
+     && printf '%s' "$OUT" | grep -q "$s"; then
+    ok "flagged skill '$s' carries the flag and is named in the bootstrap"
+  else bad "flagged skill '$s': flag present + named in bootstrap"; fi
+done
+
 # 3. specs/stack-profile.md marker → bootstrap emitted.
 mkdir -p "$TMP/m2/specs"
 echo "# stack profile" > "$TMP/m2/specs/stack-profile.md"

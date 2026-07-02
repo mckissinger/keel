@@ -28,6 +28,17 @@ Set up the project environment from the environment contract in `specs/01-archit
 
    The allowlist is safe only because the environment holds test-mode credentials — it and the spec's test-key rule are a paired system. Never widen one without re-checking the other.
 
+   **Seed keel itself in the same committed file, so every collaborator's session has it.** So that anyone who opens the project gets keel's skills and hooks with no manual install, this same `.claude/settings.json` also carries keel's marketplace + plugin — `extraKnownMarketplaces` (keel's GitHub source, repo `mckissinger/keel`) and `enabledPlugins` (`keel@keel`):
+
+   ```json
+   {
+     "extraKnownMarketplaces": {
+       "keel": { "source": { "source": "github", "repo": "mckissinger/keel" } }
+     },
+     "enabledPlugins": { "keel@keel": true }
+   }
+   ```
+
 5. **Pre-authorize bounded spend — the cap is the authorization.** Some milestones' done-conditions need a real-resource action that costs money (an accuracy-gate eval calling a live AI API, a paid API call). In an unattended multi-milestone run these become *unsatisfiable mid-run* if they require per-use human permission — the run either blocks or defers the gate and stacks later work on unverified code. Drain that at kickoff exactly like a credential. The mechanism: provision a **spend-capped** dev key (the provider key gets a hard dollar ceiling in its console), then allowlist the command that spends against it (`Bash(pnpm eval:*)`, `Bash(tsx scripts/eval*)`, etc.). The cap bounds the worst case including a runaway loop; within it, the action runs unattended without a permission wall. Stop treating capped-key spend as gated — it's pre-authorized by the cap, the same way test-mode payment keys let payment flows run. Size the cap to expected run cost × a small multiple, recorded in the contract.
 
 6. **Bake the known-flake mitigations into config, not into people's heads.** Recurring environment flakes get their mitigation written into the project's config/test setup at provisioning, so a run never rediscovers them — the profile's shared-singleton answer (Q3–Q6) names which apply. The standing shapes: **one local backend stack at a time** (concurrent local stacks exhaust shared ports/gateways and throw intermittent errors — e.g. a Supabase Kong 502) and **serial local test runs** (the test runner's `--workers=1`-equivalent for anything touching a shared local stack). A mitigation that lives only in a `verified:` caveat or an agent's memory will be re-hit every run — encode it where the run will actually obey it (test config, preflight, allowlisted command flags). Add new recurring flakes here as identified. Optionally, a lint/typecheck-on-edit hook is a legitimate mitigation for the cheapest-rung class (it catches shape errors at write time) — **optional, never mandated**; keel is a methodology, not a harness config. **Pin tool-setup action versions in CI — never `@latest` / `version: latest`** for a setup action that resolves a release over the network: the resolve hits a registry/API that can rate-limit and fail the job spuriously with a red that looks like a code failure (e.g. a `supabase/setup-cli@latest` build dying on "rate limit exceeded").

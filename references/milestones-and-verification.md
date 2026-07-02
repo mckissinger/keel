@@ -10,6 +10,12 @@ Write each completion condition so that a verifier subagent (`${CLAUDE_PLUGIN_RO
 
 "Auth works" fails this test. "POST /api/login with valid credentials returns 200 and a session cookie; invalid credentials return 401; covered by passing tests in auth.test.ts" passes it.
 
+A done-condition is a per-milestone eval, and the classic grader mistakes produce both false bounces and false pins. Three authoring anti-patterns:
+
+- **Grading implementation paths instead of outcomes.** "Uses a recursive-descent parser" bounces a correct implementation that took another route; assert the observable outcome, never the route to it. (Naming the committed test file per §3 is not a path — it's the *location* of the evidence, so there is no collision.)
+- **Incidental exactness where the requirement is approximate.** A condition demanding exactly 100 rows when the requirement is "about a page" fails compliant work on noise; where the requirement is approximate, `[auto]` conditions match tolerance or shape ("100 ± 5", "non-empty, sorted by date"), never a point value the spec doesn't actually require.
+- **Wording two readers score differently.** The bar: two independent readers reach the same pass/fail verdict from the condition's text alone. If they could disagree, the condition will eventually produce both a false bounce and a false pin — rewrite until the text forces the verdict.
+
 ## 2. Done-conditions span three dimensions, not just invariants
 
 The failure mode that ships thin features is a milestone whose done-conditions only assert *logic/invariants* (objectively checkable, so they get written) and leave *UX completeness* and *fidelity* implicit (so the agent fills them with generic defaults). Every **UI-touching** milestone's done-conditions must cover all three (a milestone with **no UI** — per the profile's Q8 "has UI?" — covers only the first two: **fidelity does not apply** and the design track is skipped):

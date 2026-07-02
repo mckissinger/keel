@@ -47,3 +47,5 @@ verifier subagent against this file (docs greps: four classes present + scope li
 two new checklist items, §2 enumeration extended with platform-neutral phrasing, no-weakening
 sweep) + `scripts/check-neutral.sh` + both script self-tests. No surface/action change → no
 runtime walk; no hard invariant → no `/security-review`.
+
+verified: clean at 0d82f25, 2026-07-01, via fresh-context verifier subagent — all 6 conditions pass: four semantic classes + scope line (product-ui-craft.md:56–80), exactly two new checklist items with zero deletions elsewhere (:93–94), §2 UX-completeness enumeration extended as the file's only changed line with no ARIA/web hardcode in the spine, rendering-side floor + Logic/Fidelity bullets + tagging paragraph untouched, live-surfaces cross-reference resolves on the stack base, check-neutral PASS + 12+9 self-tests + scripts/ untouched, no scope creep. (evidence: verifier report in PR)

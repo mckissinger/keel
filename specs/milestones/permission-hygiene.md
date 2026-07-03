@@ -21,6 +21,12 @@ placement edits a distinct file, so no shared-file collision.
   substitution) does **not** trip this check. It targets `gh pr merge` specifically — the one
   command whose auto-allow bundling forfeits; other merge-shaped commands stay `ask`
   regardless and are out of scope.
+- [auto] **Coverage matcher understands Claude Code's `:*` separator (run-discovered).** So
+  the shipped baseline's canonical `Bash(gh pr merge:*)` rule actually covers a
+  space-delimited `gh pr merge <ref> --auto` inventory shape instead of false-gapping it,
+  `check-auto-preflight.sh`'s section-(a) allow-rule matcher normalizes a trailing `:*` to a
+  `*` glob — the prefix semantics the harness itself uses. Existing `:*`/glob rules still
+  match (the pre-existing self-test cases stay green, plus the new bare-merge coverage case).
 - [auto] **The bare-merge rule is stated once, with pointers.** The requirement that the
   auto-lane merge be emitted as an un-chained `gh pr merge <pr> --auto [--method]` in its own
   Bash call (chaining forfeits the strict-auto allow to `ask`) appears as the owning

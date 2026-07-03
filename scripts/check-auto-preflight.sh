@@ -71,6 +71,12 @@ if [ "$HAVE_JQ" -eq 1 ]; then
         case "$r" in
           "Bash("*")")
             pat="${r#Bash(}"; pat="${pat%)}"
+            # Claude Code's `Bash(<prefix>:*)` means "<prefix> then any args" — the
+            # ':' is the syntax separator, not a literal in the command. Normalize a
+            # trailing ':*' to a '*' glob so a space-delimited shape (e.g.
+            # `gh pr merge 5 --auto`) matches `Bash(gh pr merge:*)` here the same way
+            # it does in the harness, instead of false-gapping the canonical rule form.
+            case "$pat" in *":*") pat="${pat%:*}*" ;; esac
             case "$shape" in $pat) covered=1 ;; esac
             ;;
           *)
@@ -83,6 +89,25 @@ if [ "$HAVE_JQ" -eq 1 ]; then
         || gap "inventory: no allow rule in $SETTINGS_FILE covers the command shape: $shape"
     done < "$INVENTORY_FILE"
   fi
+fi
+
+# --- (a2) no BUNDLED merge in the inventory ----------------------------------
+# The merge-guard auto-allows exactly a BARE `gh pr merge <ref> --auto` (its
+# whitelist rejects any chaining outright). A `gh pr merge` bundled with another
+# command in one shell call — `gh pr merge 5 && gh pr view 5`, `P=$(gh pr merge …)`
+# — forfeits that allow and falls back to `ask`, which stalls a headless run mid-
+# flight. Catch it before launch. Pure string scan: needs no jq, so it fires even
+# when the allowlist dry-run above could not run.
+if [ -f "$INVENTORY_FILE" ]; then
+  while IFS= read -r shape; do
+    case "$shape" in ''|'#'*) continue ;; esac
+    case "$shape" in *"gh pr merge"*) ;; *) continue ;; esac
+    case "$shape" in
+      *"&&"* | *"||"* | *";"* | *"|"* | *'$('* | *'`'*)
+        gap "inventory: bundled merge — '$shape' chains \`gh pr merge\` with another command; emit it BARE (\`gh pr merge <ref> --auto\`) in its own call, or the merge-guard's strict-auto allow forfeits to a prompt and the run stalls"
+        ;;
+    esac
+  done < "$INVENTORY_FILE"
 fi
 
 # --- (b) branch protection: the required checks are actually REQUIRED ---------

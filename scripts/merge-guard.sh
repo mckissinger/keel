@@ -55,6 +55,15 @@
 # `--auto` inside a quoted string or consumed as another flag's value can
 # never count, and gh flag-table drift cannot widen the allow row.
 #
+# EMISSION CONTRACT (owned here; skills/land-feature and skills/auto carry a
+# one-line pointer to this paragraph, never a restatement): because the shape is
+# this closed, the auto-lane merge must be ISSUED as a bare, un-chained
+# `gh pr merge <pr> --auto [--squash|--merge|--rebase]` in its own Bash call —
+# never bundled with `&&`/`||`/`;`/`|`, a `$(...)` substitution, or a trailing
+# `echo`/`gh pr view`. A bundled merge fails this whitelist, forfeits the allow
+# back to `ask`, and stalls a headless run; scripts/check-auto-preflight.sh
+# rejects a bundled merge in the command inventory before launch.
+#
 # Safety invariants: the command text is PARSED as data — never eval'd or
 # re-executed. `gh pr view` output is data too: parsed into variables and passed
 # only as quoted argv/env, never interpolated into shell as code. Decision JSON

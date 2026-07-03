@@ -151,6 +151,30 @@ rm "$PROJ/specs/01-architecture.md"
 run_gate "$PROJ" "$TMP/protection-full.json"
 expect "missing contract fails closed" 1 "01-architecture.md missing"
 
+# 12. A BUNDLED merge in the inventory (gh pr merge chained with another command)
+#     → fail closed, the bundled-merge reason named. It forfeits the merge-guard's
+#     strict-auto allow and would stall a headless run mid-flight.
+make_proj p12
+echo 'gh pr merge 5 --auto && gh pr view 5' >> "$PROJ/specs/run-command-inventory.txt"
+run_gate "$PROJ" "$TMP/protection-full.json"
+expect "bundled merge fails closed, named" 1 "bundled merge"
+
+# 13. A BARE `gh pr merge <ref> --auto` line, with the canonical baseline rule
+#     (`Bash(gh pr merge:*)`, the ':*' form the harness uses) present: covered by
+#     the normalized matcher AND not flagged by the bundled check → overall exit 0,
+#     and the bundled-merge reason is ABSENT. Guards both the ':*' normalization and
+#     the bundled check's precision against the bare shape.
+make_proj p13
+cat > "$PROJ/.claude/settings.json" <<'EOF'
+{"permissions":{"allow":["Bash(supabase db *)","Bash(pnpm eval:*)","Bash(pnpm test*)","mcp__trigger__deploy","Bash(gh pr merge:*)","Bash(gh pr view:*)"]}}
+EOF
+{ echo 'gh pr merge 5 --auto'; echo 'gh pr view 5'; } >> "$PROJ/specs/run-command-inventory.txt"
+run_gate "$PROJ" "$TMP/protection-full.json"
+expect "bare merge + canonical baseline rule passes" 0 "auto-preflight: PASS"
+if printf '%s' "$OUT" | grep -qF "bundled merge"; then
+  bad "bare merge must NOT trip the bundled-merge check"
+else ok "bare merge does not trip the bundled-merge check"; fi
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

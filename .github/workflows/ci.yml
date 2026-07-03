@@ -35,6 +35,12 @@ jobs:
       - name: plan lint (this repo)
         run: bash scripts/check-plan.sh
 
+      # The skill-frontmatter lint keel ships to projects — prove it, and lint keel's own skills.
+      - name: skill frontmatter lint self-test
+        run: bash scripts/check-skill-frontmatter.test.sh
+      - name: skill frontmatter lint (this repo)
+        run: bash scripts/check-skill-frontmatter.sh
+
       # Plugin manifest/structure validation via the Claude Code CLI.
       - name: install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code

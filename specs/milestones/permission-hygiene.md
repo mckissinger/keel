@@ -90,3 +90,5 @@ untouched, so no new attack surface and **no `/security-review` pre-pin gate**. 
 conditions are `[auto]`; there is deliberately **no `[runtime]` "prompt suppressed"
 condition** — that outcome is unobservable by construction (the reporting invariant above),
 so it is proven by the deterministic self-tests, not by a live "no prompt" claim.
+
+verified: clean at ec11065, 2026-07-03, via fresh-context verifier subagent against this file — 9/9 [auto] conditions checked with file:line evidence; check-auto-preflight.test.sh 16/16 (bundled-merge + bare-merge coverage cases), merge-guard 62/62, session-bootstrap 29/29, check-neutral 17/17, check-verified-pin 17/17, check-plan 18/18, guard-branch-rules 16/16, check-neutral corpus scan PASS (baseline artifact covered), claude plugin validate --strict PASS; no [runtime] surface (methodology plugin), no /security-review precondition (merge-guard decision logic untouched) (evidence in PR #67)

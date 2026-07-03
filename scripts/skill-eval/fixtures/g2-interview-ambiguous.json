@@ -1,0 +1,5 @@
+{
+  "prompt": "I want to add 'social features' to the app — that's vague. Help me pin down the scope before anyone builds.",
+  "expected": "interview",
+  "boundary": "kickoff/adopt/interview"
+}

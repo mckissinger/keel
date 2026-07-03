@@ -1,0 +1,5 @@
+{
+  "prompt": "Rename these three variables and delete a dead import — a handful of trivial, independent edits.",
+  "expected": "punch-list",
+  "boundary": "punch-list-vs-spec-change"
+}

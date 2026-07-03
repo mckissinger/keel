@@ -1,0 +1,5 @@
+{
+  "prompt": "Build the m2-harness milestone; its spec is already on main.",
+  "expected": "implement-milestone",
+  "boundary": "implement-feature/implement-milestone"
+}

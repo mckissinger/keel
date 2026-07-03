@@ -1,0 +1,5 @@
+{
+  "prompt": "Add a compact-density toggle to the data table — it's small, but it needs a bit of design and a new control on the surface.",
+  "expected": "spec-change",
+  "boundary": "punch-list-vs-spec-change"
+}

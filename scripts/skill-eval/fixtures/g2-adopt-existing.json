@@ -1,0 +1,5 @@
+{
+  "prompt": "We have an existing Rails codebase with no keel setup — retrofit keel's foundation onto it.",
+  "expected": "adopt",
+  "boundary": "kickoff/adopt/interview"
+}

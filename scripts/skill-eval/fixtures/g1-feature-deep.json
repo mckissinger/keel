@@ -1,0 +1,5 @@
+{
+  "prompt": "The foundation and design system are done. Spec the checkout feature in depth — every screen, state, interaction, and edge case.",
+  "expected": "spec-feature",
+  "boundary": "spec-foundation/spec-feature/spec-change"
+}

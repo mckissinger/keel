@@ -1,0 +1,5 @@
+{"type":"system","subtype":"init","session_id":"s-if-01","model":"claude-opus-4-8","tools":["Bash","Read","Edit","Skill"],"plugins":["keel@keel"]}
+{"type":"assistant","message":{"id":"msg_01","role":"assistant","content":[{"type":"text","text":"This is a whole feature with several milestone specs on main. I'll drive them in dependency order, verifying each."},{"type":"tool_use","id":"tu_01","name":"Skill","input":{"skill":"keel:implement-feature","args":"the checkout feature"}}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu_01","content":"[keel:implement-feature] Orchestrating the feature's milestones..."}]}}
+{"type":"assistant","message":{"id":"msg_02","role":"assistant","content":[{"type":"text","text":"Starting milestone 1 on its own branch."}]}}
+{"type":"result","subtype":"success","session_id":"s-if-01","is_error":false,"result":"Built and verified the feature's milestones; stopped at the user's merge."}

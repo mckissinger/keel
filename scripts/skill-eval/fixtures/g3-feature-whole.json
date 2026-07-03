@@ -1,0 +1,5 @@
+{
+  "prompt": "Build out the whole notifications feature — all of its milestones, verified end to end.",
+  "expected": "implement-feature",
+  "boundary": "implement-feature/implement-milestone"
+}

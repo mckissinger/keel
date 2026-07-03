@@ -1,0 +1,24 @@
+{
+  "skill": "implement-feature",
+  "pair": "implement-feature/implement-milestone",
+  "measures": "The superpowers finding: whether a workflow-SUMMARIZING description pulls the model toward the description text instead of the skill body — mis-firing implement-feature on a single-milestone prompt. Variant A is implement-feature's real (workflow-paragraph) description; variant B trims it to a when-to-use-only disambiguation. Higher accuracy for B is the finding.",
+  "variantA": {
+    "label": "current — workflow-summary description",
+    "description": "Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge. Spawns fresh-context verifier subagents ([auto] parallel, [runtime] serial). Defaults to interleaved cadence but ALWAYS asks. Never merges.",
+    "cases": [
+      { "prompt": "Build the whole notifications feature — all its milestones, verified end to end.", "expected": "implement-feature", "detected": "implement-feature" },
+      { "prompt": "Build just the m2-harness milestone; its spec is already on main.", "expected": "implement-milestone", "detected": "implement-feature" },
+      { "prompt": "Implement the single milestone that this spec-change fans into.", "expected": "implement-milestone", "detected": "implement-feature" }
+    ]
+  },
+  "variantB": {
+    "label": "trimmed — when-to-use only",
+    "description": "Use to build a WHOLE feature's already-authored milestone specs end to end. NOT for a single milestone (that's implement-milestone).",
+    "cases": [
+      { "prompt": "Build the whole notifications feature — all its milestones, verified end to end.", "expected": "implement-feature", "detected": "implement-feature" },
+      { "prompt": "Build just the m2-harness milestone; its spec is already on main.", "expected": "implement-milestone", "detected": "implement-milestone" },
+      { "prompt": "Implement the single milestone that this spec-change fans into.", "expected": "implement-milestone", "detected": "implement-milestone" }
+    ]
+  },
+  "note": "The `detected` values are CANNED illustrative session outcomes carrying the measured superpowers finding, so judge.test.sh scores the A/B comparison deterministically offline. The live BASELINE run re-measures them against real `claude -p` sessions (the planned spend stop-point)."
+}

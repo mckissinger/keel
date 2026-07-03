@@ -1,0 +1,5 @@
+{
+  "prompt": "What's the difference between spec-feature and spec-change? Just explaining, not asking you to spec anything.",
+  "expected": "none",
+  "boundary": "spec-foundation/spec-feature/spec-change"
+}

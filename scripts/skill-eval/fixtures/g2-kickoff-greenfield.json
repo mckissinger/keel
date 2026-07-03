@@ -1,0 +1,5 @@
+{
+  "prompt": "Kickoff a brand-new Next.js app for tracking gym workouts — nothing exists yet, take it from zero.",
+  "expected": "interview",
+  "boundary": "kickoff/adopt/interview"
+}

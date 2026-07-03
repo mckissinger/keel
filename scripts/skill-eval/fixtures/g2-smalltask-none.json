@@ -1,0 +1,5 @@
+{
+  "prompt": "Fix the typo in the footer copyright year.",
+  "expected": "none",
+  "boundary": "kickoff/adopt/interview"
+}

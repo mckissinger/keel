@@ -1,0 +1,5 @@
+{
+  "prompt": "We're starting a brand-new SaaS product from scratch — stand up the foundational specs: the product skeleton (a feature backlog), the architecture, and the data model.",
+  "expected": "spec-foundation",
+  "boundary": "spec-foundation/spec-feature/spec-change"
+}

@@ -1,0 +1,5 @@
+{
+  "prompt": "Implement the single milestone that this spec-change fans into — just that one milestone.",
+  "expected": "implement-milestone",
+  "boundary": "implement-feature/implement-milestone"
+}

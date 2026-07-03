@@ -1,0 +1,5 @@
+{
+  "prompt": "Fix these five things: a header typo, a missing aria-label on the nav toggle, two stale comments, and bump the lint dep.",
+  "expected": "punch-list",
+  "boundary": "punch-list-vs-spec-change"
+}

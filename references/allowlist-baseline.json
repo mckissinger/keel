@@ -1,0 +1,26 @@
+{
+  "_comment": "keel's canonical process-verb allowlist baseline. provision (greenfield) and adopt (brownfield) MERGE the .permissions.allow array below into the project's committed .claude/settings.json — on top of, never replacing, whatever else is there. It covers keel's OWN git + gh workflow plumbing so those calls stop drawing a permission prompt every feature. It names NO stack command (no test/build/lint runner): those stay profile-derived (Q11) and are seeded per-project, never here, so this file stays stack-neutral (check-neutral.sh). Branch scope is NOT expressible in a prefix rule: Bash(git push:*) also matches push-to-default, and that is intended and safe — push-to-default and every merge stay gated by the merge-guard PreToolUse hook as the backstop, which this baseline never loosens. Merge only .permissions.allow; this _comment key is not part of the merge.",
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr status:*)",
+      "Bash(gh pr merge:*)"
+    ]
+  }
+}

@@ -54,7 +54,7 @@ A stop-point under a mode is what it always was: **halt and surface, never route
 
 ## Boundaries
 
-- **Delegation is to the required checks, never to agent judgment** (the decisions entry §(e)): only the canonical `gh pr merge --auto` shape on a gate-passing PR is allowed under a mode; plain `gh pr merge` stays ask; a gate failure stays deny. No session ever decides a PR is good enough — it hands the PR to the checks that decide.
+- **Delegation is to the required checks, never to agent judgment** (the decisions entry §(e)): only the canonical `gh pr merge --auto` shape on a gate-passing PR is allowed under a mode — **emit it bare and un-chained** (its own Bash call, nothing bundled), per the emission contract in `scripts/merge-guard.sh`'s header, or the allow forfeits and the run stalls; plain `gh pr merge` stays ask; a gate failure stays deny. No session ever decides a PR is good enough — it hands the PR to the checks that decide.
 - **The build-session branch guard is untouched** — build sessions still never merge; landing runs from the orchestrating session.
 - **This skill never widens the harness's permission posture** and never treats a blocked call as something to work around: the mode changes which gates exist via the m2 guard path, nothing else.
 - **One writer, one clearer**: the mode file exists only between this skill's step 3 and the run's end.

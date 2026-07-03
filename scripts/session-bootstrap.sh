@@ -103,6 +103,7 @@ Standing invariants — these hold no matter what else the session is doing:
 - Autonomy mode ACTIVE — level: ${MODE_LEVEL}, scope: ${MODE_SCOPE}. Merge authority is delegated to the server-side required checks via gh pr merge --auto, per decisions/2026-07-autonomy-modes.md — the checks decide, never agent judgment. Ledger every would-be ask to specs/runs/<run-id>/ (recorded deferral; silent deferral stays banned). Stop-points still halt: go-live, live-key swaps, and spend beyond pre-authorized caps stay attended.
 - Never commit to main; builds run on branches.
 - A milestone's code merges only with a fresh-session verified pin (verified code == merged code).
+- Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."
 
 Specs live under specs/. When work matches a keel verb, invoke that skill rather than improvising the process.
 EOF
@@ -126,6 +127,7 @@ Standing invariants — these hold no matter what else the session is doing:
 - Never commit to main; builds run on branches.
 - A milestone's code merges only with a fresh-session verified pin (verified code == merged code).
 - Attended gates stop and ask; they are never silently deferred.
+- Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."
 
 Specs live under specs/. When work matches a keel verb, invoke that skill rather than improvising the process.
 EOF

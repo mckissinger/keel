@@ -29,3 +29,5 @@ verification: fresh-context verifier subagent against this file + the diff (vers
 `1.1.0`→`1.2.0` in `plugin.json` and nowhere else; no code/skill/script behavior change) +
 `claude plugin validate --strict .` + `scripts/check-neutral.sh` + `scripts/check-plan.sh`.
 No runtime surface → no walk; no mechanism touched → no `/security-review`.
+
+verified: clean at 88bc38e, 2026-07-04, via fresh-context verifier subagent — `plugin.json` version bumped `1.1.0`→`1.2.0` and nowhere else (the diff vs main is that single version line), branch changes exactly two files (`plugin.json` + this chore spec) with no skills/scripts/hooks/reference touched, `marketplace.json` unchanged (no version field), `claude plugin validate --strict .` passed, check-neutral + check-plan green, and the change set since `v1.1.0` is additive (new `auto-merge` skill + one-line attended-marker rows, skill-frontmatter lint, session-eval harness — no capability removed) so the minor bump is correct. (evidence: verifier report in PR #74)

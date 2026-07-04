@@ -10,13 +10,25 @@
 #   merge-shaped command                     → exit 2 (build sessions never merge)
 #   everything else                          → exit 0, silent
 #
+# ONE exception, the attended-merge marker (contract below): a per-session,
+# human-set marker + no active autonomy mode + a bare `gh pr merge <pr> --auto`
+# (the canonical detect_strict_auto shape) → exit 0, DEFERRING the gate decision
+# to merge-guard.sh, which fires on the same Bash call. Every other merge-shaped
+# command, and `git commit` on the default branch, still → exit 2. No marker →
+# the exit-2 matrix is byte-for-byte today's.
+#
 # Exit 2 blocks the tool call and feeds stderr back to Claude (PreToolUse exit-code
 # semantics per https://code.claude.com/docs/en/hooks).
 #
 # The merge-shape classifier is DUPLICATED from merge-guard.sh on purpose —
 # m1's precedent keeps hook scripts self-contained (no sibling sourcing, so each
 # survives plugin-cache path churn and reads standalone). Keep the two in sync.
-# Safety: command text is PARSED as data — never eval'd or re-executed.
+# The marker readers (json_str, read_mode_file, read_attended_marker) and the
+# detect_strict_auto whitelist are likewise DUPLICATED from merge-guard.sh (the
+# marker's reading owner) — same self-contained idiom; the cross-script parity is
+# asserted by scripts/attended-marker-parity.test.sh.
+# Safety: command text and marker text are PARSED as data — never eval'd or
+# re-executed.
 
 set -euo pipefail
 set -f # no globbing: command text is tokenized as data
@@ -244,6 +256,106 @@ classify_cmd() { # <command text> → SHAPE, GH_PR_ARG, GIT_COMMIT
   return 0
 }
 
+# --- marker readers (DUPLICATED from merge-guard.sh — keep in sync) ------------
+# The attended-merge marker's reading owner is merge-guard.sh; its full contract
+# lives there. This build guard reads the same file with the same validation so
+# the two agree on the same Bash call (parity asserted by
+# scripts/attended-marker-parity.test.sh). The mode file is read too, only to
+# enforce autonomy precedence: a valid autonomy mode makes the attended marker
+# ignored here (turning autonomy mode on suppresses the attended defer).
+
+json_str() { # <json> <key> → prints the value ONLY if it is a string, or nothing
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$1" | jq -r --arg k "$2" '.[$k] | select(type=="string")' 2>/dev/null || true
+  elif command -v python3 >/dev/null 2>&1; then
+    printf '%s' "$1" | K="$2" python3 -c '
+import json, os, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+v = d.get(os.environ["K"])
+if isinstance(v, str):
+    sys.stdout.write(v)
+' 2>/dev/null || true
+  fi
+  return 0
+}
+
+MODE_ACTIVE=0
+read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE; any defect → no mode
+  MODE_ACTIVE=0
+  local f="$ROOT/.claude/keel-autonomy.json" content lvl scope created invoker
+  [ -f "$f" ] && [ -r "$f" ] || return 0
+  if git -C "$ROOT" ls-files --error-unmatch -- .claude/keel-autonomy.json >/dev/null 2>&1; then
+    return 0
+  fi
+  content="$(cat "$f" 2>/dev/null)" || return 0
+  lvl="$(json_str "$content" level)"
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  case "$lvl" in feature | run) ;; *) return 0 ;; esac
+  [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  MODE_ACTIVE=1
+  return 0
+}
+
+ATTENDED_ACTIVE=0
+read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE; any defect → no marker
+  ATTENDED_ACTIVE=0
+  local f="$ROOT/.claude/keel-attended-merge.json" content scope created invoker
+  [ -f "$f" ] && [ -r "$f" ] || return 0
+  if git -C "$ROOT" ls-files --error-unmatch -- .claude/keel-attended-merge.json >/dev/null 2>&1; then
+    return 0
+  fi
+  content="$(cat "$f" 2>/dev/null)" || return 0
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  [ "$scope" = "session" ] || return 0
+  [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  ATTENDED_ACTIVE=1
+  return 0
+}
+
+AUTO_MERGE=0
+detect_strict_auto() { # WHITELIST: does $CMD exactly match the canonical delegation shape?
+  # A CLOSED SET, default-deny (mirrors merge-guard.sh):
+  #   gh pr merge <PR-number-or-safe-ref> --auto [--squash|--merge|--rebase]
+  # flags in any order; exactly one positional; NOTHING else. Chaining, quotes,
+  # expansions, clustered short flags, the `--` separator, value-taking/unknown
+  # flags all fall out and keep the exit-2 refusal by construction.
+  AUTO_MERGE=0
+  case "$CMD" in *$'\n'* | *$'\r'*) return 0 ;; esac
+  if printf '%s' "$CMD" | LC_ALL=C grep -q '[^A-Za-z0-9 ._/:#@=-]'; then
+    return 0
+  fi
+  local -a w=()
+  local t i=3 pos="" auto=0
+  for t in $CMD; do w[${#w[@]}]="$t"; done # noglob on; safe charset only
+  [ "${#w[@]}" -ge 3 ] || return 0
+  [ "${w[0]}" = "gh" ] && [ "${w[1]}" = "pr" ] && [ "${w[2]}" = "merge" ] || return 0
+  while [ "$i" -lt "${#w[@]}" ]; do
+    t="${w[$i]}"
+    case "$t" in
+      --auto) auto=1 ;;
+      --squash | --merge | --rebase) : ;;
+      -*) return 0 ;;
+      *)
+        [ -z "$pos" ] || return 0
+        printf '%s' "$t" | LC_ALL=C grep -qE '^[0-9]+$|^[A-Za-z0-9][A-Za-z0-9._/-]*$' \
+          || return 0
+        pos="$t"
+        ;;
+    esac
+    i=$((i + 1))
+  done
+  [ -n "$pos" ] && [ "$auto" -eq 1 ] || return 0
+  AUTO_MERGE=1
+  return 0
+}
+
 # --- main ---------------------------------------------------------------------
 
 read_hook_command
@@ -257,6 +369,17 @@ if [ -z "${REMOTES// /}" ]; then REMOTES="origin"; fi
 classify_cmd "$CMD"
 
 if [ -n "$SHAPE" ]; then
+  # The one exception: a per-session attended marker + no active autonomy mode +
+  # a bare `gh pr merge <pr> --auto` (the canonical detect_strict_auto shape) →
+  # defer the gate decision to merge-guard.sh (which fires on the same Bash
+  # call). Autonomy mode takes precedence — a valid mode suppresses this defer.
+  read_mode_file
+  read_attended_marker
+  detect_strict_auto
+  if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 1 ] \
+     && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+    exit 0 # merge-guard.sh owns the gate-pass/-fail decision on this same call
+  fi
   echo "keel: build sessions never merge — merging is the user's decision, driven through land-feature with per-merge approval. Open the PR and stop there." >&2
   exit 2
 fi

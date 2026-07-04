@@ -306,6 +306,106 @@ run_guard "$R6" 'gh pr merge 123 --auto'
 expect_decision "valid mode + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-a2m"
 STUB_PATH=""
 
+# ---- attended-merge marker: the per-session --auto unlock --------------------
+# Contract (merge-guard.sh header): a valid .claude/keel-attended-merge.json
+# (scope="session" + created + invoker) + NO autonomy mode + a bare
+# `gh pr merge <pr> --auto` + gate PASS → allow. Plain merge → ask. Gate FAIL →
+# deny. Bundled/evaded --auto → ask. Autonomy mode present → attended ignored
+# (the mode row governs). Spoof / malformed / wrong-scope → treated absent.
+
+ATT_JSON='{"scope":"session","created":"2026-07-04T12:00:00Z","invoker":"human:keel-auto-merge"}'
+write_attended() { # <repo> <json>
+  mkdir -p "$1/.claude"
+  printf '%s' "$2" > "$1/.claude/keel-attended-merge.json"
+}
+
+# R7: main default, feature branch, PASSING gate, resolvable PR context (gh stub).
+make_repo r7 main symref; R7="$REPO"
+git -C "$R7" checkout -q -b feat/work
+git -C "$R7" checkout -q -b feat-1 && git -C "$R7" checkout -q feat/work
+mkdir -p "$R7/scripts"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$R7/scripts/check-verified-pin.sh"
+chmod +x "$R7/scripts/check-verified-pin.sh"
+STUB_PATH="$TMP/bin-ok"
+
+# Marker absent → today's ask-floor (regression: unchanged by this milestone).
+run_guard "$R7" 'gh pr merge 123 --auto --squash'
+expect_decision "no attended marker: --auto + gate pass → ask (ask-floor unchanged)" ask "verified-pin gate passed"
+
+# The one attended allow row: valid marker + bare --auto + gate PASS.
+write_attended "$R7" "$ATT_JSON"
+run_guard "$R7" 'gh pr merge 123 --auto --squash'
+expect_decision "attended marker + gh pr merge --auto + passing gate → allow" allow "attended auto-merge active"
+run_guard "$R7" 'gh pr merge --auto 123'
+expect_decision "attended: flag order does not matter → allow, delegating to required checks" allow "required checks"
+run_guard "$R7" 'gh pr merge 123 --auto --rebase'
+expect_decision "attended: --auto with a merge-method flag still allows (positive control)" allow "attended auto-merge active"
+
+# Plain gh pr merge (no --auto) stays ask even under the marker.
+run_guard "$R7" 'gh pr merge 123 --squash'
+expect_decision "attended marker, no --auto → ask" ask "verified-pin gate passed"
+
+# Bundled / evaded --auto under the marker → ask (only the bare shape unlocks).
+run_guard "$R7" 'gh pr merge 123 --auto && echo done'
+expect_decision "attended: chained --auto never allows → ask" ask
+run_guard "$R7" 'gh pr merge 123 --auto --admin'
+expect_decision "attended: --admin alongside --auto → ask" ask
+run_guard "$R7" 'gh pr merge 123 --subject "ship it --auto"'
+expect_decision "attended: --auto inside a quoted string does not count → ask" ask
+
+# Other merge shapes / non-triggers are byte-for-byte today's table under the marker.
+run_guard "$R7" 'git merge main'
+expect_decision "attended marker: git merge <default> stays ask" ask
+run_guard "$R7" 'git push origin main'
+expect_decision "attended marker: git push <default> stays ask" ask
+run_guard "$R7" 'git status'
+expect_silent "attended marker: non-merge command stays silent"
+
+# Malformed / partial / wrong-scope / wrong-typed → treated absent → ask.
+write_attended "$R7" '{"scope":"session","created":'
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "malformed attended marker JSON → treated absent → ask" ask "verified-pin gate passed"
+write_attended "$R7" '{"scope":"project","created":"c","invoker":"i"}'
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended marker scope != session → treated absent → ask" ask "verified-pin gate passed"
+write_attended "$R7" '{"scope":"session","created":"c"}'
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended marker missing invoker → treated absent → ask" ask "verified-pin gate passed"
+write_attended "$R7" '{"scope":5,"created":"c","invoker":"i"}'
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended marker wrong-typed scope (number) → treated absent → ask (jq/python3 parity)" ask "verified-pin gate passed"
+
+# Autonomy precedence: a valid mode file present → the attended marker is IGNORED,
+# the mode row governs (still allow here, but with the MODE reason, not attended).
+write_attended "$R7" "$ATT_JSON"
+write_mode "$R7" "$MODE_JSON"
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended + valid autonomy mode both active → mode governs (allow, mode reason)" allow "autonomy mode active"
+rm -f "$R7/.claude/keel-autonomy.json"
+
+# Spoof: a git-TRACKED attended marker violates the untracked contract → absent.
+write_attended "$R7" "$ATT_JSON"
+git -C "$R7" add -f .claude/keel-attended-merge.json
+git -C "$R7" -c user.email=t@keel.test -c user.name=t commit -qm spoof-attended
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "git-tracked attended marker is a spoof → treated absent → ask" ask "verified-pin gate passed"
+
+# Gate FAIL under a valid attended marker stays deny (R8, failing gate).
+make_repo r8 main symref; R8="$REPO"
+git -C "$R8" checkout -q -b feat/work
+git -C "$R8" checkout -q -b feat-1 && git -C "$R8" checkout -q feat/work
+mkdir -p "$R8/scripts"
+cat > "$R8/scripts/check-verified-pin.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "verified-pin: FAIL — synthetic-reason-att9 (pin drift)" >&2
+exit 1
+EOF
+chmod +x "$R8/scripts/check-verified-pin.sh"
+write_attended "$R8" "$ATT_JSON"
+run_guard "$R8" 'gh pr merge 123 --auto'
+expect_decision "attended marker + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-att9"
+STUB_PATH=""
+
 # ---- shipped shape ------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "merge-guard.sh is executable"
 else bad "merge-guard.sh is executable"; fi
@@ -323,6 +423,11 @@ if grep -q 'keel-autonomy.json' "$SCRIPT" && grep -qi 'fail closed' "$SCRIPT" \
    && grep -q 'keel:auto' "$SCRIPT"; then
   ok "mode-file contract is documented in the guard header (path, writer, fail-closed)"
 else bad "mode-file contract is documented in the guard header (path, writer, fail-closed)"; fi
+
+if grep -q 'keel-attended-merge.json' "$SCRIPT" && grep -q 'keel:auto-merge' "$SCRIPT" \
+   && grep -qi 'precedence\|ignored when' "$SCRIPT"; then
+  ok "attended-marker contract is documented in the guard header (path, writer, autonomy precedence)"
+else bad "attended-marker contract is documented in the guard header (path, writer, autonomy precedence)"; fi
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

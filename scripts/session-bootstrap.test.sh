@@ -88,6 +88,15 @@ BASELINE="$OUT"
 if printf '%s' "$BASELINE" | grep -qF 'Never merge; the user reviews and merges'; then
   ok "no mode file: the never-merge invariant line is present verbatim"
 else bad "no mode file: the never-merge invariant line is present verbatim"; fi
+# The never-merge line carries the attended exception clause: /keel:auto-merge on
+# drops the per-merge tap on an instructed, gate-passing --auto — the agent still
+# never merges on its own initiative, and with no marker the line holds as written.
+if printf '%s' "$BASELINE" | grep -qF '/keel:auto-merge on' \
+   && printf '%s' "$BASELINE" | grep -qF -- '--auto' \
+   && printf '%s' "$BASELINE" | grep -qiF 'own initiative' \
+   && printf '%s' "$BASELINE" | grep -qF 'with no marker'; then
+  ok "no mode file: the never-merge line names the /keel:auto-merge attended exception"
+else bad "no mode file: the never-merge line names the /keel:auto-merge attended exception"; fi
 
 MODE_JSON='{"level":"run","scope":"whole-project","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
 

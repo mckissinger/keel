@@ -64,10 +64,41 @@
 # back to `ask`, and stalls a headless run; scripts/check-auto-preflight.sh
 # rejects a bundled merge in the command inventory before launch.
 #
+# --- Attended-merge marker contract (this guard is a reading owner) ----------
+#
+# Path:    .claude/keel-attended-merge.json  (under CLAUDE_PROJECT_DIR)
+# Fields:  scope   — MUST equal "session" (any other value → the file is invalid)
+#          created — when the toggle was set (ISO timestamp)
+#          invoker — who set it
+# All three are required, non-empty strings; any defect → treated as NO marker,
+# fail closed. The file is UNTRACKED — a git-tracked copy is a spoof and ignored,
+# same as the autonomy mode file. It is written ONLY by the human-triggered
+# `keel:auto-merge` skill (`on` writes it, `off` removes it — the write path is
+# the authorization trail; `disable-model-invocation` keeps the model from
+# invoking the skill).
+#
+# It is the per-session, attended sibling of the autonomy-mode allow row above.
+# Under a valid attended marker AND no active autonomy mode (the mode path takes
+# precedence — a valid mode file makes the attended marker ignored here), exactly
+# one row changes, mirroring the mode row:
+#
+#   the canonical `gh pr merge ... --auto` shape + gate PASS → "allow"
+#     (the redundant per-merge tap is dropped; GitHub still merges when and only
+#      when the required checks pass — decisions/2026-07-04-attended-auto-merge.md)
+#
+# Everything else is byte-for-byte today's table: plain `gh pr merge` without
+# `--auto` stays "ask"; gate FAIL stays "deny"; `git merge` / `git push` to the
+# default branch stay "ask"; unresolvable context stays "ask"; no marker → the
+# existing ask-floor. The same closed-set shape whitelist (detect_strict_auto)
+# and emission discipline as the mode row apply — a bundled/chained `--auto`
+# forfeits the allow back to "ask".
+#
 # Safety invariants: the command text is PARSED as data — never eval'd or
 # re-executed. `gh pr view` output is data too: parsed into variables and passed
 # only as quoted argv/env, never interpolated into shell as code. Decision JSON
 # is encoded by jq (python3 fallback, m1's pattern), never by interpolation.
+# The marker text is parsed as data too (json_str, the same string-typed reader
+# as the mode file), never eval'd.
 
 set -euo pipefail
 set -f # no globbing: command text is tokenized as data
@@ -164,6 +195,31 @@ read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE/MODE_LEVEL; any 
   # (or malformed JSON, which parses to nothing) fails closed.
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
   MODE_ACTIVE=1 MODE_LEVEL="$lvl"
+  return 0
+}
+
+# --- attended-merge marker (see the marker contract in the header) ------------
+
+ATTENDED_ACTIVE=0
+
+read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE; any defect → no marker
+  ATTENDED_ACTIVE=0
+  local f="$ROOT/.claude/keel-attended-merge.json" content scope created invoker
+  [ -f "$f" ] && [ -r "$f" ] || return 0
+  # Contract: the file is untracked. A git-tracked copy is a spoof → treated as
+  # no marker (parity with read_mode_file).
+  if git -C "$ROOT" ls-files --error-unmatch -- .claude/keel-attended-merge.json >/dev/null 2>&1; then
+    return 0
+  fi
+  content="$(cat "$f" 2>/dev/null)" || return 0
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  # scope MUST be the literal "session"; created and invoker present, non-empty
+  # strings. A partial file, a wrong scope, or malformed JSON fails closed.
+  [ "$scope" = "session" ] || return 0
+  [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  ATTENDED_ACTIVE=1
   return 0
 }
 
@@ -476,6 +532,14 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
       # tripwire against a bare unconditional allow literal — stays live.
       d_auto="allow"
       emit "$d_auto" "autonomy mode active (level: $MODE_LEVEL) — gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-autonomy-modes.md); GitHub merges when and only when the required checks pass"
+    elif [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+      # The attended sibling of the mode row (header contract): a per-session,
+      # human-set marker drops the redundant per-merge tap on the same bare
+      # `--auto` + gate-pass shape. Autonomy mode takes precedence (guarded by
+      # MODE_ACTIVE=0 above). Same variable-bound decision word, so the
+      # no-bare-`allow`-literal tripwire stays live.
+      d_auto="allow"
+      emit "$d_auto" "attended auto-merge active — an instructed gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-04-attended-auto-merge.md); the per-merge tap is dropped for this session, GitHub merges when and only when the required checks pass"
     else
       emit ask "verified-pin gate passed — per-merge human approval"
     fi
@@ -510,8 +574,9 @@ if [ -z "${REMOTES// /}" ]; then REMOTES="origin"; fi
 classify_cmd "$CMD"
 if [ -z "$SHAPE" ]; then exit 0; fi # not merge-shaped → allow silently
 
-read_mode_file    # no/invalid mode file → MODE_ACTIVE=0 → today's table exactly
-detect_strict_auto # only a single plain `gh pr merge ... --auto` sets AUTO_MERGE
+read_mode_file       # no/invalid mode file → MODE_ACTIVE=0 → today's table exactly
+read_attended_marker # no/invalid marker → ATTENDED_ACTIVE=0; ignored when a mode is active
+detect_strict_auto   # only a single plain `gh pr merge ... --auto` sets AUTO_MERGE
 
 decide
 exit 0

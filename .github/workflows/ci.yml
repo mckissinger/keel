@@ -28,6 +28,8 @@ jobs:
         run: bash scripts/merge-guard.test.sh
       - name: branch-rules guard hook self-test
         run: bash scripts/guard-branch-rules.test.sh
+      - name: attended-marker cross-script parity self-test
+        run: bash scripts/attended-marker-parity.test.sh
 
       # The plan lint keel ships to projects — prove it, and lint keel's own specs.
       - name: plan lint self-test

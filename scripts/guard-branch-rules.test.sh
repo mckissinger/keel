@@ -88,6 +88,81 @@ run_rules "$R1" 'git merge feat/other';     expect_silent "branch-to-branch merg
 run_rules "$R1" 'git push origin feat/work'; expect_silent "push to a non-default branch does not trigger"
 run_rules "$R1" 'ls -la';                   expect_silent "non-git command does not trigger"
 
+# ---- attended-merge marker: the per-session --auto defer ---------------------
+# Contract (guard-branch-rules.sh header): a valid .claude/keel-attended-merge.json
+# (scope="session" + created + invoker) + NO autonomy mode + a bare
+# `gh pr merge <pr> --auto` → exit 0 (defer the gate decision to merge-guard.sh).
+# Plain merge, git commit on the default branch, other merge shapes, and a
+# bundled/evaded --auto → exit 2. A valid autonomy mode present suppresses the
+# defer (mode precedence). No marker → the exit-2 matrix is unchanged.
+
+ATT_JSON='{"scope":"session","created":"2026-07-04T12:00:00Z","invoker":"human:keel-auto-merge"}'
+MODE_JSON='{"level":"run","scope":"whole-project","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+write_attended() { mkdir -p "$1/.claude"; printf '%s' "$2" > "$1/.claude/keel-attended-merge.json"; }
+write_mode()     { mkdir -p "$1/.claude"; printf '%s' "$2" > "$1/.claude/keel-autonomy.json"; }
+
+make_repo r2; R2="$REPO"              # sitting on main
+git -C "$R2" checkout -q -b feat/work # a build branch
+
+# Marker absent → the exit-2 matrix is unchanged (regression).
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "no attended marker: gh pr merge --auto → exit 2 (unchanged)" "never merge"
+
+# Valid marker + bare --auto → exit 0, deferring to merge-guard.sh (silent).
+write_attended "$R2" "$ATT_JSON"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_silent "attended marker + bare gh pr merge --auto → exit 0 (defer to merge-guard)"
+run_rules "$R2" 'gh pr merge 123 --auto --squash'
+expect_silent "attended marker + bare --auto with a merge-method flag → exit 0 (defer)"
+run_rules "$R2" 'gh pr merge --auto 123'
+expect_silent "attended marker + --auto before the PR arg → exit 0 (defer)"
+
+# Plain gh pr merge (no --auto) under the marker → exit 2.
+run_rules "$R2" 'gh pr merge 123'
+expect_block "attended marker + plain gh pr merge (no --auto) → exit 2" "never merge"
+
+# Bundled / evaded --auto under the marker → exit 2 (only the bare shape defers).
+run_rules "$R2" 'gh pr merge 123 --auto && echo done'
+expect_block "attended marker + chained --auto → exit 2 (only the bare shape defers)" "never merge"
+run_rules "$R2" 'gh pr merge 123 --auto --admin'
+expect_block "attended marker + --admin alongside --auto → exit 2" "never merge"
+
+# Other merge shapes under the marker → exit 2 (only gh pr merge --auto defers).
+run_rules "$R2" 'git push origin main'
+expect_block "attended marker + git push <default> → exit 2" "never merge"
+run_rules "$R2" 'git merge main'
+expect_block "attended marker + git merge <default> → exit 2" "never merge"
+
+# git commit on the default branch under the marker → exit 2 (branch-first intact).
+git -C "$R2" checkout -q main
+write_attended "$R2" "$ATT_JSON"
+run_rules "$R2" 'git commit -m "wip"'
+expect_block "attended marker + git commit on the default branch → exit 2 (branch first)" "branch first"
+git -C "$R2" checkout -q feat/work
+
+# Autonomy precedence: a valid mode file present suppresses the attended defer →
+# exit 2 (turning autonomy mode on removes the attended unlock in build scope).
+write_attended "$R2" "$ATT_JSON"
+write_mode "$R2" "$MODE_JSON"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "attended marker + valid autonomy mode both active → exit 2 (mode precedence suppresses the defer)" "never merge"
+rm -f "$R2/.claude/keel-autonomy.json"
+
+# Malformed marker → treated absent → exit 2.
+write_attended "$R2" '{"scope":"session","created":'
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "malformed attended marker → treated absent → exit 2" "never merge"
+write_attended "$R2" '{"scope":"project","created":"c","invoker":"i"}'
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "attended marker scope != session → treated absent → exit 2" "never merge"
+
+# Spoof: a git-TRACKED attended marker violates the untracked contract → absent.
+write_attended "$R2" "$ATT_JSON"
+git -C "$R2" add -f .claude/keel-attended-merge.json
+git -C "$R2" -c user.email=t@keel.test -c user.name=t commit -qm spoof-attended
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "git-tracked attended marker is a spoof → treated absent → exit 2" "never merge"
+
 # ---- shipped shape --------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "guard-branch-rules.sh is executable"
 else bad "guard-branch-rules.sh is executable"; fi

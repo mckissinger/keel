@@ -123,7 +123,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:
-- Never merge; the user reviews and merges. Open PRs and stop there.
+- Never merge; the user reviews and merges. Open PRs and stop there. One attended exception: if the user has invoked /keel:auto-merge on this session, an explicitly-instructed, verified-pin-gate-passing gh pr merge <pr> --auto may land without the per-merge tap — you still never merge on your own initiative, and with no marker this line holds exactly as written (decisions/2026-07-04-attended-auto-merge.md).
 - Never commit to main; builds run on branches.
 - A milestone's code merges only with a fresh-session verified pin (verified code == merged code).
 - Attended gates stop and ask; they are never silently deferred.

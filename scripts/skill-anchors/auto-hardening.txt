@@ -1,0 +1,7 @@
+# auto-hardening — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+skills/verify-milestone/SKILL.md	runtime facts into the verifier/workflow prompt
+agents/verifier.md	runtime ground truth — read it before judging
+skills/kickoff/SKILL.md	specs/runs/<date>-<slug>-kickoff/charter.md
+skills/kickoff/SKILL.md	never issue it
+skills/auto/SKILL.md	specs/runs/*/charter.md

@@ -20,6 +20,8 @@ Run the seven steps below **in order** — each is a gate for the next.
 
 Before anything is written, establish where the project sits on the **grain ladder** from `specs/` + git state: what `specs/00-product.md`'s backlog lists, which features have deep specs (`specs/features/`), which milestones exist / are pinned / are merged (`specs/milestones/`, `_landed/`, open PRs, branch state). From that position, write down **the run's definition of done for the given scope** — the concrete list of features/milestones this run will take from their current state to landed-and-debrief-pending.
 
+**First input when present: the most recent `specs/runs/*/charter.md`.** An immediately-preceding `kickoff` sitting writes its synthesis there — backlog, build order, resolved decisions, definition of done — so read it as the audit's starting point instead of re-deriving that state from cold; reconcile it against current `specs/` + git state (a charter can be stale if work landed since). With **no** charter present, the audit proceeds from `specs/` + git state exactly as above, unchanged. A charter is a *seed*, never the authorization — this human `keel:auto` invocation is what enters the posture.
+
 Any entry point is valid — that is what "posture, not phase" means. A feature specced attended **just builds**. An unspecced feature in scope gets `spec-feature` in **default-taking mode** with the synthesis ledgered (step 5). A half-built feature resumes from its open branches/PRs. The audit's output is the run's charter; commit it as the run ledger's first entry.
 
 ## 2. Preflight gate — before the mode file exists

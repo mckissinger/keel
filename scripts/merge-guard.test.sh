@@ -18,6 +18,10 @@ pass=0 failc=0
 ok()  { echo "ok   - $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL - $1"; failc=$((failc + 1)); }
 
+# Fresh/aged ISO-8601 UTC timestamps for marker TTL fixtures (GNU or BSD date).
+ts_ago()    { date -u -d "-$1 hours" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-"$1"H +%Y-%m-%dT%H:%M:%SZ; }
+ts_future() { date -u -d "+$1 hours" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v+"$1"H +%Y-%m-%dT%H:%M:%SZ; }
+
 json_quote() { # raw string → JSON string literal (house pattern: jq, python3 fallback)
   if command -v jq >/dev/null 2>&1; then printf '%s' "$1" | jq -Rs .
   else printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
@@ -177,7 +181,9 @@ expect_silent "master-default repo: push to a 'main' branch does not trigger"
 # PASS maps to allow. Every defect — file missing / malformed / unknown level /
 # --auto absent or evaded / gate FAIL — yields the pre-mode behavior.
 
-MODE_JSON='{"level":"run","scope":"whole-project","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+# created is 1h ago — comfortably inside the 24h mode TTL (fixtures below probe
+# the 23h/25h boundary explicitly). A hardcoded past date would now read expired.
+MODE_JSON="$(printf '{"level":"run","scope":"whole-project","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
 write_mode() { # <repo> <json>
   mkdir -p "$1/.claude"
   printf '%s' "$2" > "$1/.claude/keel-autonomy.json"
@@ -202,7 +208,7 @@ run_guard "$R5" 'gh pr merge 123 --auto --squash'
 expect_decision "valid mode + gh pr merge --auto + passing gate → allow, delegating to required checks" allow "required checks"
 run_guard "$R5" 'gh pr merge --auto 123'
 expect_decision "flag order does not matter: --auto before the PR arg still allows" allow "required checks"
-write_mode "$R5" '{"level":"feature","scope":"autonomy-modes","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+write_mode "$R5" "$(printf '{"level":"feature","scope":"autonomy-modes","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
 run_guard "$R5" 'gh pr merge 123 --auto'
 expect_decision "feature-level mode allows and names its level" allow "level: feature"
 write_mode "$R5" "$MODE_JSON"
@@ -263,6 +269,22 @@ expect_decision "mode: genuine flag-position --auto still allows (positive contr
 run_guard "$R5" 'gh pr merge 123 --auto --rebase'
 expect_decision "mode: --auto with a merge-method flag still allows (positive control)" allow "required checks"
 
+# TTL (24h): a mode file aged past 24h → treated absent (ask); one inside the TTL
+# → still allows. Full-hour margins (23h/25h) avoid clock-edge flake.
+write_mode "$R5" "$(printf '{"level":"run","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 25)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "expired mode file (created 25h ago) → treated absent → ask" ask "verified-pin gate passed"
+write_mode "$R5" "$(printf '{"level":"run","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 23)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "fresh mode file (created 23h ago, inside 24h TTL) → allow" allow "required checks"
+write_mode "$R5" '{"level":"run","scope":"x","created":"not-a-timestamp","invoker":"human"}'
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "mode file with an unparseable created → treated absent → ask" ask "verified-pin gate passed"
+write_mode "$R5" "$(printf '{"level":"run","scope":"x","created":"%s","invoker":"human"}' "$(ts_future 5)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "mode file with a future-dated created → treated absent → ask" ask "verified-pin gate passed"
+write_mode "$R5" "$MODE_JSON" # restore a fresh valid mode for the rows below
+
 # Fail-closed rows 3-5: malformed JSON / unknown level / missing contract field.
 write_mode "$R5" '{"level":"run","scope":'
 run_guard "$R5" 'gh pr merge 123 --auto'
@@ -313,7 +335,8 @@ STUB_PATH=""
 # deny. Bundled/evaded --auto → ask. Autonomy mode present → attended ignored
 # (the mode row governs). Spoof / malformed / wrong-scope → treated absent.
 
-ATT_JSON='{"scope":"session","created":"2026-07-04T12:00:00Z","invoker":"human:keel-auto-merge"}'
+# created 1h ago — inside the 8h attended TTL (the 7h/9h boundary is probed below).
+ATT_JSON="$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 1)")"
 write_attended() { # <repo> <json>
   mkdir -p "$1/.claude"
   printf '%s' "$2" > "$1/.claude/keel-attended-merge.json"
@@ -360,6 +383,21 @@ run_guard "$R7" 'git push origin main'
 expect_decision "attended marker: git push <default> stays ask" ask
 run_guard "$R7" 'git status'
 expect_silent "attended marker: non-merge command stays silent"
+
+# TTL (8h): a marker aged past 8h → treated absent (ask); one inside the TTL
+# (7h) → still allows. 7h/9h give a full hour of margin around the 8h bound.
+write_attended "$R7" "$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 9)")"
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "expired attended marker (created 9h ago) → treated absent → ask" ask "verified-pin gate passed"
+write_attended "$R7" "$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 7)")"
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "fresh attended marker (created 7h ago, inside 8h TTL) → allow" allow "attended auto-merge active"
+write_attended "$R7" '{"scope":"session","created":"not-a-timestamp","invoker":"human:keel-auto-merge"}'
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended marker with an unparseable created → treated absent → ask" ask "verified-pin gate passed"
+write_attended "$R7" "$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_future 5)")"
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended marker with a future-dated created → treated absent → ask" ask "verified-pin gate passed"
 
 # Malformed / partial / wrong-scope / wrong-typed → treated absent → ask.
 write_attended "$R7" '{"scope":"session","created":'
@@ -428,6 +466,15 @@ if grep -q 'keel-attended-merge.json' "$SCRIPT" && grep -q 'keel:auto-merge' "$S
    && grep -qi 'precedence\|ignored when' "$SCRIPT"; then
   ok "attended-marker contract is documented in the guard header (path, writer, autonomy precedence)"
 else bad "attended-marker contract is documented in the guard header (path, writer, autonomy precedence)"; fi
+
+# TTL contract tripwire: both TTLs (24h/8h), the expired≡absent rule, and the
+# no-refresh rule must stay documented in the header (parity with the milestone).
+if grep -qF 'TTL (24h)' "$SCRIPT" && grep -qF 'TTL (8h)' "$SCRIPT" \
+   && grep -qiF 'as absent' "$SCRIPT" \
+   && grep -qiF 'NO REFRESH PATH' "$SCRIPT" \
+   && grep -qiF 'fresh human invocation' "$SCRIPT"; then
+  ok "TTL contract is documented in the guard header (24h/8h, expired≡absent, no-refresh)"
+else bad "TTL contract is documented in the guard header (24h/8h, expired≡absent, no-refresh)"; fi
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

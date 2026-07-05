@@ -1,5 +1,19 @@
 # mode-file trigger-binding + expiry on the merge guard
 
+**Expiry half (b) RESOLVED 2026-07-05 by `auto-hardening-m1-guards`.** The `created` TTL now
+ships in all three committed readers — `scripts/merge-guard.sh`, `scripts/guard-branch-rules.sh`,
+and `scripts/session-bootstrap.sh`: a mode file is honored only while `created` is within **24h**
+of now, and the attended marker (`.claude/keel-attended-merge.json`) only within **8h**; an
+expired, unparseable, or future-dated `created` is treated EXACTLY as absent (fail closed), with
+the age computed from `created` as parsed data (jq `fromdateiso8601` / python3 `strptime`), never
+eval'd. **These two TTL values supersede this deferral's original "older than the session start"
+sketch** — a fixed 24h/8h bound needs no per-session harness signal, so it shipped first exactly
+as the note below anticipated. **The run-binding half (a)/(c) remains deferred** with its original
+rationale (see the Gate section). Regression coverage: the guards' `.test.sh` suites (expired /
+fresh / unparseable / future fixtures), `attended-marker-parity.test.sh` (an expired-marker
+fixture, jq + python3), and `session-bootstrap.test.sh` (25h expired → no-mode baseline; 23h fresh
+→ mode orientation).
+
 **Parked 2026-07-02.** Harden `scripts/merge-guard.sh`'s `read_mode_file` (and
 `session-bootstrap.sh`'s copy) so the autonomy mode file is trusted on more than mere
 existence + field-validity. Surfaced by the `auto-m5-composition` pre-pin `/security-review`
@@ -30,16 +44,17 @@ the merge gate.
 
 **The change when built.** Bind the file to the run and to freshness the guard checks:
 (a) a `run_id` field the guard cross-checks against a per-session marker the harness sets;
-and/or (b) a short `created` TTL — reject a mode file older than the session start (kills
-crash-persistence with no harness dependency); and consider (c) gating the *write* (an
-HMAC/nonce the harness issues only to a human-triggered skill invocation), since
-untracked-ness proves nothing about authorship. Regression tests: a stale-`created` file →
-no mode; a `run_id` mismatch → no mode; parity across the jq and python3 field readers and
-across both `merge-guard.sh` and `session-bootstrap.sh`.
+and/or ~~(b) a short `created` TTL — reject a mode file older than the session start (kills
+crash-persistence with no harness dependency)~~ **— DONE (24h/8h, see the resolution banner);**
+and consider (c) gating the *write* (an HMAC/nonce the harness issues only to a human-triggered
+skill invocation), since untracked-ness proves nothing about authorship. Regression tests: a
+stale-`created` file → no mode; a `run_id` mismatch → no mode; parity across the jq and python3
+field readers and across both `merge-guard.sh` and `session-bootstrap.sh`.
 
-**Gate.** Needs a decision on the run-binding mechanism, which depends on what per-session
-signal the harness can expose to a PreToolUse hook (a `run_id` in the hook env, or the
-session start time) — untested platform interaction. The TTL half (b) is buildable without
-that and could ship first. Resolve as a `spec-change` against `merge-guard.sh` once the
-harness signal is confirmed; until then the delegation-to-required-checks backstop holds the
-line.
+**Gate (run-binding half (a)/(c) only).** Needs a decision on the run-binding mechanism, which
+depends on what per-session signal the harness can expose to a PreToolUse hook (a `run_id` in the
+hook env, or the session start time) — untested platform interaction. The TTL half (b) needed no
+such signal and **has shipped** (`auto-hardening-m1-guards`). The remaining run-binding /
+write-gating work stays a future `spec-change` against the guards once the harness signal is
+confirmed; until then the delegation-to-required-checks backstop plus the new TTL hold the line
+(a leftover file now self-expires within 24h/8h even if a crash skips the skill's cleanup).

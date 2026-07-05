@@ -31,6 +31,11 @@ jobs:
       - name: attended-marker cross-script parity self-test
         run: bash scripts/attended-marker-parity.test.sh
 
+      # The auto-run entry preflight keel ships to projects — prove it, incl. the
+      # allow_auto_merge assertion (check d).
+      - name: auto preflight self-test
+        run: bash scripts/check-auto-preflight.test.sh
+
       # The plan lint keel ships to projects — prove it, and lint keel's own specs.
       - name: plan lint self-test
         run: bash scripts/check-plan.test.sh

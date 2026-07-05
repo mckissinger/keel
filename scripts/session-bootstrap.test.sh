@@ -21,6 +21,9 @@ run_in() { # dir → sets OUT + RC (harness shape: CLAUDE_PROJECT_DIR points at 
   OUT="$(CLAUDE_PROJECT_DIR="$dir" bash "$SCRIPT" 2>/dev/null)" && RC=0 || RC=$?
 }
 
+# Aged ISO-8601 UTC timestamps for mode-file TTL fixtures (GNU or BSD date).
+ts_ago() { date -u -d "-$1 hours" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-"$1"H +%Y-%m-%dT%H:%M:%SZ; }
+
 # 1. No keel marker → exit 0, NO output (silent everywhere keel isn't).
 mkdir -p "$TMP/plain/src"
 echo "just a repo" > "$TMP/plain/README.md"
@@ -98,7 +101,8 @@ if printf '%s' "$BASELINE" | grep -qF '/keel:auto-merge on' \
   ok "no mode file: the never-merge line names the /keel:auto-merge attended exception"
 else bad "no mode file: the never-merge line names the /keel:auto-merge attended exception"; fi
 
-MODE_JSON='{"level":"run","scope":"whole-project","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+# created 1h ago — inside the 24h mode TTL (the 23h/25h boundary is probed below).
+MODE_JSON="$(printf '{"level":"run","scope":"whole-project","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
 
 mkdir -p "$TMP/mode1/specs/milestones" "$TMP/mode1/.claude"
 printf '%s' "$MODE_JSON" > "$TMP/mode1/.claude/keel-autonomy.json"
@@ -126,7 +130,7 @@ else bad "mode bootstrap word bound ($mwords words, want 1..699)"; fi
 
 # feature level is named too.
 mkdir -p "$TMP/mode2/specs/milestones" "$TMP/mode2/.claude"
-printf '%s' '{"level":"feature","scope":"autonomy-modes","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}' \
+printf '{"level":"feature","scope":"autonomy-modes","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)" \
   > "$TMP/mode2/.claude/keel-autonomy.json"
 run_in "$TMP/mode2"
 if printf '%s' "$OUT" | grep -q 'level: feature' && printf '%s' "$OUT" | grep -q 'autonomy-modes'; then
@@ -169,6 +173,37 @@ run_in "$d"
 if [ "$RC" -eq 0 ] && [ "$OUT" = "$BASELINE" ]; then
   ok "git-tracked mode file is a spoof → no mode, today's text byte-identical"
 else bad "git-tracked mode file is a spoof → no mode, today's text byte-identical (rc=$RC)"; fi
+
+# 5b-ttl. TTL (24h): an expired (25h) mode file → the no-mode baseline byte-
+# identical; a fresh (23h) one → the mode orientation. Parity with the guards'
+# verdicts on the same fixtures (the deferral's cross-reader parity clause).
+d="$TMP/mode-expired"
+mkdir -p "$d/specs/milestones" "$d/.claude"
+printf '{"level":"run","scope":"whole-project","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 25)" \
+  > "$d/.claude/keel-autonomy.json"
+run_in "$d"
+if [ "$RC" -eq 0 ] && [ "$OUT" = "$BASELINE" ]; then
+  ok "expired mode file (25h) → no-mode baseline byte-identical (TTL)"
+else bad "expired mode file (25h) → no-mode baseline byte-identical (TTL) (rc=$RC)"; fi
+
+d="$TMP/mode-fresh23"
+mkdir -p "$d/specs/milestones" "$d/.claude"
+printf '{"level":"run","scope":"whole-project","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 23)" \
+  > "$d/.claude/keel-autonomy.json"
+run_in "$d"
+if [ "$RC" -eq 0 ] && printf '%s' "$OUT" | grep -q 'level: run' \
+   && ! printf '%s' "$OUT" | grep -qi 'never merge'; then
+  ok "fresh mode file (23h, inside 24h TTL) → the mode orientation"
+else bad "fresh mode file (23h, inside 24h TTL) → the mode orientation (rc=$RC)"; fi
+
+d="$TMP/mode-badts"
+mkdir -p "$d/specs/milestones" "$d/.claude"
+printf '{"level":"run","scope":"whole-project","created":"not-a-timestamp","invoker":"human:keel-auto"}' \
+  > "$d/.claude/keel-autonomy.json"
+run_in "$d"
+if [ "$RC" -eq 0 ] && [ "$OUT" = "$BASELINE" ]; then
+  ok "unparseable created → no-mode baseline byte-identical"
+else bad "unparseable created → no-mode baseline byte-identical (rc=$RC)"; fi
 
 # 5c. The keel:auto verb is named in BOTH orientation variants (m4: the modes
 #     are drivable, so every session — mode or no mode — knows the verb exists).

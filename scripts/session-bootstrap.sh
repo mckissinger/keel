@@ -38,6 +38,12 @@ is_keel_managed || exit 0
 # .claude/keel-autonomy.json, fields level/scope/created/invoker, untracked,
 # written only by the human-triggered keel:auto skill, cleared at run end.
 # This hook applies the same validation: any defect → no mode → today's text.
+# TTL (24h): this copy enforces the same 24h freshness bound the guards do —
+# a stale / expired / unparseable-`created` mode file produces the no-mode
+# baseline banner (never "Autonomy mode ACTIVE"), so a crashed run's leftover
+# file cannot arm a later session's context after the guards stopped honoring
+# it. `created` is parsed AS DATA — never eval'd. NO REFRESH PATH: keel:auto is
+# the file's only writer; nothing extends its life but a fresh human invocation.
 
 MODE_ACTIVE=0 MODE_LEVEL="" MODE_SCOPE=""
 
@@ -61,6 +67,36 @@ if isinstance(v, str):
   return 0
 }
 
+created_fresh() { # <created-string> <ttl-seconds> → 0 iff parseable AND 0<=age<=ttl
+  # DUPLICATED from merge-guard.sh (keep in sync). `created` is DATA — stdin
+  # (jq -Rs) or env (python3), never eval'd. Only the strict "%Y-%m-%dT%H:%M:%SZ"
+  # ISO-8601 UTC form matching the WHOLE string is fresh (jq round-trips
+  # fromdateiso8601|todateiso8601==input for python3-strptime parity); unparseable
+  # or future → not fresh; no parser → not fresh (fail closed to the no-mode baseline).
+  local created="$1" ttl="$2"
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$created" | jq -e -Rs --argjson ttl "$ttl" '
+      . as $in
+      | (try (fromdateiso8601 | todateiso8601) catch null) as $r
+      | if $r == null or $r != $in then false
+        else ($in | fromdateiso8601) as $c | (now - $c) as $a | ($a >= 0 and $a <= $ttl) end
+    ' >/dev/null 2>&1
+  elif command -v python3 >/dev/null 2>&1; then
+    C="$created" TTL="$ttl" python3 -c '
+import os, sys, time
+from datetime import datetime, timezone
+try:
+    dt = datetime.strptime(os.environ["C"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    age = time.time() - dt.timestamp()
+    sys.exit(0 if 0 <= age <= float(os.environ["TTL"]) else 1)
+except Exception:
+    sys.exit(1)
+' >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+
 read_mode_file() {
   local f="$ROOT/.claude/keel-autonomy.json" content lvl scope created invoker
   [ -f "$f" ] && [ -r "$f" ] || return 0
@@ -75,6 +111,7 @@ read_mode_file() {
   invoker="$(mode_json_str "$content" invoker)"
   case "$lvl" in feature | run) ;; *) return 0 ;; esac
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  created_fresh "$created" 86400 || return 0 # TTL 24h: expired/unparseable → no mode banner
   MODE_ACTIVE=1
   MODE_LEVEL="$lvl"
   # scope is echoed into session context: constrain it to a safe charset and

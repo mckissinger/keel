@@ -23,10 +23,18 @@
 # The merge-shape classifier is DUPLICATED from merge-guard.sh on purpose —
 # m1's precedent keeps hook scripts self-contained (no sibling sourcing, so each
 # survives plugin-cache path churn and reads standalone). Keep the two in sync.
-# The marker readers (json_str, read_mode_file, read_attended_marker) and the
-# detect_strict_auto whitelist are likewise DUPLICATED from merge-guard.sh (the
-# marker's reading owner) — same self-contained idiom; the cross-script parity is
-# asserted by scripts/attended-marker-parity.test.sh.
+# The marker readers (json_str, created_fresh, read_mode_file,
+# read_attended_marker) and the detect_strict_auto whitelist are likewise
+# DUPLICATED from merge-guard.sh (the marker's reading owner) — same
+# self-contained idiom; the cross-script parity is asserted by
+# scripts/attended-marker-parity.test.sh.
+# Marker TTLs (enforced identically here): the autonomy mode file is valid only
+# while `created` is within 24h, the attended marker within 8h; an expired,
+# unparseable, or future-dated `created` is treated EXACTLY as absent, so the
+# exit-2 matrix stays byte-for-byte today's. The TTL age is computed from
+# `created` as parsed data — never eval'd. NO REFRESH PATH: each file's invoking
+# skill (`keel:auto` / `keel:auto-merge`) is its only writer; nothing extends a
+# marker's life except a fresh human invocation.
 # Safety: command text and marker text are PARSED as data — never eval'd or
 # re-executed.
 
@@ -282,6 +290,36 @@ if isinstance(v, str):
   return 0
 }
 
+created_fresh() { # <created-string> <ttl-seconds> → 0 iff parseable AND 0<=age<=ttl
+  # DUPLICATED from merge-guard.sh (keep in sync). `created` is DATA — stdin
+  # (jq -Rs) or env (python3), never eval'd. Only the strict "%Y-%m-%dT%H:%M:%SZ"
+  # ISO-8601 UTC form matching the WHOLE string is fresh (jq round-trips
+  # fromdateiso8601|todateiso8601==input for python3-strptime parity); unparseable
+  # or future (`age < 0`) → not fresh; no parser → not fresh (fail closed).
+  local created="$1" ttl="$2"
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$created" | jq -e -Rs --argjson ttl "$ttl" '
+      . as $in
+      | (try (fromdateiso8601 | todateiso8601) catch null) as $r
+      | if $r == null or $r != $in then false
+        else ($in | fromdateiso8601) as $c | (now - $c) as $a | ($a >= 0 and $a <= $ttl) end
+    ' >/dev/null 2>&1
+  elif command -v python3 >/dev/null 2>&1; then
+    C="$created" TTL="$ttl" python3 -c '
+import os, sys, time
+from datetime import datetime, timezone
+try:
+    dt = datetime.strptime(os.environ["C"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    age = time.time() - dt.timestamp()
+    sys.exit(0 if 0 <= age <= float(os.environ["TTL"]) else 1)
+except Exception:
+    sys.exit(1)
+' >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+
 MODE_ACTIVE=0
 read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE; any defect → no mode
   MODE_ACTIVE=0
@@ -297,6 +335,7 @@ read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE; any defect → 
   invoker="$(json_str "$content" invoker)"
   case "$lvl" in feature | run) ;; *) return 0 ;; esac
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  created_fresh "$created" 86400 || return 0 # TTL 24h: expired/unparseable → no mode
   MODE_ACTIVE=1
   return 0
 }
@@ -315,6 +354,7 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
   invoker="$(json_str "$content" invoker)"
   [ "$scope" = "session" ] || return 0
   [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  created_fresh "$created" 28800 || return 0 # TTL 8h: expired/unparseable → no marker
   ATTENDED_ACTIVE=1
   return 0
 }

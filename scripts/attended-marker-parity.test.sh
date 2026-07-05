@@ -98,7 +98,12 @@ bg_conclusion() { # <repo> <PATH> → "unlock" | "gate" | "other"
 
 write_attended() { mkdir -p "$1/.claude"; printf '%s' "$2" > "$1/.claude/keel-attended-merge.json"; }
 
-VALID='{"scope":"session","created":"2026-07-04T12:00:00Z","invoker":"human:keel-auto-merge"}'
+ts_ago() { date -u -d "-$1 hours" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-"$1"H +%Y-%m-%dT%H:%M:%SZ; }
+
+# created 1h ago — inside the 8h TTL (a hardcoded past date would now read expired).
+VALID="$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 1)")"
+# created 9h ago — past the 8h TTL: both scripts must treat it absent (GATE).
+EXPIRED="$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 9)")"
 
 # Fixtures: name | expected-conclusion | JSON payload | tracked?(yes/no)
 run_fixture() { # <name> <expected> <payload> <tracked>
@@ -130,6 +135,12 @@ run_fixture() { # <name> <expected> <payload> <tracked>
 
 # A valid untracked marker → both UNLOCK.
 run_fixture "valid"      unlock "$VALID"                                          no
+# An expired marker (created past the 8h TTL) → both GATE (parity on the TTL).
+run_fixture "expired"    gate   "$EXPIRED"                                        no
+# A fresh timestamp with trailing junk after a newline → both GATE. jq slurps the
+# WHOLE value (-Rs) and round-trips it, so it can't parse just the valid prefix and
+# read fresh where python3's strptime rejects the trailing data (jq/python parity).
+run_fixture "trailjunk"  gate   "$(printf '{"scope":"session","created":"%s\\ngotcha","invoker":"i"}' "$(ts_ago 1)")" no
 # A git-tracked marker (spoof) → both GATE (untracked contract).
 run_fixture "tracked"    gate   "$VALID"                                          yes
 # Malformed JSON → both GATE.

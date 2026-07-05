@@ -17,15 +17,26 @@ pass=0 failc=0
 ok()  { echo "ok   - $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL - $1"; failc=$((failc + 1)); }
 
-# gh stub: serves $GH_PROT_FILE for `gh api .../protection`, else fails (404-shaped).
+# gh stub: `gh api .../protection` → $GH_PROT_FILE (check b); any other `gh api`
+# (the repos/{owner}/{repo} lookup, check d) → $GH_REPO_FILE. A missing/unset
+# file for either → a 404-shaped failure (fail-closed path under test).
 mkdir -p "$TMP/bin"
 cat > "$TMP/bin/gh" <<'EOF'
 #!/usr/bin/env bash
-if [ -n "${GH_PROT_FILE:-}" ] && [ -f "$GH_PROT_FILE" ]; then cat "$GH_PROT_FILE"; exit 0; fi
-echo "gh: Branch not protected (HTTP 404)" >&2
-exit 1
+case "$*" in
+  *protection*)
+    if [ -n "${GH_PROT_FILE:-}" ] && [ -f "$GH_PROT_FILE" ]; then cat "$GH_PROT_FILE"; exit 0; fi
+    echo "gh: Branch not protected (HTTP 404)" >&2; exit 1 ;;
+  *)
+    if [ -n "${GH_REPO_FILE:-}" ] && [ -f "$GH_REPO_FILE" ]; then cat "$GH_REPO_FILE"; exit 0; fi
+    echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+esac
 EOF
 chmod +x "$TMP/bin/gh"
+
+# repo-metadata fixtures for check (d): allow_auto_merge enabled vs disabled.
+printf '{"allow_auto_merge":true}\n'  > "$TMP/repo-aam-true.json"
+printf '{"allow_auto_merge":false}\n' > "$TMP/repo-aam-false.json"
 
 cat > "$TMP/protection-full.json" <<'EOF'
 {"required_status_checks":{"contexts":["verified-pin","plan-lint","security-review"]}}
@@ -62,9 +73,11 @@ EOF
 }
 
 SENTINEL="s3ntinel-value-9f"
-run_gate() { # <proj> [prot-file] → OUT, RC (gh stubbed; one contract var via host env)
-  local proj="$1" prot="${2:-}"
-  OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$prot" PREFLIGHT_T_SET="$SENTINEL" \
+run_gate() { # <proj> [prot-file] [repo-file] → OUT, RC (gh stubbed; one contract var via host env)
+  # repo-file defaults to the allow_auto_merge=true fixture so checks (a)-(c) can
+  # be exercised without check (d) tripping; pass a false/absent file to probe (d).
+  local proj="$1" prot="${2:-}" repo="${3:-$TMP/repo-aam-true.json}"
+  OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$prot" GH_REPO_FILE="$repo" PREFLIGHT_T_SET="$SENTINEL" \
     bash "$SCRIPT" "$proj" 2>&1)" && RC=0 || RC=$?
 }
 expect() { # <desc> <exit> [output substring]
@@ -174,6 +187,25 @@ expect "bare merge + canonical baseline rule passes" 0 "auto-preflight: PASS"
 if printf '%s' "$OUT" | grep -qF "bundled merge"; then
   bad "bare merge must NOT trip the bundled-merge check"
 else ok "bare merge does not trip the bundled-merge check"; fi
+
+# 14. Check (d): allow_auto_merge enabled → PASS (part of the full-pass path, but
+#     asserted explicitly against the true fixture).
+make_proj p14
+run_gate "$PROJ" "$TMP/protection-full.json" "$TMP/repo-aam-true.json"
+expect "allow_auto_merge=true passes check (d)" 0 "auto-preflight: PASS"
+
+# 15. Check (d): allow_auto_merge disabled → FAIL, naming the setting + attended remedy.
+make_proj p15
+run_gate "$PROJ" "$TMP/protection-full.json" "$TMP/repo-aam-false.json"
+expect "allow_auto_merge=false fails check (d), named" 1 "allow_auto_merge is not enabled"
+if printf '%s' "$OUT" | grep -qF "gh api -X PATCH"; then
+  ok "check (d) failure names the attended fix (gh api -X PATCH)"
+else bad "check (d) failure names the attended fix (gh api -X PATCH)"; fi
+
+# 16. Check (d): the repo api lookup errors (no repo fixture) → fail closed.
+make_proj p16
+run_gate "$PROJ" "$TMP/protection-full.json" "$TMP/repo-absent.json"
+expect "repo api error fails check (d) closed" 1 "cannot confirm allow_auto_merge"
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

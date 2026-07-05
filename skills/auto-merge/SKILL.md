@@ -50,7 +50,10 @@ delegation shape, which is meaningful only where branch protection makes `--auto
    ```
 
    `scope` **must** equal `"session"`; any other value, a missing or empty field, or malformed
-   JSON makes the marker invalid and both guards fail closed to today's behavior.
+   JSON makes the marker invalid and both guards fail closed to today's behavior. **TTL: 8h.**
+   The guards honor the marker only while `created` is within 8 hours of now; past that it is
+   treated as absent and the per-merge tap returns. There is no refresh path — re-run
+   `keel:auto-merge on` (a fresh human invocation) to renew it for another session.
 3. **Confirm the path stays untracked.** A git-tracked copy is a spoof and is ignored by both
    guards. If the project tracks `.claude/` (check with `git ls-files -- .claude/`), add
    `/.claude/keel-attended-merge.json` to `.gitignore`. **Never `git add` or commit the marker.**

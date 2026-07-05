@@ -48,6 +48,12 @@ jobs:
       - name: skill frontmatter lint (this repo)
         run: bash scripts/check-skill-frontmatter.sh
 
+      # The prose-anchor lint — load-bearing skill/agent sentences stay present.
+      - name: skill anchors lint self-test
+        run: bash scripts/check-skill-anchors.test.sh
+      - name: skill anchors lint (this repo)
+        run: bash scripts/check-skill-anchors.sh
+
       # Plugin manifest/structure validation via the Claude Code CLI.
       - name: install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code

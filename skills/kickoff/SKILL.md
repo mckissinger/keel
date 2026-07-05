@@ -28,7 +28,9 @@ Plan *globally* what is expensive to change (architecture, data model, design sy
 
 4. **Provision** (`provision` skill) — attended. CLI logins, dev resources, allowlist seeding, spend-capped key, branch-protection + `verified-pin` CI verified live. The sitting ends on a **green preflight**.
 
-**Kickoff ends here** — on a whole foundation (product backlog, architecture, design system, conventions, project CLAUDE.md), green provision, and **no milestone list yet**.
+5. **Charter seed** (post-preflight) — write the kickoff synthesis to **`specs/runs/<date>-<slug>-kickoff/charter.md`**: the resolved backlog + build order, the architecture/design decisions, and the run's definition of done — everything a subsequent `keel:auto run` would otherwise re-derive from cold. Then **offer** the continuation — the exact `keel:auto run [scope]` invocation the user could type next — but **never issue it**: the human invocation is the authorization for an autonomy posture, and kickoff only hands over the charter it seeded. (`keel:auto`'s entry audit reads the most recent `specs/runs/*/charter.md` as its first input.)
+
+**Kickoff ends here** — on a whole foundation (product backlog, architecture, design system, conventions, project CLAUDE.md), green provision, a seeded charter, and **no milestone list yet**.
 
 ## After kickoff: the per-feature loop (not part of this skill)
 

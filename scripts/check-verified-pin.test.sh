@@ -179,6 +179,22 @@ got=0; BASE_REF="$BASE" bash "$SCRIPT" no-such-head >/dev/null 2>&1 || got=$?
 if [ "$got" -ne 0 ]; then echo "ok   - unresolvable HEAD_REF fails closed"; pass=$((pass+1));
 else echo "FAIL - unresolvable HEAD_REF fails closed (got exit 0)"; failc=$((failc+1)); fi
 
+# 17. decisions/**-only PR is plan-only exempt (off BASE2, window closed — off BASE it would
+#      pass via the bootstrap window, making the test vacuous).
+fresh cX-decisions-only "$BASE2"
+mkdir -p decisions
+echo x >> decisions/2026-01-note.md
+git add -A && git commit -qm 'decisions only'
+check "decisions-only PR is plan-only exempt" 0 "$BASE2"
+
+# 18. deferrals/**-only PR is plan-only exempt. Repo-root deferrals/ exercises the new
+#      deferrals/* arm (keel's real deferrals live at specs/deferrals/, already covered by specs/*).
+fresh cX-deferrals-only "$BASE2"
+mkdir -p deferrals
+echo x >> deferrals/foo.md
+git add -A && git commit -qm 'deferrals only'
+check "deferrals-only PR is plan-only exempt" 0 "$BASE2"
+
 # HEAD-side closure of the window (a PR that itself adds the first milestone spec is
 # validated normally, never exempted) is covered by cases 2 (with pin → pass) and
 # 3 (without pin → fail); chore specs closing the window by case 9.

@@ -28,7 +28,7 @@ set -euo pipefail
 BASE_REF="${BASE_REF:-origin/main}"
 HEAD_REF="${1:-HEAD}"
 
-is_plan_path() { case "$1" in specs/*|design/*) return 0 ;; *) return 1 ;; esac; }
+is_plan_path() { case "$1" in specs/*|design/*|decisions/*|deferrals/*) return 0 ;; *) return 1 ;; esac; }
 fail() { echo "verified-pin: FAIL — $1" >&2; exit 1; }
 
 # 0. Fail closed on unresolvable refs. A misconfigured CI (missing fetch, deleted stack
@@ -53,7 +53,7 @@ fi
 has_code=0
 for f in "${changed[@]}"; do is_plan_path "$f" || has_code=1; done
 if [ "$has_code" -eq 0 ]; then
-  echo "verified-pin: plan-only PR (specs/** + design/** only) — exempt, pass"
+  echo "verified-pin: plan-only PR (specs/** + design/** + decisions/** + deferrals/** only) — exempt, pass"
   exit 0
 fi
 

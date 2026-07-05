@@ -18,6 +18,9 @@ pass=0 failc=0
 ok()  { echo "ok   - $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL - $1"; failc=$((failc + 1)); }
 
+# Fresh/aged ISO-8601 UTC timestamps for marker TTL fixtures (GNU or BSD date).
+ts_ago() { date -u -d "-$1 hours" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-"$1"H +%Y-%m-%dT%H:%M:%SZ; }
+
 json_quote() { # raw string → JSON string literal (house pattern: jq, python3 fallback)
   if command -v jq >/dev/null 2>&1; then printf '%s' "$1" | jq -Rs .
   else printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
@@ -96,8 +99,10 @@ run_rules "$R1" 'ls -la';                   expect_silent "non-git command does 
 # bundled/evaded --auto → exit 2. A valid autonomy mode present suppresses the
 # defer (mode precedence). No marker → the exit-2 matrix is unchanged.
 
-ATT_JSON='{"scope":"session","created":"2026-07-04T12:00:00Z","invoker":"human:keel-auto-merge"}'
-MODE_JSON='{"level":"run","scope":"whole-project","created":"2026-07-02T10:00:00Z","invoker":"human:keel-auto"}'
+# created within TTL (attended 8h / mode 24h); the boundary is probed below. A
+# hardcoded past date would now read expired and flip these defer rows.
+ATT_JSON="$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 1)")"
+MODE_JSON="$(printf '{"level":"run","scope":"whole-project","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
 write_attended() { mkdir -p "$1/.claude"; printf '%s' "$2" > "$1/.claude/keel-attended-merge.json"; }
 write_mode()     { mkdir -p "$1/.claude"; printf '%s' "$2" > "$1/.claude/keel-autonomy.json"; }
 
@@ -116,6 +121,27 @@ run_rules "$R2" 'gh pr merge 123 --auto --squash'
 expect_silent "attended marker + bare --auto with a merge-method flag → exit 0 (defer)"
 run_rules "$R2" 'gh pr merge --auto 123'
 expect_silent "attended marker + --auto before the PR arg → exit 0 (defer)"
+
+# TTL (8h): an expired attended marker (9h) → treated absent → exit 2; a fresh
+# one inside the TTL (7h) → still defers (exit 0). Full-hour margins.
+write_attended "$R2" "$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 9)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "expired attended marker (9h) + bare --auto → exit 2 (treated absent)" "never merge"
+write_attended "$R2" "$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 7)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_silent "fresh attended marker (7h, inside 8h TTL) + bare --auto → exit 0 (defer)"
+write_attended "$R2" '{"scope":"session","created":"not-a-timestamp","invoker":"human:keel-auto-merge"}'
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "attended marker with an unparseable created → treated absent → exit 2" "never merge"
+write_attended "$R2" "$ATT_JSON" # restore a fresh valid marker for the rows below
+
+# TTL (24h): an EXPIRED mode file no longer suppresses the attended defer — it is
+# treated absent, so a fresh attended marker + bare --auto defers (exit 0), where
+# a fresh mode file would have forced exit 2 (mode precedence, tested below).
+write_mode "$R2" "$(printf '{"level":"run","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 25)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_silent "expired mode file (25h) does not suppress the attended defer → exit 0"
+rm -f "$R2/.claude/keel-autonomy.json"
 
 # Plain gh pr merge (no --auto) under the marker → exit 2.
 run_rules "$R2" 'gh pr merge 123'
@@ -166,6 +192,15 @@ expect_block "git-tracked attended marker is a spoof → treated absent → exit
 # ---- shipped shape --------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "guard-branch-rules.sh is executable"
 else bad "guard-branch-rules.sh is executable"; fi
+
+# TTL contract tripwire: the header must document both TTLs (24h/8h), the
+# expired≡absent rule, and the no-refresh rule (parity with merge-guard.sh).
+if grep -qF '24h' "$SCRIPT" && grep -qF '8h' "$SCRIPT" \
+   && grep -qiF 'as absent' "$SCRIPT" \
+   && grep -qiF 'NO REFRESH PATH' "$SCRIPT" \
+   && grep -qiF 'fresh human invocation' "$SCRIPT"; then
+  ok "TTL contract is documented in the branch-guard header (24h/8h, expired≡absent, no-refresh)"
+else bad "TTL contract is documented in the branch-guard header (24h/8h, expired≡absent, no-refresh)"; fi
 
 for skill in implement-milestone implement-feature; do
   f="$SKILLS_DIR/$skill/SKILL.md"

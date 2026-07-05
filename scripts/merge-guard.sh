@@ -25,7 +25,8 @@
 # Path:    .claude/keel-autonomy.json  (under CLAUDE_PROJECT_DIR)
 # Fields:  level   — "feature" | "run" (any other value → the file is invalid)
 #          scope   — what the mode covers (feature slug / run scope string)
-#          created — when the mode was entered (ISO timestamp)
+#          created — when the mode was entered, ISO-8601 UTC (the `...Z` form
+#                    `date -u +%Y-%m-%dT%H:%M:%SZ` prints); parsed AS DATA
 #          invoker — who triggered it
 # The file is UNTRACKED — never committed; a git-tracked copy is treated as a
 # spoof and ignored. It is written ONLY by the human-triggered `keel:auto`
@@ -33,6 +34,16 @@
 # escalate its own autonomy) and cleared at run end. A malformed, unreadable,
 # or field-incomplete mode file is treated as NO mode: fail closed to the
 # pre-mode decision table.
+#
+# TTL (24h): the mode file is valid only while `created` is within 24 hours of
+# now. An expired file — or a `created` that will not parse as an ISO-8601 UTC
+# timestamp, or one dated in the future — is treated EXACTLY as absent (no mode,
+# byte-for-byte the pre-mode table); it changes no other row of the matrix.
+# Expiry kills a crashed run's leftover file so it cannot arm a later, unrelated
+# session after the guard stopped honoring it. The age is computed from `created`
+# as parsed data (jq fromdateiso8601 / python3 strptime) — never shelled through
+# eval. NO REFRESH PATH: the invoking `keel:auto` skill is this file's only
+# writer, and nothing extends a marker's life except a fresh human invocation.
 #
 # Under a VALID mode file, exactly one row of the decision table changes
 # (per decisions/2026-07-autonomy-modes.md — delegation to GitHub's required
@@ -68,7 +79,7 @@
 #
 # Path:    .claude/keel-attended-merge.json  (under CLAUDE_PROJECT_DIR)
 # Fields:  scope   — MUST equal "session" (any other value → the file is invalid)
-#          created — when the toggle was set (ISO timestamp)
+#          created — when the toggle was set, ISO-8601 UTC (parsed AS DATA)
 #          invoker — who set it
 # All three are required, non-empty strings; any defect → treated as NO marker,
 # fail closed. The file is UNTRACKED — a git-tracked copy is a spoof and ignored,
@@ -76,6 +87,14 @@
 # `keel:auto-merge` skill (`on` writes it, `off` removes it — the write path is
 # the authorization trail; `disable-model-invocation` keeps the model from
 # invoking the skill).
+#
+# TTL (8h): the marker is valid only while `created` is within 8 hours of now.
+# An expired marker — or an unparseable / future-dated `created` — is treated
+# EXACTLY as absent (no marker, byte-for-byte the pre-marker table). The age is
+# computed from `created` as parsed data (never eval'd), the same discipline as
+# the mode file's 24h TTL. NO REFRESH PATH: the invoking `keel:auto-merge` skill
+# is this marker's only writer; nothing extends its life but a fresh human
+# `keel:auto-merge on`.
 #
 # It is the per-session, attended sibling of the autonomy-mode allow row above.
 # Under a valid attended marker AND no active autonomy mode (the mode path takes
@@ -172,6 +191,42 @@ if isinstance(v, str):
   return 0
 }
 
+# --- marker freshness (TTL; see the contracts in the header) ------------------
+
+created_fresh() { # <created-string> <ttl-seconds> → 0 iff parseable AND 0<=age<=ttl
+  # `created` is DATA: passed on stdin (jq -Rs) or via env (python3), never
+  # interpolated into code, never eval'd. jq first, python3 fallback — the same
+  # reader ordering as json_str, held to the SAME accept/reject set: only the
+  # strict "%Y-%m-%dT%H:%M:%SZ" ISO-8601 UTC form matching the WHOLE string is
+  # fresh. jq slurps the whole value (-Rs) and round-trips it
+  # (fromdateiso8601 | todateiso8601 == input) so a valid-prefix-plus-trailing-
+  # junk string is rejected exactly as python3's strptime rejects it — no reader
+  # is the lenient one. Future-dated (`age < 0`) is rejected too, so a crafted
+  # timestamp cannot extend a marker's life past its TTL. No parser → not fresh.
+  local created="$1" ttl="$2"
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$created" | jq -e -Rs --argjson ttl "$ttl" '
+      . as $in
+      | (try (fromdateiso8601 | todateiso8601) catch null) as $r
+      | if $r == null or $r != $in then false
+        else ($in | fromdateiso8601) as $c | (now - $c) as $a | ($a >= 0 and $a <= $ttl) end
+    ' >/dev/null 2>&1
+  elif command -v python3 >/dev/null 2>&1; then
+    C="$created" TTL="$ttl" python3 -c '
+import os, sys, time
+from datetime import datetime, timezone
+try:
+    dt = datetime.strptime(os.environ["C"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    age = time.time() - dt.timestamp()
+    sys.exit(0 if 0 <= age <= float(os.environ["TTL"]) else 1)
+except Exception:
+    sys.exit(1)
+' >/dev/null 2>&1
+  else
+    return 1
+  fi
+}
+
 # --- autonomy mode (see the mode-file contract in the header) -----------------
 
 MODE_ACTIVE=0 MODE_LEVEL=""
@@ -194,6 +249,8 @@ read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE/MODE_LEVEL; any 
   # All contract fields must be present, non-empty strings — a partial file
   # (or malformed JSON, which parses to nothing) fails closed.
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  # TTL (24h): an expired / unparseable / future `created` → treated absent.
+  created_fresh "$created" 86400 || return 0
   MODE_ACTIVE=1 MODE_LEVEL="$lvl"
   return 0
 }
@@ -219,6 +276,8 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
   # strings. A partial file, a wrong scope, or malformed JSON fails closed.
   [ "$scope" = "session" ] || return 0
   [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  # TTL (8h): an expired / unparseable / future `created` → treated absent.
+  created_fresh "$created" 28800 || return 0
   ATTENDED_ACTIVE=1
   return 0
 }

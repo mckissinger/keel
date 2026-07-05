@@ -17,6 +17,11 @@
 #       ALL_CAPS tokens, e.g. `STRIPE_SECRET_KEY`) resolves in the host env
 #       store — the process environment or a `NAME=` line in the derived env
 #       file. Names only: values are never read into output, never echoed.
+#   (d) asserts via `gh api` that the repo has `allow_auto_merge` enabled — the
+#       repo setting that lets `gh pr merge --auto` queue a merge instead of
+#       falling back to an interactive prompt. Disabled / missing / API-error →
+#       a gap: an unattended run's `--auto` would stall on a prompt. The fix is
+#       attended (repo Settings → Allow auto-merge, or `gh api -X PATCH`).
 #
 # Exit 0 = ready for an auto run. Non-zero = one or more gaps, each named on
 # stderr. Fails closed: a missing input file, unparsable settings, or missing
@@ -172,8 +177,23 @@ else
   done < "$CONTRACT_FILE"
 fi
 
+# --- (d) the repo can auto-merge: allow_auto_merge is enabled -----------------
+# `gh pr merge --auto` only queues a merge when the repo allows auto-merge;
+# otherwise it drops to an interactive prompt that stalls a headless run. Assert
+# the setting up front. Fail closed: an API error → a gap, never a silent pass.
+if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
+  if repo_json="$(gh api "repos/{owner}/{repo}" 2>/dev/null)"; then
+    aam="$(printf '%s' "$repo_json" | jq -r '.allow_auto_merge // false' 2>/dev/null || true)"
+    if [ "$aam" != "true" ]; then
+      gap "auto-merge: allow_auto_merge is not enabled on the repo (gh api repos/{owner}/{repo} .allow_auto_merge = ${aam:-missing}) — \`gh pr merge --auto\` would fall back to an interactive prompt and stall a headless run. Enable it attended: repo Settings → General → 'Allow auto-merge', or gh api -X PATCH repos/{owner}/{repo} -f allow_auto_merge=true"
+    fi
+  else
+    gap "auto-merge: gh api repos/{owner}/{repo} failed — cannot confirm allow_auto_merge is enabled (fail closed; enable it attended before an auto run)"
+  fi
+fi
+
 if [ "$fails" -eq 0 ]; then
-  echo "auto-preflight: PASS — inventory covered, required checks required, contract env names resolve"
+  echo "auto-preflight: PASS — inventory covered, required checks required, contract env names resolve, repo allows auto-merge"
   exit 0
 fi
 echo "auto-preflight: $fails gap(s) — fix attended before launching an auto run; never widen permissions mid-run" >&2

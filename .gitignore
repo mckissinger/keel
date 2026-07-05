@@ -13,3 +13,4 @@ node_modules/
 scratchpad/
 .env.local
 .playwright-mcp/
+/.claude/

@@ -27,7 +27,9 @@
 # read_attended_marker) and the detect_strict_auto whitelist are likewise
 # DUPLICATED from merge-guard.sh (the marker's reading owner) — same
 # self-contained idiom; the cross-script parity is asserted by
-# scripts/attended-marker-parity.test.sh.
+# scripts/attended-marker-parity.test.sh. The mode file's `level` whitelist is
+# likewise identical to the owner's: "feature" | "run" | "genesis" are the only
+# valid values; any other → no mode (fail closed).
 # Marker TTLs (enforced identically here): the autonomy mode file is valid only
 # while `created` is within 24h, the attended marker within 8h; an expired,
 # unparseable, or future-dated `created` is treated EXACTLY as absent, so the
@@ -333,7 +335,7 @@ read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE; any defect → 
   scope="$(json_str "$content" scope)"
   created="$(json_str "$content" created)"
   invoker="$(json_str "$content" invoker)"
-  case "$lvl" in feature | run) ;; *) return 0 ;; esac
+  case "$lvl" in feature | run | genesis) ;; *) return 0 ;; esac # feature|run|genesis; any other → no mode
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
   created_fresh "$created" 86400 || return 0 # TTL 24h: expired/unparseable → no mode
   MODE_ACTIVE=1

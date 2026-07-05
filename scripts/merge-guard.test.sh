@@ -211,6 +211,26 @@ expect_decision "flag order does not matter: --auto before the PR arg still allo
 write_mode "$R5" "$(printf '{"level":"feature","scope":"autonomy-modes","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
 run_guard "$R5" 'gh pr merge 123 --auto'
 expect_decision "feature-level mode allows and names its level" allow "level: feature"
+
+# genesis-level mode (auto-genesis-m3): identical decision word to run across the
+# matrix — only the reason's level token differs. allow / ask / bogus / TTL here;
+# gate-FAIL deny in R6 and mode-over-marker precedence in R7 below.
+write_mode "$R5" "$(printf '{"level":"genesis","scope":"idea-slug","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "genesis-level mode + --auto + passing gate → allow, names level: genesis" allow "level: genesis"
+run_guard "$R5" 'gh pr merge 123 --squash'
+expect_decision "genesis-level mode, no --auto → ask (parity with run)" ask "verified-pin gate passed"
+# bogus genesis-adjacent levels → treated absent (whitelist is an EXACT set).
+write_mode "$R5" "$(printf '{"level":"genesis ","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 1)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "level \"genesis \" (trailing whitespace) → no mode → ask" ask "verified-pin gate passed"
+write_mode "$R5" "$(printf '{"level":"Genesis","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 1)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "level \"Genesis\" (casing variant) → no mode → ask" ask "verified-pin gate passed"
+# genesis + expired (>24h) → treated absent, byte-for-byte the no-mode row.
+write_mode "$R5" "$(printf '{"level":"genesis","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 25)")"
+run_guard "$R5" 'gh pr merge 123 --auto'
+expect_decision "genesis-level + expired created (25h) → treated absent → ask" ask "verified-pin gate passed"
 write_mode "$R5" "$MODE_JSON"
 
 # Fail-closed row 2: plain gh pr merge (no --auto) stays ask even under a mode.
@@ -326,6 +346,9 @@ chmod +x "$R6/scripts/check-verified-pin.sh"
 write_mode "$R6" "$MODE_JSON"
 run_guard "$R6" 'gh pr merge 123 --auto'
 expect_decision "valid mode + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-a2m"
+write_mode "$R6" "$(printf '{"level":"genesis","scope":"idea-slug","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
+run_guard "$R6" 'gh pr merge 123 --auto'
+expect_decision "genesis-level mode + --auto + FAILING gate → deny (parity with run)" deny "synthetic-reason-a2m"
 STUB_PATH=""
 
 # ---- attended-merge marker: the per-session --auto unlock --------------------
@@ -419,6 +442,11 @@ write_attended "$R7" "$ATT_JSON"
 write_mode "$R7" "$MODE_JSON"
 run_guard "$R7" 'gh pr merge 123 --auto'
 expect_decision "attended + valid autonomy mode both active → mode governs (allow, mode reason)" allow "autonomy mode active"
+# same precedence with a genesis-level mode: marker ignored, mode row governs and
+# names level: genesis (auto-genesis-m3 — precedence rule unchanged by the new level).
+write_mode "$R7" "$(printf '{"level":"genesis","scope":"idea-slug","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
+run_guard "$R7" 'gh pr merge 123 --auto'
+expect_decision "attended + genesis-level mode both active → mode governs (allow, level: genesis)" allow "level: genesis"
 rm -f "$R7/.claude/keel-autonomy.json"
 
 # Spoof: a git-TRACKED attended marker violates the untracked contract → absent.

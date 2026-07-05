@@ -13,22 +13,26 @@ after that milestone is on `main`). **Parallelizable:** no.
 ### Logic / invariants
 - [auto] `scripts/merge-guard.sh`: `read_mode_file` accepts `level` values `"feature"`,
   `"run"`, and `"genesis"` (any other value → invalid file → treated absent, unchanged);
-  a valid genesis-level mode file produces byte-identical decisions to a run-level one across
+  a valid genesis-level mode file yields the **same decision word** as a run-level one across
   the full matrix (bare `--auto` + gate pass → allow; plain merge → ask; gate fail → deny),
-  including under the 24h TTL. The header contract's field documentation adds `"genesis"`.
+  including under the 24h TTL. The emitted reason **names the active level** (`level: genesis`
+  vs `level: run`) via the existing `$MODE_LEVEL` interpolation on the allow row — so the
+  decision is identical and only the level token in the reason differs; today's run/feature
+  emission is unchanged. The header contract's field documentation adds `"genesis"`.
 - [auto] `scripts/guard-branch-rules.sh`: its duplicated reader accepts the same three values
-  with the same fail-closed defects; genesis-level behavior matches run-level across its exit
-  matrix. Header contract updated identically.
+  with the same fail-closed defects; genesis-level yields the same exit code as run-level across
+  its matrix. Header contract updated identically.
 - [auto] Both scripts remain safe under `set -euo pipefail` with quoted expansions; the level
   value is handled as data (never eval'd or interpolated into decision JSON);
   `scripts/check-neutral.sh` passes on both.
 
 ### Behavioral completeness
-- [auto] `scripts/merge-guard.test.sh` extended: genesis-level fixture → the run-level
-  allow/ask/deny outcomes byte-for-byte; a bogus level (`"genesis "` with whitespace,
-  `"Genesis"`, `"total"`) → treated absent; genesis + expired (>24h) `created` → treated
-  absent; the attended-marker precedence rows unchanged (mode active → marker ignored) with a
-  genesis-level mode.
+- [auto] `scripts/merge-guard.test.sh` extended: genesis-level fixture → the run-level decision
+  word on each row (allow/ask/deny), with the emitted reason asserted to contain
+  `level: genesis`; a bogus level (`"genesis "` with whitespace, `"Genesis"`, `"total"`) →
+  treated absent; genesis + expired (>24h, fixture 25h) `created` → treated absent; the
+  attended-marker precedence rows unchanged (mode active → marker ignored) with a genesis-level
+  mode.
 - [auto] `scripts/guard-branch-rules.test.sh` extended: genesis-level + bare `--auto` in build
   scope → today's run-level exit behavior; bogus/expired genesis fixtures → exit 2.
 - [auto] `claude plugin validate --strict .` passes; every pre-existing self-test suite still

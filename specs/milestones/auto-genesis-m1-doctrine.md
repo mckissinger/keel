@@ -5,8 +5,10 @@ contract the bootstrap generates against, exist as reviewable plan artifacts —
 or guard implements them.
 
 **Feature:** `specs/features/auto-genesis.md`. **No-UI** → two-dimension done-conditions.
-**Depends on:** nothing in this feature (first). **Parallelizable:** no (m2 cites both artifacts
-by name).
+**Depends on:** nothing in this feature (first), **but the landed `auto-hardening` feature** —
+this milestone's template contract cites that feature's preflight check (d)
+(`allow_auto_merge`) and its 24h TTL contract, so it builds only after `auto-hardening` is on
+`main`. **Parallelizable:** no (m2 cites both artifacts by name).
 
 ## Done-conditions
 
@@ -25,7 +27,11 @@ by name).
   the flow with nothing created; (e) the residual (an approval artifact authorizing later
   scripted actions is forgeable the same way the mode file is) names
   `specs/deferrals/mode-file-binding-ttl.md` as the shared concern and the server-side required
-  checks as the standing backstop.
+  checks as the standing backstop; (f) **the delegation carve-out's mode enumeration is
+  extended**: `decisions/2026-07-autonomy-modes.md` §(a) scopes per-merge delegation to
+  `auto:feature`/`auto:run` — this entry extends that enumeration (by reference, not by editing
+  the prior entry) to an active genesis-level mode, with §(e)'s rule unchanged (delegation to
+  the required checks, never to agent judgment).
 - [auto] A new `references/template-contract.md` defines the two-tier contract a generated (or
   future forked) repo must satisfy to pass `scripts/check-auto-preflight.sh` on first run:
   **tier 1, invariant** — the three required-check CI jobs (`verified-pin`, `plan-lint`,
@@ -49,13 +55,15 @@ by name).
   later milestones cite: the decisions entry names `references/template-contract.md` and the
   genesis posture in `skills/auto/SKILL.md` (forward reference acceptable — m2 lands next);
   the contract names `scripts/check-auto-preflight.sh` checks (a)–(d) as the machine gate it
-  satisfies, including the `allow_auto_merge` assertion the auto-hardening feature adds.
+  satisfies — check (d) being the `allow_auto_merge` assertion the landed `auto-hardening-m1-guards`
+  added (a hard build-order dependency, stated in this milestone's header: at build time that
+  check exists in the script, so the citation is verifiable against code, not a promise).
 - [auto] `claude plugin validate --strict .` passes; every pre-existing self-test suite still
   passes (prose-only milestone, scripts untouched).
 
 ## verification
 verifier subagent against this file — each artifact present with every enumerated element
-((a)–(e) in the decisions entry; both tiers + the asymmetry + the prune rule in the contract;
+((a)–(f) in the decisions entry; both tiers + the asymmetry + the prune rule in the contract;
 the deferral's reopen condition), the by-reference discipline (prior decisions files
 byte-unchanged), the names-only key invariant stated, and the never-auto list quoted intact. A
 doctrine amendment that widens an envelope is invariant-adjacent prose: the verifier

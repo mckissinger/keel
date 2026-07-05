@@ -52,8 +52,8 @@ never reads key values — env wiring is by **name** against `sandbox.env`.
 
 | Unit | Milestone | Owns |
 |---|---|---|
-| Doctrine + contract | `auto-genesis-m1-doctrine` | new `decisions/` entry (genesis envelope), new `references/template-contract.md`, new `specs/deferrals/genesis-template-repo.md` |
-| The posture | `auto-genesis-m2-posture` | `skills/auto/SKILL.md` (genesis posture: Phase 1 contract, approval gate, Phase 2 orchestration, ledger + debrief deltas), its frontmatter |
+| Doctrine + contract | `auto-genesis-m1-doctrine` | new `decisions/2026-07-genesis-envelope.md`, new `references/template-contract.md`, new `specs/deferrals/genesis-template-repo.md` |
+| The posture | `auto-genesis-m2-posture` | `skills/auto/SKILL.md` (genesis posture: Phase 1 contract, approval gate, Phase 2 orchestration, ledger + debrief deltas) + its frontmatter, `skills/spec-foundation/SKILL.md` (new under-a-mode carve-out), new `scripts/skill-anchors/auto-genesis.txt` |
 | Guard recognition | `auto-genesis-m3-guards` | `scripts/merge-guard.sh`, `scripts/guard-branch-rules.sh`, their `.test.sh` suites (accept `level: "genesis"`) |
 
 **Build order + integration seams:** m1 → m2 → m3 (m2 cites m1's decision entry + contract by

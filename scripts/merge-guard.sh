@@ -26,7 +26,6 @@
 # Fields:  level   — "feature" | "run" | "genesis" (any other value → the file
 #                    is invalid); all three yield the identical decision table —
 #                    only the level token in the emitted reason differs
-
 #          scope   — what the mode covers (feature slug / run scope string)
 #          created — when the mode was entered, ISO-8601 UTC (the `...Z` form
 #                    `date -u +%Y-%m-%dT%H:%M:%SZ` prints); parsed AS DATA

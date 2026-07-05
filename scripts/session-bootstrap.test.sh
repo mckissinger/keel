@@ -137,6 +137,16 @@ if printf '%s' "$OUT" | grep -q 'level: feature' && printf '%s' "$OUT" | grep -q
   ok "mode: feature level + its scope are named"
 else bad "mode: feature level + its scope are named"; fi
 
+# genesis level is recognized too (auto-genesis-m3: all three mode-file readers
+# stay in parity — a genesis session self-orients like feature/run).
+mkdir -p "$TMP/mode2g/specs/milestones" "$TMP/mode2g/.claude"
+printf '{"level":"genesis","scope":"idea-slug","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)" \
+  > "$TMP/mode2g/.claude/keel-autonomy.json"
+run_in "$TMP/mode2g"
+if printf '%s' "$OUT" | grep -q 'level: genesis' && printf '%s' "$OUT" | grep -q 'idea-slug'; then
+  ok "mode: genesis level + its scope are named"
+else bad "mode: genesis level + its scope are named"; fi
+
 # Fail-closed matrix: each defect yields the no-mode text BYTE-IDENTICAL.
 for defect in \
   'malformed-json:{"level":"run","scope":' \

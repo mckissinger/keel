@@ -27,8 +27,8 @@ machinery.
 
 | Unit | Milestone | Owns |
 |---|---|---|
-| Guard/preflight mechanics | `auto-hardening-m1-guards` | `scripts/merge-guard.sh`, `scripts/guard-branch-rules.sh`, `scripts/check-auto-preflight.sh`, their `.test.sh` suites, `scripts/attended-marker-parity.test.sh`, marker-contract prose in `skills/auto/SKILL.md` + `skills/auto-merge/SKILL.md`, `specs/deferrals/mode-file-binding-ttl.md` update |
-| Verb-prose seams | `auto-hardening-m2-seams` | `skills/verify-milestone/SKILL.md`, `agents/verifier.md`, `skills/kickoff/SKILL.md`, the entry-audit paragraph of `skills/auto/SKILL.md`, `specs/deferrals/verifier-project-memory.md` update |
+| Guard/preflight mechanics | `auto-hardening-m1-guards` | `scripts/merge-guard.sh`, `scripts/guard-branch-rules.sh`, **`scripts/session-bootstrap.sh` (its `read_mode_file` copy — the third reader)**, `scripts/check-auto-preflight.sh`, their `.test.sh` suites, `scripts/attended-marker-parity.test.sh`, marker-contract prose in `skills/auto/SKILL.md` + `skills/auto-merge/SKILL.md`, `specs/deferrals/mode-file-binding-ttl.md` update |
+| Verb-prose seams | `auto-hardening-m2-seams` | `skills/verify-milestone/SKILL.md`, `agents/verifier.md`, `skills/kickoff/SKILL.md`, the entry-audit paragraph of `skills/auto/SKILL.md`, `specs/deferrals/verifier-project-memory.md` update, **new `scripts/check-skill-anchors.sh` + `scripts/skill-anchors/auto-hardening.txt` + CI wiring** (the prose-anchor lint; anchor sets are file-per-feature so later features add their own file, never edit a shared one) |
 
 **Build order + integration seams:** m1 and m2 touch disjoint files **except**
 `skills/auto/SKILL.md` (m1 edits its mode-file contract sentence; m2 edits its entry-audit

@@ -20,6 +20,15 @@
 # Exit 2 blocks the tool call and feeds stderr back to Claude (PreToolUse exit-code
 # semantics per https://code.claude.com/docs/en/hooks).
 #
+# Accepted classification limits (same set as merge-guard.sh): a text
+# classifier cannot see through shell reassembly — `sh -c`, `eval`, piped
+# `xargs`, aliases — by design; branch protection + required checks are the
+# authority, this guard is defense-in-depth. Reader-less degrade direction:
+# with neither jq nor python3 on PATH this guard fails CLOSED — a raw
+# substring scan of the hook input blocks merge/push/commit-shaped text
+# (exit 2) and never parses JSON or evals; it does not exit 0 at input
+# parsing. (merge-guard.sh's own reader-less degrade is ask, never allow.)
+#
 # The merge-shape classifier is DUPLICATED from merge-guard.sh on purpose —
 # m1's precedent keeps hook scripts self-contained (no sibling sourcing, so each
 # survives plugin-cache path churn and reads standalone). Keep the two in sync.

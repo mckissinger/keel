@@ -139,7 +139,7 @@ Grain ladder — pick the verb that matches the size of the work:
 Standing invariants — these hold no matter what else the session is doing:
 - Autonomy mode ACTIVE — level: ${MODE_LEVEL}, scope: ${MODE_SCOPE}. Merge authority is delegated to the server-side required checks via gh pr merge --auto, per decisions/2026-07-autonomy-modes.md — the checks decide, never agent judgment. Ledger every would-be ask to specs/runs/<run-id>/ (recorded deferral; silent deferral stays banned). Stop-points still halt: go-live, live-key swaps, and spend beyond pre-authorized caps stay attended.
 - Never commit to main; builds run on branches.
-- A milestone's code merges only with a fresh-session verified pin (verified code == merged code).
+- A milestone's code merges only under the two-part control: a fresh-session verified pin (the verification half) plus the pin gate's drift check (no code changed since the pin). Neither half alone proves the other.
 - Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."
 
 Specs live under specs/. When work matches a keel verb, invoke that skill rather than improvising the process.
@@ -162,7 +162,7 @@ Grain ladder — pick the verb that matches the size of the work:
 Standing invariants — these hold no matter what else the session is doing:
 - Never merge; the user reviews and merges. Open PRs and stop there. One attended exception: if the user has invoked /keel:auto-merge on this session, an explicitly-instructed, verified-pin-gate-passing gh pr merge <pr> --auto may land without the per-merge tap — you still never merge on your own initiative, and with no marker this line holds exactly as written (decisions/2026-07-04-attended-auto-merge.md).
 - Never commit to main; builds run on branches.
-- A milestone's code merges only with a fresh-session verified pin (verified code == merged code).
+- A milestone's code merges only under the two-part control: a fresh-session verified pin (the verification half) plus the pin gate's drift check (no code changed since the pin). Neither half alone proves the other.
 - Attended gates stop and ask; they are never silently deferred.
 - Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."
 

@@ -283,6 +283,18 @@ done
 if [ -x "$SCRIPT" ]; then ok "guard-branch-rules.sh is executable"
 else bad "guard-branch-rules.sh is executable"; fi
 
+# Accepted-limits + degrade-direction header tripwire (m2): the header must
+# document the same classification limits as merge-guard.sh (sh -c / eval /
+# xargs; branch protection + required checks as the authority) and the m1
+# reader-less fallback-scan degrade direction (fails CLOSED, never exit-0-open).
+if grep -qF 'sh -c' "$SCRIPT" && grep -qF '`eval`' "$SCRIPT" \
+   && grep -qF 'xargs' "$SCRIPT" \
+   && grep -qF 'branch protection + required checks' "$SCRIPT" \
+   && grep -qF 'fails CLOSED' "$SCRIPT" \
+   && grep -qiF 'never parses JSON' "$SCRIPT"; then
+  ok "header documents the accepted limits + the reader-less fail-closed degrade direction"
+else bad "header documents the accepted limits + the reader-less fail-closed degrade direction"; fi
+
 # TTL contract tripwire: the header must document both TTLs (24h/8h), the
 # expired≡absent rule, and the no-refresh rule (parity with merge-guard.sh).
 if grep -qF '24h' "$SCRIPT" && grep -qF '8h' "$SCRIPT" \

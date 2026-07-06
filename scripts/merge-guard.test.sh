@@ -513,6 +513,16 @@ if grep -q 'keel-attended-merge.json' "$SCRIPT" && grep -q 'keel:auto-merge' "$S
   ok "attended-marker contract is documented in the guard header (path, writer, autonomy precedence)"
 else bad "attended-marker contract is documented in the guard header (path, writer, autonomy precedence)"; fi
 
+# Accepted-limits header tripwire (m2): the classification comment must name the
+# reassembly shapes the bypass block asserts — including eval — and the authority
+# sentence must name branch protection + required checks. Pins the prose to the
+# asserted behavior so neither drifts alone.
+if grep -qF 'sh -c' "$SCRIPT" && grep -qF '`eval`' "$SCRIPT" \
+   && grep -qF 'xargs' "$SCRIPT" \
+   && grep -qF 'branch protection + required checks' "$SCRIPT"; then
+  ok "accepted-limits paragraph names sh -c/eval/xargs and the branch-protection + required-checks authority"
+else bad "accepted-limits paragraph names sh -c/eval/xargs and the branch-protection + required-checks authority"; fi
+
 # TTL contract tripwire: both TTLs (24h/8h), the expired≡absent rule, and the
 # no-refresh rule must stay documented in the header (parity with the milestone).
 if grep -qF 'TTL (24h)' "$SCRIPT" && grep -qF 'TTL (8h)' "$SCRIPT" \

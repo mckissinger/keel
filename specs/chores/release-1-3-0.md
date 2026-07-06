@@ -34,3 +34,14 @@ No merge-decision mechanism, skill, script, or hook behavior is touched by a ver
 no `/security-review`. The version-visible-to-the-installed-runtime effect is a [runtime]
 property that only a reinstall proves — carried into the post-merge install (the user cuts the
 `v1.3.0` tag and reinstalls), correctly out of branch scope.
+
+verified: clean at 307a0e3, 2026-07-05, via fresh-context keel:verifier subagent — the branch
+changes exactly two files vs `main` (`.claude-plugin/plugin.json` + this chore spec, `git diff
+main --name-only`); the `plugin.json` diff is a single hunk, exactly `version` `1.2.1`→`1.3.0`
+with every other field unchanged context; `python3 -m json.tool` confirms valid JSON;
+`.claude-plugin/marketplace.json` unchanged vs `main` (empty diff); `claude plugin validate
+--strict .` `✔ Validation passed` (exit 0), `scripts/check-neutral.sh` PASS, `scripts/check-plan.sh`
+PASS (37 milestone + 8 chore specs well-formed). Minor bump (auto:genesis is a new capability, no
+removals/breaking changes). The version-visible-to-installed-runtime effect is the disclosed
+[runtime] property closed by the user's post-merge tag + reinstall, out of branch scope. No
+merge-decision mechanism touched → no `/security-review`. (evidence: verifier report in PR)

@@ -42,19 +42,20 @@ hardcoded to any framework.
 
 ## What's in the plugin
 
-**15 skills**, grouped by grain:
+**17 skills**, grouped by grain:
 - **Kickoff** — `kickoff` (greenfield) / `adopt` (brownfield), `interview`, `spec-foundation`, `app-design-directions`, `provision`
 - **Feature** — `spec-feature`, `implement-feature`, `land-feature`, `review-feature`
 - **Milestone** — `implement-milestone`, `verify-milestone`
 - **Change** — `spec-change`
 - **Chore** — `punch-list` (a batch of tiny changes → one verified chore PR)
 - **Cross-cutting** — `debug`
+- **Autonomy** — `auto` (posture switch), `auto-merge` (attended merge toggle) — both human-triggered only
 
 Plus the **`verifier`** agent, the **`verify-all-milestones`** + **`punch-list`** workflows, the canonical **`scripts/check-verified-pin.sh`** gate (copy into your project; its chore-lane accepts a `specs/chores/` batch pin), and shared references: the **profile interface**, the **milestone/verification rules**, and the **interaction-craft** + **motion-cookbook** craft layer.
 
-And a **hooks layer** (`hooks/hooks.json`): a SessionStart bootstrap — re-injected after compaction — that orients every session in a keel-managed project (grain ladder + standing invariants) and stays silent everywhere else, plus PreToolUse guards over merge-shaped and branch-rule commands. These hooks are a **local backstop** — project CI and branch protection remain the server-side gate, and nothing in this layer replaces them.
+And a **hooks layer** (`hooks/hooks.json`): a SessionStart bootstrap — re-injected after compaction — that orients every session in a keel-managed project (grain ladder + standing invariants) and stays silent everywhere else, plus PreToolUse guards: `merge-guard.sh` is the globally wired PreToolUse hook (in `hooks/hooks.json`, over merge-shaped commands), while `guard-branch-rules.sh` is skill-scoped — wired by the build skills' frontmatter, not by `hooks/hooks.json`. These hooks are a **local backstop** — project CI and branch protection remain the server-side gate, and nothing in this layer replaces them.
 
-keel also has two **autonomy modes** — `auto:feature` and `auto:run` — posture levels a human explicitly triggers (never the agent), under which merge authority is delegated to the server-side required checks. The scope and the trades are argued once, in [`decisions/2026-07-autonomy-modes.md`](./decisions/2026-07-autonomy-modes.md), not here.
+keel also has three **autonomy postures** — `auto:feature`, `auto:run`, and `auto:genesis` — posture levels a human explicitly triggers (never the agent), under which merge authority is delegated to the server-side required checks, plus an attended **auto-merge** toggle for merge delegation within an attended session. The scope and the trades are argued once — in [`decisions/2026-07-05-autonomy-modes-v2.md`](./decisions/2026-07-05-autonomy-modes-v2.md) and [`decisions/2026-07-genesis-envelope.md`](./decisions/2026-07-genesis-envelope.md), which supersede the original [`decisions/2026-07-autonomy-modes.md`](./decisions/2026-07-autonomy-modes.md) — not here.
 
 Two design principles worth calling out: the **design track is optional** (it runs only when the deliverable has a UI, so keel builds CLIs/backends/libraries too), and **every interview confirms its understanding with you before authoring anything**.
 

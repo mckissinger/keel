@@ -101,6 +101,14 @@ if printf '%s' "$BASELINE" | grep -qF '/keel:auto-merge on' \
   ok "no mode file: the never-merge line names the /keel:auto-merge attended exception"
 else bad "no mode file: the never-merge line names the /keel:auto-merge attended exception"; fi
 
+# The pin line carries the honest two-part-control form in BOTH variants (m2):
+# it names the fresh-session verified pin AND the drift half, and no shipped
+# line claims the gate alone proves verification.
+if printf '%s' "$BASELINE" | grep -qF 'fresh-session verified pin' \
+   && printf '%s' "$BASELINE" | grep -qi 'drift'; then
+  ok "no-mode pin line names both halves (fresh-session pin + drift gate)"
+else bad "no-mode pin line names both halves (fresh-session pin + drift gate)"; fi
+
 # created 1h ago — inside the 24h mode TTL (the 23h/25h boundary is probed below).
 MODE_JSON="$(printf '{"level":"run","scope":"whole-project","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
 
@@ -124,6 +132,10 @@ else bad "mode framing: --auto delegation + would-be-ask ledger + stop-points st
 if printf '%s' "$OUT" | grep -q 'implement-milestone'; then
   ok "mode: the grain ladder survives the swap"
 else bad "mode: the grain ladder survives the swap"; fi
+if printf '%s' "$OUT" | grep -qF 'fresh-session verified pin' \
+   && printf '%s' "$OUT" | grep -qi 'drift'; then
+  ok "mode pin line names both halves (fresh-session pin + drift gate)"
+else bad "mode pin line names both halves (fresh-session pin + drift gate)"; fi
 mwords="$(printf '%s' "$OUT" | wc -w | tr -d ' ')"
 if [ "$mwords" -gt 0 ] && [ "$mwords" -lt 700 ]; then ok "mode bootstrap under the token budget ($mwords words < 700)"
 else bad "mode bootstrap word bound ($mwords words, want 1..699)"; fi

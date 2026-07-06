@@ -363,9 +363,11 @@ is_default_ref() { # <token> — does it name the default branch?
 # --- classification (parse only; never executed) ------------------------------
 # Classification sees only the literal command text and strips a single outer
 # quote layer per token. Like any text-level hook it cannot see through shell
-# reassembly (`git "me""rge"`, `m=merge; git $m`, aliases, `sh -c`, `xargs`) —
-# that is the documented inherent limit; this guard is defense-in-depth under
-# branch protection + the skill-scoped branch guard + human merge approval.
+# reassembly (`git "me""rge"`, `m=merge; git $m`, aliases, `sh -c`, `eval`,
+# piped `xargs`) — that is the documented inherent limit, asserted as the
+# accepted set by merge-guard.test.sh's bypass block; this guard is
+# defense-in-depth under branch protection + required checks (the authority),
+# the skill-scoped branch guard, and human merge approval.
 
 SHAPE="" GH_PR_ARG=""
 TOKS=()

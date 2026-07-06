@@ -10,10 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: the gate's merge-base precondition (m1) fails closed on
+          # shallow clones — the exact misconfiguration it exists to catch.
+          fetch-depth: 0
 
       # The verified-pin gate keel ships to projects — prove it still behaves.
       - name: verified-pin gate self-test
         run: bash scripts/check-verified-pin.test.sh
+
+      # The gate run against THIS repo's real PRs — keel eats its own gate.
+      # pull_request only: on push to main there is no PR diff to judge.
+      - name: verified-pin gate (this repo)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: bash scripts/check-verified-pin.sh HEAD
 
       # The stack-neutral guard for keel's own corpus + its self-test.
       - name: neutrality guard self-test

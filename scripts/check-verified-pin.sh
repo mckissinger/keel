@@ -1,11 +1,28 @@
 #!/usr/bin/env bash
 #
-# check-verified-pin.sh — keel's verified-pin gate.
+# check-verified-pin.sh — keel's verified-pin gate: the DRIFT half of a two-part
+# control.
 #
-# Enforces "verified code == merged code" on a milestone CODE PR: the milestone's
-# spec file must carry a `verified:` line whose pinned <short-sha> is an ancestor of
-# HEAD, and between that SHA and HEAD only PLAN files (specs/**, design/**) may have
-# changed. A wholly PLAN-ONLY PR (the upfront feature plan PR) is EXEMPT.
+# What this script mechanically proves on a milestone CODE PR: the milestone's
+# spec file carries a `verified:` line, its pinned <short-sha> is an ancestor of
+# HEAD, and between that SHA and HEAD only PLAN files (specs/**, design/**,
+# decisions/**, deferrals/** — minus the runtime-affecting carve-outs) changed.
+# That is DRIFT-FREEDOM. It does NOT prove a verification ran — a self-written
+# `verified:` line passes this gate. The verification half is the fresh-session
+# `verify-milestone` process (an independent context checks the work against the
+# spec and only then writes the pin); the two halves together are the control,
+# and neither alone is it. A wholly PLAN-ONLY PR (the upfront feature plan PR)
+# is EXEMPT.
+#
+# Merge-mode scope: "verified code == merged code" holds at CONTENT level when
+# the base has not moved under the PR — which is why the shipped process requires
+# the require-branches-up-to-date branch-protection setting: a moved base forces
+# the branch to absorb it, real code enters the pin's drift window, and this gate
+# itself demands re-verification of the combined state. Squash merge (keel's
+# prescribed mode for independent milestones) preserves that content; its cost is
+# that the pinned SHA is not an ancestor of main afterward — traceability lives
+# in the PR and the spec's pin line, not in SHA-level identity on main. The gate
+# runs pre-merge on the PR head, never on the merged commit.
 #
 # BOOTSTRAP WINDOW: until the first milestone or chore spec exists — judged at BOTH the
 # base branch's tip and HEAD, so the window is deletion-proof and can never be re-entered

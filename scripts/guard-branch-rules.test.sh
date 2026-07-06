@@ -252,6 +252,11 @@ run_rules_path "$LEAN" "$R3" 'git push origin main'
 expect_block "reader-less: push-shaped raw input → exit 2 (raw-scan fallback)" "fail closed"
 run_rules_path "$LEAN" "$R3" 'ls -la'
 expect_silent "reader-less: benign raw input still exits 0, silent"
+# JSON escapes must not hide a shape from the raw scan: a tab between the words
+# serializes as \t, whose trailing "t" abuts "merge" — a \b-anchored scan missed
+# this (verified live); the substring scan must catch it.
+run_rules_path "$LEAN" "$R3" "$(printf 'git\tmerge main')"
+expect_block "reader-less: tab-separated merge (JSON \\t escape) is still blocked" "fail closed"
 
 # With EITHER reader present, exit codes are today's — full classification,
 # including the fresh-marker defer row (regression against the fallback leaking).

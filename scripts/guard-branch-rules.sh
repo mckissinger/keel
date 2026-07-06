@@ -409,7 +409,11 @@ if [ "$CMD_PARSED" -ne 1 ]; then
   # input — never parsed as JSON, never eval'd — blocks anything merge- or
   # commit-shaped; only inputs the scan finds benign pass. Marker files are
   # unreadable without a JSON reader and are treated as absent, as they already are.
-  if printf '%s' "$RAW" | grep -qiE '\bmerge\b|\bpush\b|\bcommit\b'; then
+  # SUBSTRING match, no word boundaries: the raw text is JSON, where an escape
+  # like \t abuts the next word ("git\tmerge") and a \b anchor would miss it.
+  # Over-blocking benign text that merely contains these substrings is the
+  # accepted cost of failing closed here.
+  if printf '%s' "$RAW" | grep -qiE 'merge|push|commit'; then
     echo "keel: cannot parse the hook input (neither jq nor python3 is available) and its raw text carries a merge/push/commit shape — blocked, fail closed. Build sessions never merge, and commits on the default branch need a branch first; install jq or python3 for full classification." >&2
     exit 2
   fi

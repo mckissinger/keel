@@ -28,7 +28,7 @@ specs/
   01-architecture.md     # stack, data model, environment contract, hard invariants, deploy model
   design.md              # design system: decision + material palette; written at the design-system gate, committed to main, durable
   features/
-    <feature>.md         # one per feature — the DEEP feature spec (interview outcome + screen mockups + its milestone list). Written by spec-feature, NOT here.
+    <feature>.md         # one per feature — the DEEP feature spec (interview outcome + workbench composition reference + its milestone list). Written by spec-feature, NOT here.
   milestones/
     m1-<slug>.md         # one file per milestone (the build/verify unit). Written by spec-feature.
     _landed/             # completed milestone specs, archived by land-feature after a wave lands (mirrors deferrals/_closed.md); not an active spec — the pin is history. check-plan's glob is non-recursive, so archived specs aren't linted.

@@ -37,10 +37,10 @@ Plan *globally* what is expensive to change (architecture, data model, design sy
 The build runs as a repeated per-feature loop, each feature taken from the `00-product.md` backlog (spine-journey features first, so early work is a usable walking skeleton):
 
 ```
-spec-feature   → deep interview + mock the feature's screens from the design system + author its milestones   (attended, one session, ends on your sign-off)
-build          → implement-feature  (implement-milestone + verify-milestone per milestone)                     (fresh session, autonomous)
-verify         → verify-milestone per milestone, + the consolidated wave check on main                        (fresh session, autonomous)
-review-feature → render vs the feature's mockups, judge completeness + fidelity, refinement milestone          (attended)
+spec-feature   → deep interview + mock the feature's screens from the design system + author its milestones        (attended, one session, ends on your sign-off)
+build          → implement-feature  (implement-milestone + verify-milestone per milestone)                          (fresh session, autonomous)
+verify         → verify-milestone per milestone, + the consolidated wave check on main                             (fresh session, autonomous)
+review-feature → render vs the feature's workbench composition, judge completeness + fidelity, refinement milestone (attended)
 ```
 
 - **Build/verify in fresh sessions, separate from spec-feature** — the spec must be self-contained enough to build from cold; separating enforces that.

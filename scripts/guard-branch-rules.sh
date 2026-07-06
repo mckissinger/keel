@@ -48,7 +48,7 @@ cd "$ROOT" 2>/dev/null || true
 
 # --- hook input --------------------------------------------------------------
 
-CMD="" CMD_PARSED=0
+CMD="" CMD_PARSED=0 RAW=""
 read_hook_command() { # stdin JSON → CMD (tool_input.command), CMD_PARSED
   local input
   input="$(cat 2>/dev/null || true)"
@@ -66,6 +66,8 @@ c = (d.get("tool_input") or {}).get("command") or ""
 sys.stdout.write(c if isinstance(c, str) else "")
 ' 2>/dev/null || true)"
     CMD_PARSED=1
+  else
+    RAW="$input"
   fi
   return 0
 }
@@ -401,7 +403,22 @@ detect_strict_auto() { # WHITELIST: does $CMD exactly match the canonical delega
 # --- main ---------------------------------------------------------------------
 
 read_hook_command
-if [ "$CMD_PARSED" -ne 1 ]; then exit 0; fi # no jq/python3: this backstop degrades open
+if [ "$CMD_PARSED" -ne 1 ]; then
+  # No jq AND no python3: we cannot extract the command. Degrade CLOSED (the
+  # merge-guard.sh reader-less precedent): a crude data-only scan of the raw hook
+  # input — never parsed as JSON, never eval'd — blocks anything merge- or
+  # commit-shaped; only inputs the scan finds benign pass. Marker files are
+  # unreadable without a JSON reader and are treated as absent, as they already are.
+  # SUBSTRING match, no word boundaries: the raw text is JSON, where an escape
+  # like \t abuts the next word ("git\tmerge") and a \b anchor would miss it.
+  # Over-blocking benign text that merely contains these substrings is the
+  # accepted cost of failing closed here.
+  if printf '%s' "$RAW" | grep -qiE 'merge|push|commit'; then
+    echo "keel: cannot parse the hook input (neither jq nor python3 is available) and its raw text carries a merge/push/commit shape — blocked, fail closed. Build sessions never merge, and commits on the default branch need a branch first; install jq or python3 for full classification." >&2
+    exit 2
+  fi
+  exit 0
+fi
 if [ -z "$CMD" ]; then exit 0; fi           # not a Bash command payload
 
 DEFAULT_BRANCH="$(detect_default_branch)"

@@ -134,7 +134,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Change:    spec-change (a sub-feature tweak → one milestone, then the milestone verbs)
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
 - Cross-cut: debug
-- Autonomy:  keel:auto feature <slug> / keel:auto run [scope] (human-triggered only; enters and exits the autonomy mode)
+- Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:
 - Autonomy mode ACTIVE — level: ${MODE_LEVEL}, scope: ${MODE_SCOPE}. Merge authority is delegated to the server-side required checks via gh pr merge --auto, per decisions/2026-07-autonomy-modes.md — the checks decide, never agent judgment. Ledger every would-be ask to specs/runs/<run-id>/ (recorded deferral; silent deferral stays banned). Stop-points still halt: go-live, live-key swaps, and spend beyond pre-authorized caps stay attended.
@@ -157,7 +157,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Change:    spec-change (a sub-feature tweak → one milestone, then the milestone verbs)
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
 - Cross-cut: debug
-- Autonomy:  keel:auto feature <slug> / keel:auto run [scope] (human-triggered only; enters and exits the autonomy mode)
+- Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:
 - Never merge; the user reviews and merges. Open PRs and stop there. One attended exception: if the user has invoked /keel:auto-merge on this session, an explicitly-instructed, verified-pin-gate-passing gh pr merge <pr> --auto may land without the per-merge tap — you still never merge on your own initiative, and with no marker this line holds exactly as written (decisions/2026-07-04-attended-auto-merge.md).

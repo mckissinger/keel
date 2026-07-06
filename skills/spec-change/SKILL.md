@@ -18,7 +18,7 @@ Restate the change in one sentence (who it's for, what it enables). Surface the 
 
 ### 2. Workbench composition — bespoke sketch optional and asked (UI changes only)
 
-For a no-UI change (the profile's has-UI? verb, Q8.1), skip this. For a UI change, compose the change's surface(s) from the **real workbench components** (the built gallery per the M1 workbench verb, Q8.3) — that **real workbench composition is the fidelity reference**. A bespoke throwaway mockup is optional; **ask** rather than always sketching — most of the time the gallery already carries the intent:
+For a no-UI change (the profile's has-UI? verb, Q8.1), skip this. For a UI change, compose the change's surface(s) from the **real workbench components** (the built gallery, Q8.3) — that **real workbench composition is the fidelity reference**. A bespoke throwaway mockup is optional; **ask** rather than always sketching — most of the time the gallery already carries the intent:
 
 - *"This change is [a novel layout archetype] / [pure composition of existing gallery components]. Generate a bespoke divergence sketch?"* — default **yes** for a novel archetype, **skip** for pure recomposition.
 - If generated: `design/mockups/<change>/<screen>.html` (real data, real states) — an **optional divergence sketch** that picks the direction cheaply and is **never re-implemented as the spec**: the moment the direction is chosen it converges into the real workbench composition, and *that* is the reference. Then *"review it now, or trust it and proceed?"* (open / capture it for review per Q8.4).

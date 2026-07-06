@@ -472,6 +472,24 @@ run_guard "$R8" 'gh pr merge 123 --auto'
 expect_decision "attended marker + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-att9"
 STUB_PATH=""
 
+# ---- accepted classifier bypasses: ASSERTED, not closed ------------------------
+# These shapes are out of classification reach BY DESIGN: the guard is a text
+# classifier and cannot see through shell reassembly (`sh -c`, `eval`, piped
+# `xargs`) — the documented inherent limit; branch protection + required checks
+# are the authority, not this hook. This block pins TODAY'S behavior — each shape
+# is unclassified and allowed silently — as the ACCEPTED LIMIT, not a target to
+# close: a future edit that silently changes classification on these shapes must
+# fail here and become a conscious suite edit. R1 has no gate script, so a
+# classified merge shape would emit "ask" — silence proves unclassified.
+run_guard "$R1" "sh -c 'gh pr merge 5'"
+expect_silent "accepted limit: sh -c wrapped merge is unclassified (silent allow)"
+run_guard "$R1" "bash -lc 'gh pr merge 5'"
+expect_silent "accepted limit: bash -lc wrapped merge is unclassified (silent allow)"
+run_guard "$R1" 'eval "gh pr merge 5"'
+expect_silent "accepted limit: eval-carried merge is unclassified (silent allow)"
+run_guard "$R1" 'echo 5 | xargs gh pr merge'
+expect_silent "accepted limit: piped-xargs merge is unclassified (silent allow)"
+
 # ---- shipped shape ------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "merge-guard.sh is executable"
 else bad "merge-guard.sh is executable"; fi

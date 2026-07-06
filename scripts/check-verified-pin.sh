@@ -28,7 +28,15 @@ set -euo pipefail
 BASE_REF="${BASE_REF:-origin/main}"
 HEAD_REF="${1:-HEAD}"
 
-is_plan_path() { case "$1" in specs/*|design/*|decisions/*|deferrals/*) return 0 ;; *) return 1 ;; esac; }
+is_plan_path() {
+  case "$1" in
+    # Runtime-affecting spec files are code, not plan: a PR touching either needs a
+    # pinned milestone/chore spec, and a post-pin edit to either counts as drift.
+    specs/stack-profile.md|specs/run-command-inventory.txt) return 1 ;;
+    specs/*|design/*|decisions/*|deferrals/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 fail() { echo "verified-pin: FAIL — $1" >&2; exit 1; }
 
 # 0. Fail closed on unresolvable refs. A misconfigured CI (missing fetch, deleted stack
@@ -38,6 +46,14 @@ git rev-parse --verify --quiet "$BASE_REF^{commit}" >/dev/null \
   || fail "BASE_REF '$BASE_REF' does not resolve to a commit"
 git rev-parse --verify --quiet "$HEAD_REF^{commit}" >/dev/null \
   || fail "HEAD_REF '$HEAD_REF' does not resolve to a commit"
+
+# 0.5. Fail closed when no merge base exists. Both refs resolving is not enough: with
+#      disconnected histories the three-dot diff below fails INSIDE the process
+#      substitution, the failure never propagates past set -euo pipefail, and the empty
+#      result reads as "no changes — pass". Likely causes: a shallow CI clone
+#      (actions/checkout without fetch-depth: 0) or unrelated histories.
+git merge-base "$BASE_REF" "$HEAD_REF" >/dev/null 2>&1 \
+  || fail "no merge base between BASE_REF '$BASE_REF' and HEAD_REF '$HEAD_REF' — likely a shallow clone (use fetch-depth: 0 / git fetch --unshallow for a full fetch) or unrelated histories; the diff cannot be computed and must never read as 'no changes'"
 
 # 1. What does this PR change (vs the merge-base with BASE_REF)?
 changed=()

@@ -195,6 +195,57 @@ echo x >> deferrals/foo.md
 git add -A && git commit -qm 'deferrals only'
 check "deferrals-only PR is plan-only exempt" 0 "$BASE2"
 
+# 19. Merge-base precondition (the 2026-07-05 review's live repro): both refs resolvable
+#     but sharing NO merge base — an orphan-history branch carrying code + an UNPINNED
+#     milestone spec. Was: the three-dot diff failed inside the process substitution,
+#     read as empty, and the gate passed open ("no changes — pass"). Now: fail closed,
+#     naming both refs and the shallow-clone/unrelated-histories cause.
+git checkout -q --orphan c19-orphan
+git rm -rfq . >/dev/null 2>&1 || true
+mkdir -p src specs/milestones
+echo "code" > src/orphan.ts
+echo "# m-orphan, unpinned" > specs/milestones/m-orphan.md
+git add -A && git commit -qm "orphan history: code + unpinned milestone spec"
+check "orphan-history PR (no merge base) fails closed (was: passed open)" 1 "$BASE2"
+check_msg "no-merge-base failure names both refs" "no merge base between BASE_REF '$BASE2' and HEAD_REF 'HEAD'" "$BASE2"
+check_msg "no-merge-base failure names the shallow-clone/unrelated-histories cause" "shallow clone" "$BASE2"
+check_msg "no-merge-base failure names the fix (full fetch)" "fetch-depth: 0" "$BASE2"
+
+# 20/21. Runtime-affecting spec files are code, not plan: a PR touching only
+#        specs/stack-profile.md or specs/run-command-inventory.txt is NOT plan-exempt —
+#        the gate proceeds to the pin requirement (and fails here, no spec pinned).
+fresh c20-stack-profile "$BASE2"
+echo "run: npm test" > specs/stack-profile.md
+git add -A && git commit -qm "stack profile only"
+check "stack-profile-only PR is not plan-exempt (proceeds to the pin requirement)" 1 "$BASE2"
+fresh c21-inventory "$BASE2"
+echo "npm test" > specs/run-command-inventory.txt
+git add -A && git commit -qm "run-command inventory only"
+check "run-command-inventory-only PR is not plan-exempt (proceeds to the pin requirement)" 1 "$BASE2"
+
+# 22. A post-pin edit to a runtime-affecting spec file lands in the DRIFT set → fail.
+fresh c22-profile-drift "$BASE2"
+echo "code" > src/w.ts
+echo "# m22" > specs/milestones/m22.md
+git add -A && git commit -qm "m22 code"
+sha="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-05, via verifier (evidence in PR #22)\n' "$sha" >> specs/milestones/m22.md
+git add -A && git commit -qm "verify(m22): record"
+echo "post-pin profile edit" > specs/stack-profile.md
+git add -A && git commit -qm "edit stack profile after the pin"
+check "post-pin edit to stack-profile.md is drift → fail" 1 "$BASE2"
+
+# 23. Positive control: a stack-profile change riding a properly pinned milestone passes —
+#     the carve-out makes the file code, not unmergeable.
+fresh c23-profile-pinned "$BASE2"
+echo "profile" > specs/stack-profile.md
+echo "# m23" > specs/milestones/m23.md
+git add -A && git commit -qm "m23: profile change"
+sha="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-05, via verifier (evidence in PR #23)\n' "$sha" >> specs/milestones/m23.md
+git add -A && git commit -qm "verify(m23): record"
+check "stack-profile change with a valid pin passes (treated exactly as code)" 0 "$BASE2"
+
 # HEAD-side closure of the window (a PR that itself adds the first milestone spec is
 # validated normally, never exempted) is covered by cases 2 (with pin → pass) and
 # 3 (without pin → fail); chore specs closing the window by case 9.

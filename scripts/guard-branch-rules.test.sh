@@ -212,6 +212,68 @@ git -C "$R2" -c user.email=t@keel.test -c user.name=t commit -qm spoof-attended
 run_rules "$R2" 'gh pr merge 123 --auto'
 expect_block "git-tracked attended marker is a spoof → treated absent → exit 2" "never merge"
 
+# ---- reader-less degrade: no jq AND no python3 → raw-scan fallback, fail CLOSED --
+# Contract (m1): a reader-less environment can no longer silently allow a merge-
+# or commit-shaped command. The guard falls back to a raw data-only scan of the
+# hook input (the merge-guard.sh degrade precedent): merge/push/commit-shaped raw
+# text → exit 2; clearly benign input → exit 0. The fallback never parses JSON
+# and never evals the input; markers are unreadable and treated as absent.
+lean_path() { # <dir> <binaries...> → a PATH dir holding ONLY those binaries
+  local d="$1" b p; shift
+  mkdir -p "$d"
+  for b in "$@"; do
+    p="$(command -v "$b" 2>/dev/null)" && ln -sf "$p" "$d/$b"
+  done
+}
+LEAN="$TMP/leanbin"          # everything the guard needs EXCEPT jq/python3
+lean_path "$LEAN" bash sh cat git grep tr
+LEAN_PY="$TMP/leanbin-py"    # python3 present, jq absent
+lean_path "$LEAN_PY" bash sh cat git grep tr python3
+LEAN_JQ="$TMP/leanbin-jq"    # jq present, python3 absent
+lean_path "$LEAN_JQ" bash sh cat git grep tr jq
+
+run_rules_path() { # <PATH-dir> <repo> <command text> → OUT, ERR, RC
+  local lp="$1" repo="$2" cmd="$3" json
+  json="$(json_quote "$cmd")"
+  OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$json" \
+    | CLAUDE_PROJECT_DIR="$repo" PATH="$lp" bash "$SCRIPT" 2>"$TMP/err.txt")" && RC=0 || RC=$?
+  ERR="$(cat "$TMP/err.txt" 2>/dev/null)"
+}
+
+make_repo r3; R3="$REPO" # sitting on main (the default branch)
+make_repo r4; R4="$REPO" # a build branch (for the reader-present discriminator)
+git -C "$R4" checkout -q -b feat/work
+
+run_rules_path "$LEAN" "$R3" 'git commit -m "quick fix"'
+expect_block "reader-less: commit-shaped raw input → exit 2 (raw-scan fallback)" "fail closed"
+run_rules_path "$LEAN" "$R3" 'gh pr merge 5'
+expect_block "reader-less: merge-shaped raw input → exit 2 (raw-scan fallback)" "fail closed"
+run_rules_path "$LEAN" "$R3" 'git push origin main'
+expect_block "reader-less: push-shaped raw input → exit 2 (raw-scan fallback)" "fail closed"
+run_rules_path "$LEAN" "$R3" 'ls -la'
+expect_silent "reader-less: benign raw input still exits 0, silent"
+
+# With EITHER reader present, exit codes are today's — full classification,
+# including the fresh-marker defer row (regression against the fallback leaking).
+for RP in "$LEAN_PY" "$LEAN_JQ"; do
+  rn="$(basename "$RP")"
+  run_rules_path "$RP" "$R3" 'git commit -m "quick fix"'
+  expect_block "$rn: git commit on the default branch → exit 2 (unchanged)" "branch first"
+  run_rules_path "$RP" "$R3" 'gh pr merge 12'
+  expect_block "$rn: gh pr merge → exit 2 (unchanged)" "never merge"
+  run_rules_path "$RP" "$R3" 'git status'
+  expect_silent "$rn: benign git command silent (unchanged)"
+  # Discriminator: commit on a FEATURE branch is silent under a reader — the raw
+  # scan would have blocked it (its text carries "commit"), so this proves full
+  # classification, not the fallback, decided.
+  run_rules_path "$RP" "$R4" 'git commit -m "milestone work"'
+  expect_silent "$rn: git commit on a feature branch → exit 0 (classification, not the raw scan)"
+  write_attended "$R3" "$ATT_JSON"
+  run_rules_path "$RP" "$R3" 'gh pr merge 123 --auto'
+  expect_silent "$rn: fresh attended marker + bare --auto → exit 0 (defer row unchanged)"
+  rm -f "$R3/.claude/keel-attended-merge.json"
+done
+
 # ---- shipped shape --------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "guard-branch-rules.sh is executable"
 else bad "guard-branch-rules.sh is executable"; fi

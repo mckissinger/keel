@@ -80,6 +80,22 @@ mkroot notrailingnl skills/x/SKILL.md "tail anchor here"
 printf '%s\t%s' "skills/x/SKILL.md" "tail anchor here" > "$ROOT/scripts/skill-anchors/f.txt" # no \n
 run "$ROOT"; expect "final line without trailing newline is read → pass" 0 "PASS"
 
+# 8b. NEGATIVE anchors ('!' prefix): banned-string-absent → pass; present → fail
+#     with the banned-string message; a '!' line still requires the named file.
+mkroot negclean skills/x/SKILL.md "the converged sentence, old claim gone"
+{ printf '%s\t%s\n' "skills/x/SKILL.md" "converged sentence"; \
+  printf '!%s\t%s\n' "skills/x/SKILL.md" "the old banned claim"; } \
+  > "$ROOT/scripts/skill-anchors/f.txt"
+run "$ROOT"; expect "negative anchor, banned string absent → pass" 0 "PASS"
+
+mkroot negdirty skills/x/SKILL.md "someone re-added the old banned claim here"
+printf '!%s\t%s\n' "skills/x/SKILL.md" "the old banned claim" > "$ROOT/scripts/skill-anchors/f.txt"
+run "$ROOT"; expect "negative anchor, banned string present → fail, names it as banned" 1 "BANNED string"
+
+mkroot negnofile skills/x/SKILL.md "whatever"
+printf '!%s\t%s\n' "skills/gone/SKILL.md" "anything" > "$ROOT/scripts/skill-anchors/f.txt"
+run "$ROOT"; expect "negative anchor on a missing file → fail (not a vacuous pass)" 1 "named file does not exist"
+
 # 9. This repo: the shipped auto-hardening.txt anchors are all present.
 run "$REPO_ROOT"; expect "this repo's anchors all present → pass" 0 "PASS"
 

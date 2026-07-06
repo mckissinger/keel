@@ -174,6 +174,29 @@ run_rules "$R2" 'gh pr merge 123 --auto'
 expect_block "attended marker + valid autonomy mode both active → exit 2 (mode precedence suppresses the defer)" "never merge"
 rm -f "$R2/.claude/keel-autonomy.json"
 
+# genesis-level parity (auto-genesis-m3): genesis is a recognized valid level, so
+# it behaves exactly as run in build scope — a valid genesis mode suppresses the
+# attended defer, its TTL is enforced, and a bogus/expired genesis level is treated
+# absent (fail closed).
+write_attended "$R2" "$ATT_JSON"
+write_mode "$R2" "$(printf '{"level":"genesis","scope":"idea-slug","created":"%s","invoker":"human:keel-auto"}' "$(ts_ago 1)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "attended marker + valid genesis-level mode → exit 2 (genesis suppresses the defer, parity with run)" "never merge"
+# TTL applies to genesis: an expired genesis mode no longer suppresses → the
+# attended defer returns (exit 0), exactly as an expired run mode.
+write_mode "$R2" "$(printf '{"level":"genesis","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 25)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_silent "expired genesis mode (25h) does not suppress the attended defer → exit 0"
+rm -f "$R2/.claude/keel-autonomy.json" "$R2/.claude/keel-attended-merge.json"
+# Standing alone (no marker), bogus/expired genesis levels open nothing → exit 2.
+write_mode "$R2" "$(printf '{"level":"genesis","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 25)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "expired genesis mode (25h), no marker → exit 2 (treated absent, fail closed)" "never merge"
+write_mode "$R2" "$(printf '{"level":"Genesis","scope":"x","created":"%s","invoker":"human"}' "$(ts_ago 1)")"
+run_rules "$R2" 'gh pr merge 123 --auto'
+expect_block "bogus level \"Genesis\" (casing), no marker → exit 2 (whitelist exact, fail closed)" "never merge"
+rm -f "$R2/.claude/keel-autonomy.json"
+
 # Malformed marker → treated absent → exit 2.
 write_attended "$R2" '{"scope":"session","created":'
 run_rules "$R2" 'gh pr merge 123 --auto'

@@ -109,7 +109,7 @@ read_mode_file() {
   scope="$(mode_json_str "$content" scope)"
   created="$(mode_json_str "$content" created)"
   invoker="$(mode_json_str "$content" invoker)"
-  case "$lvl" in feature | run) ;; *) return 0 ;; esac
+  case "$lvl" in feature | run | genesis) ;; *) return 0 ;; esac # feature|run|genesis; any other → no mode
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0
   created_fresh "$created" 86400 || return 0 # TTL 24h: expired/unparseable → no mode banner
   MODE_ACTIVE=1

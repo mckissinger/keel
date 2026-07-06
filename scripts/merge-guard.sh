@@ -23,7 +23,9 @@
 # --- Autonomy-mode file contract (this guard is the reading owner) -----------
 #
 # Path:    .claude/keel-autonomy.json  (under CLAUDE_PROJECT_DIR)
-# Fields:  level   — "feature" | "run" (any other value → the file is invalid)
+# Fields:  level   — "feature" | "run" | "genesis" (any other value → the file
+#                    is invalid); all three yield the identical decision table —
+#                    only the level token in the emitted reason differs
 #          scope   — what the mode covers (feature slug / run scope string)
 #          created — when the mode was entered, ISO-8601 UTC (the `...Z` form
 #                    `date -u +%Y-%m-%dT%H:%M:%SZ` prints); parsed AS DATA
@@ -245,7 +247,7 @@ read_mode_file() { # .claude/keel-autonomy.json → MODE_ACTIVE/MODE_LEVEL; any 
   scope="$(json_str "$content" scope)"
   created="$(json_str "$content" created)"
   invoker="$(json_str "$content" invoker)"
-  case "$lvl" in feature | run) ;; *) return 0 ;; esac # unknown level → no mode
+  case "$lvl" in feature | run | genesis) ;; *) return 0 ;; esac # unknown level → no mode
   # All contract fields must be present, non-empty strings — a partial file
   # (or malformed JSON, which parses to nothing) fails closed.
   [ -n "$scope" ] && [ -n "$created" ] && [ -n "$invoker" ] || return 0

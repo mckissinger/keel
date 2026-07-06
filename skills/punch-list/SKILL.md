@@ -12,6 +12,7 @@ The batch lane for the laundry list — many tiny, mostly-independent changes th
 
 - **Punch-list** — several trivial, independently-stated changes (a typo at `x.ts:12`, a missing `aria-label` on the submit button, a stale comment, a `lucide` → the design icon swap, a dep bump). Each is checkable on its own and touches little.
 - **Not punch-list** — anything that needs **design**, adds a **new surface**, or requires **cross-item reasoning** (item B only makes sense after item A). One substantial change → `spec-change`. A coherent body of work → a feature. The intake **routes these out** rather than forcing them into the batch.
+- This is the same rule `debug` routes by after diagnosis: no design/spec judgment → a punch-list item; a spec'd done-condition or any design decision → `spec-change`.
 
 ## The pass
 

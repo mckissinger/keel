@@ -12,6 +12,10 @@
 #   * the FIRST tab splits path from anchor (an anchor may contain spaces)
 #   * blank lines and lines starting with '#' are skipped
 #   * <literal-anchor> is matched as a FIXED string (grep -F), not a regex
+#   * a line prefixed '!' is a NEGATIVE anchor: it asserts the fixed string is
+#     ABSENT from its named file (the committed form of "this claim was removed
+#     and must stay removed"). The named file must still exist — a missing file
+#     is an error, not a vacuous pass.
 #
 # Anchor sets are FILE-PER-FEATURE: a later feature adds its own
 # scripts/skill-anchors/<feature>.txt and never edits an existing one (the §4
@@ -50,6 +54,8 @@ for af in "${anchor_files[@]}"; do
   while IFS= read -r line || [ -n "$line" ]; do
     lineno=$((lineno + 1))
     case "$line" in '' | '#'*) continue ;; esac
+    negated=0
+    case "$line" in '!'*) negated=1; line="${line#!}" ;; esac
     case "$line" in
       *$'\t'*) : ;;
       *) fail "$af:$lineno — malformed line (no TAB between file-path and anchor): $line"; continue ;;
@@ -63,7 +69,11 @@ for af in "${anchor_files[@]}"; do
       fail "$af:$lineno — named file does not exist: $path"; continue
     fi
     checked=$((checked + 1))
-    if ! grep -qF -- "$anchor" "$path"; then
+    if [ "$negated" -eq 1 ]; then
+      if grep -qF -- "$anchor" "$path"; then
+        fail "$path contains a BANNED string (negative anchor declared in $af:$lineno): $anchor"
+      fi
+    elif ! grep -qF -- "$anchor" "$path"; then
       fail "$path no longer contains its anchor (declared in $af:$lineno): $anchor"
     fi
   done < "$af"

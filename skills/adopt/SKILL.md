@@ -12,6 +12,7 @@ Stand up keel's **durable foundation on an existing project** — the brownfield
 ## Triage — adopt vs kickoff
 
 - **Use `adopt`** when there's already code: a feature against an existing codebase, or a small/contained product that consumes an existing engine/host-app/platform whose stack and design language are already real.
+- **Adopt vs no-foundation — one boundary:** **adopt** when the project will take ongoing keel-managed development (retrofit the foundation once); **no-foundation** (`spec-feature`'s `references/no-foundation.md`) when one feature is being built against code that won't otherwise be keel-managed (discover just what the feature needs).
 - **Use `kickoff`** instead when it's a genuinely fresh, multi-feature greenfield app with nothing to discover — a global plan over many features is cheaper to decide once, up front, than to back-fill.
 
 ## Movement 0 — Ground in the existing codebase (mandatory, first)

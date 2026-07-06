@@ -27,7 +27,7 @@ The milestone-authoring + verification rules it builds against live in `${CLAUDE
 ## Preconditions
 
 - The milestone's spec exists on `main` with its **done-conditions** (tagged `[auto]`/`[runtime]`/`[attended]`) and its `verification:` line — written by `spec-feature` or `spec-change` and landed in the plan PR. If there's no milestone spec, you're not ready to build; go author it first.
-- The feature's mockups (`design/mockups/<feature>/`) and `specs/design.md` exist for a UI milestone (skip for a no-UI milestone, per the profile's Q8).
+- For a UI milestone: `specs/design.md` + the built workbench/gallery exist, and the feature spec names this feature's **workbench composition** (the fidelity reference the milestone's done-conditions point at). A divergence sketch under `design/mockups/<feature>/` is optional — used when present, never required; a missing `design/mockups/` directory does not block a UI milestone whose spec names its workbench components. (Skip all of this for a no-UI milestone, per the profile's Q8.)
 
 ## The pass
 

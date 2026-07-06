@@ -28,6 +28,8 @@ Set up the project environment from the environment contract in `specs/01-archit
 
    The allowlist is safe only because the environment holds test-mode credentials — it and the spec's test-key rule are a paired system. Never widen one without re-checking the other.
 
+   **Seed `specs/run-command-inventory.txt` alongside this allowlist — same step, same sitting.** It holds every command shape an autonomous run will execute, **one bare command shape per line** (e.g. `pnpm test`, `supabase db push`, `gh pr merge 5 --auto`; blank lines and `#` comments are ignored), derived from the same contract + baseline you just allowlisted. This is the file `scripts/check-auto-preflight.sh` hard-requires: the preflight fails closed when it is missing, dry-runs every line against the committed allowlist (a shape no allow rule covers is a launch-blocking gap), and rejects any `gh pr merge` line that is bundled/chained rather than bare. Seeding it here — while you're already enumerating the run's commands — is what makes the preflight's dry-run meaningful rather than vacuously green.
+
    **Seed keel itself in the same committed file, so every collaborator's session has it.** So that anyone who opens the project gets keel's skills and hooks with no manual install, this same `.claude/settings.json` also carries keel's marketplace + plugin — `extraKnownMarketplaces` (keel's GitHub source, repo `mckissinger/keel`) and `enabledPlugins` (`keel@keel`):
 
    ```json

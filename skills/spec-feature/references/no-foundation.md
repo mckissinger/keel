@@ -2,6 +2,8 @@
 
 The path for projects where the four kickoff outputs spec-feature consumes — `00-product.md`, `01-architecture.md`, `design.md` + gallery, a green `provision` — **do not exist**, because the project never ran a greenfield kickoff. Two cases trigger it: a feature against an **existing codebase**, and a **small/contained new product** that consumes an existing engine, host app, or platform rather than standing up its own world.
 
+The cut against `adopt`: **no-foundation** is for one feature built against code that won't otherwise be keel-managed — discover just what the feature needs; **adopt** is for a project that will take ongoing keel-managed development — retrofit the foundation once. One boundary, stated from both sides (adopt's SKILL.md carries the same line).
+
 **The core idea.** spec-feature's three movements are foundation-*independent* in spirit; only its *preconditions* assume a greenfield kickoff authored those four artifacts. In a project with code already on disk, most of what kickoff would have **authored**, you can instead **discover from the code**. So the rule is: satisfy each missing precondition the cheapest correct way — discover it where it already exists, author the minimum where it doesn't — and **seed a thin foundation as you go**, so it accretes feature-by-feature instead of all at once. One precondition is a hard floor you cannot fake: the design system (a UI fidelity check needs something to check against).
 
 This path does not change the three movements or the shared `milestones-and-verification.md` rules. It only stands in for the missing foundation, then returns you to them.
@@ -50,7 +52,7 @@ With Movement 0 done and the floor satisfied, run Movements 1–3 from `SKILL.md
 
 ## Output + handoff (adjustments)
 
-Same outputs as a normal spec-feature session — the feature spec (`specs/features/<feature>.md`), the mockups (`design/mockups/<feature>/`), the milestone specs (`specs/milestones/<slug>.md`) — **plus** the thin foundation you seeded as a byproduct: the stub `00-product.md`, the feature-scoped `01-architecture.md`, the discovered/adopted `design.md`. All of these are `specs/**` + `design/**`, so they ride the **plan PR** as a plan-only change set.
+Same outputs as a normal spec-feature session — the feature spec (`specs/features/<feature>.md`) carrying the **workbench composition reference** (the named components each screen composes — the standard design artifact, per the parent SKILL's Movement 2), any **optional divergence sketches** (`design/mockups/<feature>/` — only for a genuinely novel layout archetype, never required), the milestone specs (`specs/milestones/<slug>.md`) — **plus** the thin foundation you seeded as a byproduct: the stub `00-product.md`, the feature-scoped `01-architecture.md`, the discovered/adopted `design.md`. All of these are `specs/**` + `design/**`, so they ride the **plan PR** as a plan-only change set.
 
 Two carve-outs:
 - **The CI-gate bootstrap is not plan-only.** If the repo lacks the `verified-pin` job, establishing it (`scripts/check-verified-pin.sh` + the CI wiring + branch protection) is *code* and would break the plan-PR's plan-only status. Land it as a small **one-time setup PR first** (mirrors `spec-foundation`'s repo-setup step), before the feature's plan PR — so later code PRs are gated without contaminating the plan PR.

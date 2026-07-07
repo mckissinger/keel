@@ -8,6 +8,12 @@ The test for every choice: *would I have made this exact choice for a completely
 
 ## The fingerprint patterns
 
+**These patterns are calibrated to current-generation models (as of 2026-07) and decay as
+models retrain.** Named default-cluster blocklists shift convergence rather than eliminate it:
+ban today's clusters and the next model generation converges on the next nameable one. Expect
+this list to be refreshed periodically; the durable complement that survives retraining is the
+cross-direction convergence self-check below, which needs no named patterns at all.
+
 ### Typography tells
 1. **Inter for everything**, especially a centered hero/page title. Inter is a fine typeface that has become the Helvetica of the LLM era — its presence alone now signals "generated."
 2. **The recycled pairings**: Space Grotesk, Instrument Serif, Geist, used the way every AI output uses them.
@@ -68,6 +74,17 @@ When the platform target is **mobile or cross-platform** (Phase 0, from the prof
 - **System affordances ignored.** Safe-area insets, the notch/dynamic-island, home indicator, keyboard avoidance, dark-mode and dynamic-type/text-scaling, and the accessibility reduce-motion flag not respected — the surface reads as a web page in a shell, not a native app.
 
 The inversion still holds: brand-universal choices (the token palette, type scale, iconography, information architecture) **should** carry across platforms unchanged — porting those is correct, not slop. It is only the **native-feel** layer (navigation, gestures, system controls) that must be native per platform.
+
+## The cross-direction convergence self-check (the durable complement)
+
+The fingerprint list above names *known* defaults; this check catches the *unknown* ones — and
+because it compares directions against each other rather than against a dated list, it survives
+model retraining. After drafting the Phase 1 directions, compare them pairwise: **when two
+drafted directions resemble each other** — same depth grammar, same density stance, same type
+system wearing two palettes — **treat the resemblance as a shared default, not a coincidence**,
+and discard or rework at least one of the pair until the set is genuinely divergent. Whatever
+you produced twice unprompted is what the model produces for *any* app; convergence inside your
+own draft set is the fingerprint diagnosing itself.
 
 ## How to use this file
 

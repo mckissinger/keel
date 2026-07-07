@@ -14,6 +14,7 @@ This skill is for **product UI** (apps people work inside: dashboards, CRMs, tab
 
 ```
 Phase 0  DISCOVER   → learn the app, record its platform target + native-feel conventions, write a design brief, confirm with user
+Phase 0.5 REFERENCE → pull + deconstruct a generous visual-reference set (source ladder; skippable down to text-only)
 Phase 1  DIRECT     → propose 3–5 structurally distinct directions (token specs)
 Phase 2  MOCK       → build one throwaway mockup per direction (profile's exploration medium; one screen) + compare gallery
 Phase 3  SELECT     → user reviews side-by-side, picks (or hybridizes), decision recorded
@@ -26,6 +27,7 @@ Phase 4  APPLY      → converge the winner into the real workbench (the profile
 The phase is complete when each of these holds — treat them as the exit conditions, not a form to transcribe:
 
 - [ ] Phase 0: codebase explored, platform target + native-feel conventions recorded, design brief written, brief confirmed by user
+- [ ] Phase 0.5: reference mode determined (highest available rung of the source ladder, stated to the user); if a reference source exists, the set pulled generously + deconstructed into direction-spec vocabulary per `references/visual-reference.md`
 - [ ] Phase 1: 3–5 directions specced, each passed the anti-slop check and the distinctness check, each implementable on the platform target
 - [ ] Phase 2: throwaway mockups built (profile's exploration medium) with real domain data, compare.html gallery assembled, self-reviewed via screenshots if a browser is available — judged on look only
 - [ ] Phase 3: user decision captured in the design decision file (`specs/design.md` in a spec project, else `design/design-decisions.md`)
@@ -53,9 +55,22 @@ Before proposing anything visual, build a real model of the product. Investigate
 
 Write the findings into `design/design-brief.md` using `templates/design-brief.md`. Then present a compact summary to the user and ask **at most 2–3 questions**, only about things you genuinely could not infer (e.g., "should the existing green logo color survive the redesign?"). Get a confirmation before Phase 1 — a wrong brief poisons everything downstream.
 
+## Phase 0.5 — Reference: pull and deconstruct visual references
+
+Read `references/visual-reference.md` for the full mechanics. This step sits between the brief
+and the directions and is **explicitly skippable down the source ladder** — there is no hard MCP
+dependency. Run the ladder: a connected design-reference MCP (Mobbin is the known instance) →
+user-supplied screenshots → the existing text-only derivation, and **tell the user which mode
+ran**. When a reference source exists: delegate a **generous, diverse pull** (10–20+ screens
+across the app's archetypes, plus flows where a journey matters) to a **subagent** that returns
+distilled deconstructions + reference URLs — never raw screenshot volume into this session — and
+require the **deconstruction pass** (palette, type roles, density, layout architecture, depth
+grammar, candidate signature devices) on every kept reference before Phase 1 begins. On the
+text-only rung, note that mode and proceed to Phase 1 exactly as before.
+
 ## Phase 1 — Direct: propose 3–5 genuinely distinct directions
 
-Read `references/direction-recipes.md` before doing this phase, and `references/anti-slop.md` always.
+Read `references/direction-recipes.md` before doing this phase, and `references/anti-slop.md` always. When Phase 0.5 produced deconstructed references, directions may derive from those extractions alongside the domain — a direction can cite the extractions that seed it (never a raw image), and reference-derived directions still pass the anti-slop gate and the distinctness test like any other.
 
 A "direction" is a complete, named visual system — not a color swap. Each direction gets a spec (use `templates/direction-spec.md`):
 
@@ -94,7 +109,7 @@ Present: **open `design/mockups/compare.html` in the browser for the user** (`op
 When the user picks (or hybridizes):
 
 1. If hybrid, produce one merged direction spec and (if the merge is non-obvious) one merged mockup for sign-off.
-2. Write the decision file: the chosen direction's full spec — tokens, type, density, signature element, **and the material palette (icon set, motion library + stance, the motion + interaction-state tokens, chart/data-viz library + treatment, component primitives)** — the rejected directions with one line each on *why* they lost, and any user quotes about taste. **Location: if the project has a `specs/` folder, write `specs/design.md` — the spec is the single source of design memory; otherwise `design/design-decisions.md`.** `design.md` is the *owner* of the design-consequential library choices; the architecture spec's stack list references them, it does not re-decide them (one owner per fact, or the two files drift). Future sessions (and future Claude instances) read it instead of re-litigating.
+2. Write the decision file: the chosen direction's full spec — tokens, type, density, signature element, **and the material palette (icon set, motion library + stance, the motion + interaction-state tokens, chart/data-viz library + treatment, component primitives)** — the rejected directions with one line each on *why* they lost, and any user quotes about taste. **Include the reference lineage**: the chosen direction's reference screens (URLs + extraction notes from Phase 0.5), so later sessions and `review-feature` know what the direction converged toward; on the text-only rung, record that no references were used. **Location: if the project has a `specs/` folder, write `specs/design.md` — the spec is the single source of design memory; otherwise `design/design-decisions.md`.** `design.md` is the *owner* of the design-consequential library choices; the architecture spec's stack list references them, it does not re-decide them (one owner per fact, or the two files drift). Future sessions (and future Claude instances) read it instead of re-litigating.
 3. Emit the final token set in the project's native format (Tailwind v4 `@theme` block, shadcn CSS variables, or plain CSS custom properties — whatever Phase 0 found).
 4. **Name any two recorded behaviors that act on the same element or attribute** — each may be individually correct yet collide in code. A motion treatment and a static encoding on the same mark are the classic trap: "the chart line draws in on mount" and "series are differentiated by dash pattern" both target the line's `stroke-dasharray`, so the naïve draw-in (animating the dash) silently erases the differentiator — and *both* requirements still read as satisfied on paper (this is a real bug from an earlier run; the fix was to draw in via a clip-path reveal so the dash survives). When the same surface carries two requirements (motion + encoding, theme-swap + a hardcoded value, density + a fixed height), write the interaction into `design.md` so they're built to compose, not as independent lines that each pass alone.
 
@@ -132,6 +147,7 @@ The workbench verb is **profile-driven**. On the hardened web stack it is a **`/
 | File | Read when |
 |---|---|
 | `references/anti-slop.md` | Always, before Phase 1. The empirical list of AI-design fingerprints to avoid, and why. |
+| `references/visual-reference.md` | Phase 0.5. The source ladder, the generous-volume + subagent-delegation mechanics, and the mandatory deconstruction pass that turns references into direction-spec vocabulary. |
 | `references/direction-recipes.md` | Phase 1. Axes of variation, direction archetypes for app UI, how to make 5 directions truly different. |
 | `references/product-ui-craft.md` | Phase 2 and 4. App-specific craft: density, hierarchy, tables, forms, states, color-as-meaning, typography for data, accessibility floor. |
 | `references/stack-and-mockups.md` | Phase 2 and 4. The **web** mockup + workbench mechanics — one instance of the profile's exploration/workbench verbs: mockup file rules, web token wiring, screenshot self-review. Mobile is derivable against the stack profile (Q8.2–Q8.4), not spelled out here. |

@@ -54,3 +54,14 @@ verification: fresh-context verifier subagent against this spec + the
 `[runtime]` conditions: the deliverable is skill prose with no runnable surface; the
 behavioral effect (sessions actually running the pull) is observable only in later
 downstream spec-feature sessions, out of milestone scope by construction.
+
+verified: clean at a5d6bbb, 2026-07-10, via fresh-context keel:verifier subagent — Movement 1
+paragraph default-on with delegation-scoped cite, flow-shaped vocabulary, and the recorded
+text-only floor (SKILL.md:37); the feature-spec contents enumeration carries the mandatory
+`flow research:` entry + sketch lineage (SKILL.md:61); Movement 2 pull default-on before the
+sketch with lineage recorded and retroactive citation banned, pure-recomposition guard
+explicit (SKILL.md:46); flows-not-looks boundary intact, no new visual-pull surface;
+autonomy clause present (SKILL.md:75); review-feature names the feature-spec sketch lineage
+as supplementary consumer (review-feature/SKILL.md:25); diff vs main touches exactly the two
+skill files (+5/−5), nothing under scripts/ or hooks/; all five repo checks green on the
+branch. (evidence: verifier report in PR)

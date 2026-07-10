@@ -34,6 +34,8 @@ Apply the `interview` discipline — restate the goal, surface open decisions, d
 - **The edges**: permissions/role differences, validation, conflicts, the worst-case screen.
 - **Cross-feature seams**: what existing surface this feature mounts into or links to (the integration seam — name it now, per the shared rules, or it's discovered at merge).
 
+**Scoped reference research — flows, not looks.** While enumerating the states and interactions above, a connected design-reference MCP's *flow-level* search (Mobbin's `search_flows` is the known instance) may be consulted for **interaction patterns** — which states comparable products surface, how a flow's steps sequence, where an action lives — to catch what the enumeration would otherwise miss. Findings land as **UX-completeness done-conditions** (a state to cover, a step to include, a placement to name), never as tokens or visual choices: reference pulls for *looks* stay gated at Movement 2's novel-archetype divergence-sketch case, and nowhere else.
+
 End the interview with a one-paragraph feature definition and the resolved decision list. If you couldn't write that paragraph, you're not done interviewing. Then **synthesize that understanding (plus any stack-profile delta) and get the user's explicit sign-off before Movement 2 — the confirm-before-author gate.** Don't start composing or authoring until the interview is confirmed.
 
 ### 2. Design the feature's screens (compose the real workbench)

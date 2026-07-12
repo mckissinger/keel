@@ -56,6 +56,21 @@ is_plan_path() {
 }
 fail() { echo "verified-pin: FAIL — $1" >&2; exit 1; }
 
+# -1. Best-effort base-ref freshness. A stale remote-tracking ref (origin/main not
+#     fetched since a sibling merged) makes the three-dot diff below span already-merged
+#     work and report FALSE drift on files this PR never touched. So when BASE_REF names
+#     a remote-tracking ref, refresh it from origin first. Best-effort only: a failed
+#     fetch (offline, no remote, deleted remote) warns on stderr and proceeds with the
+#     local ref — the fetch itself is never a hard failure. All fail-closed behavior
+#     below (unresolvable refs, no merge base) is unchanged.
+case "$BASE_REF" in
+  origin/*)
+    branch="${BASE_REF#origin/}"
+    git fetch origin "+refs/heads/$branch:refs/remotes/origin/$branch" >/dev/null 2>&1 \
+      || echo "verified-pin: WARN — could not fetch 'origin/$branch' to refresh BASE_REF; proceeding with the local ref" >&2
+    ;;
+esac
+
 # 0. Fail closed on unresolvable refs. A misconfigured CI (missing fetch, deleted stack
 #    parent) must never read as "no changes — pass": the diff's failure would otherwise
 #    hide inside the process substitution below and the gate would exit 0.
@@ -119,12 +134,19 @@ for spec in "${specs[@]}"; do
   line="$(git show "$HEAD_REF:$spec" 2>/dev/null | grep -m1 '^verified:' || true)"
   [ -z "$line" ] && fail "$spec has no 'verified:' line"
 
-  case "$line" in
+  # Caveat scan: whole line, minus backticked spans. The caveat rule's intent lives in
+  # the pin's own prose, so a backticked domain term that merely contains a caveat word
+  # (e.g. `pending-leads`) must not trip it — while a bare caveat anywhere still fails.
+  scrubbed="$(printf '%s\n' "$line" | sed 's/`[^`]*`//g')"
+  case "$scrubbed" in
     *pending*|*unverified*|*"to be verified"*)
-      fail "$spec verified: line carries a pending/unverified caveat — a pin is never written while a check is pending: $line" ;;
+      fail "$spec verified: line carries a pending/unverified caveat — a pin is never written while a check is pending; a domain term that merely contains a caveat word must be backticked (e.g. \`pending-leads\`): $line" ;;
   esac
 
-  sha="$(printf '%s\n' "$line" | sed -nE 's/.* at ([0-9a-f]{7,40}),.*/\1/p')"
+  # SHA extraction: the FIRST ' at <hex>,' occurrence on the line, never the last — a
+  # carry-forward clause mentioning a second SHA later on the line must not outrank the
+  # real pin (a greedy .*-anchored sed matches the LAST occurrence).
+  sha="$(printf '%s\n' "$line" | grep -oE ' at [0-9a-f]{7,40},' | head -n1 | sed -E 's/ at ([0-9a-f]+),/\1/' || true)"
   [ -z "$sha" ] && fail "$spec verified: line has no parseable pinned <short-sha>: $line"
 
   git merge-base --is-ancestor "$sha" "$HEAD_REF" 2>/dev/null \

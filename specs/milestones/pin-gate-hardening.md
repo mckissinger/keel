@@ -79,3 +79,5 @@ unchanged — only the *parsing* of it hardens.
 
 verifier subagent against this file's done-conditions (all `[auto]`; no UI, no runtime
 surface — the scripts' committed self-tests carry the behavioral assertions).
+
+verified: clean at a97c6d0, 2026-07-12, via verifier subagent against this spec's done-conditions — all 11 script self-tests + 5 repo checks run green by the verifier (evidence in PR #104)

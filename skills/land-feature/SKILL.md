@@ -29,7 +29,7 @@ GitHub's defaults fight the naïve "merge + delete each" loop. The sequence that
 
 A behavioral fix to a mid-stack milestone changes its code SHA, so every descendant rebased on top must be re-pinned (the pin is self-invalidating):
 
-- **Conflict-only rebase** (no behavioral diff): re-run the suite green, **re-pin to the new `HEAD^`** with a carry-forward note. Not a full re-verification.
+- **Conflict-only rebase** (no behavioral diff): re-run the suite green, then **re-pin with `scripts/repin.sh <milestone-spec> [note]`** — it rewrites the pin to the new code tip with a carry-forward clause, commits it plan-only, and asserts the postconditions. The green suite re-run stays your job (the script runs no tests). Not a full re-verification.
 - **Behavioral rebase**: it's a new state — **re-verify** (fresh `verify-milestone`), then re-pin.
 - Write each descendant's pin **after** rebasing that branch (the rebase moves the code tip; the pin must reference the post-rebase SHA). The pin commit itself is plan-only, so the gate sees no code drift after it.
 
@@ -39,7 +39,7 @@ Not a linear stack: a milestone that genuinely depends on **all** its siblings *
 
 1. **Land it only after all its parents are on `main`.** It's the last thing merged in the wave.
 2. **Rebase the diamond branch onto `main`** (dropping the integration parentage) so its multiple merge bases collapse to a single base — a clean own-files-only diff. **Why:** the integration merge leaves the branch with more than one merge base vs `main`, so the three-dot `git diff main...HEAD` that `check-verified-pin.sh` uses picks an older base and **falsely reports drift** on the already-verified sibling files. The rebase is what makes the pin gate verify cleanly.
-3. It's a **conflict-only rebase** — content is identical (disjoint file ownership made the integration tree the same as `main`). Apply the cascade rule above unchanged: **re-run the guard/suite green and re-pin to the new `HEAD^`** with a carry-forward note. Not a re-verification.
+3. It's a **conflict-only rebase** — content is identical (disjoint file ownership made the integration tree the same as `main`). Apply the cascade rule above unchanged: **re-run the guard/suite green, then re-pin with `scripts/repin.sh`** (carry-forward clause, plan-only commit — the green re-run stays yours, the script runs no tests). Not a re-verification.
 4. **Then merge, and delete the integration scaffolding branch** once the diamond is on `main`.
 
 The post-wave consolidated check below still runs last.

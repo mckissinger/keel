@@ -214,6 +214,35 @@ verified: clean, trust me
 EOF
 check "chore pin with no parseable sha fails" 1
 
+# 8e. Backtick escape: a caveat word inside a backticked domain term passes (the scan
+#     is whole-line minus backticked spans — identical to check-verified-pin.sh's).
+fresh c8e-chore-backtick
+cat > "$ROOT/specs/chores/batch.md" <<'EOF'
+# Chore batch
+
+verified: clean at abc1234, 2026-07-12, via punch-list over the `pending-leads` suite (evidence in PR #9)
+EOF
+check "chore pin with a backticked caveat-word domain term passes" 0
+
+# 8f. A bare trailing caveat still fails (the backtick strip never rescues a real caveat).
+fresh c8f-chore-bare-caveat
+cat > "$ROOT/specs/chores/batch.md" <<'EOF'
+# Chore batch
+
+verified: clean at abc1234, 2026-07-12, via punch-list — pending the runtime walk
+EOF
+check "chore pin with a bare trailing caveat fails" 1
+
+# 8g. First-match SHA parse: a carry-forward clause mentioning a second SHA in the
+#     ' at <hex>,' shape parses to the FIRST — the line's shape stays valid.
+fresh c8g-chore-carry
+cat > "$ROOT/specs/chores/batch.md" <<'EOF'
+# Chore batch
+
+verified: clean at abc1234, 2026-07-12, via punch-list (evidence in PR #9) — carried forward from deadbee: previously at deadbee, 2026-07-01
+EOF
+check "chore pin with a carry-forward second SHA parses to the first (passes)" 0
+
 # 9. Empty spec dirs pass (bootstrap-compatible), as does a repo with none.
 fresh c9-empty
 check "empty spec dirs pass" 0

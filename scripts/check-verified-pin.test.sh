@@ -246,6 +246,94 @@ printf 'verified: clean at %s, 2026-07-05, via verifier (evidence in PR #23)\n' 
 git add -A && git commit -qm "verify(m23): record"
 check "stack-profile change with a valid pin passes (treated exactly as code)" 0 "$BASE2"
 
+# 24. Backtick escape: a caveat word inside a backticked domain term must NOT trip the
+#     caveat scan (the scan is whole-line minus backticked spans).
+fresh c24-backtick-pending
+echo "code" > src/bt.ts
+echo "# m24" > specs/milestones/m24.md
+git add -A && git commit -qm "m24 code"
+sha="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-12, via e2e over the `pending-leads` suite (evidence in PR #24)\n' "$sha" >> specs/milestones/m24.md
+git add -A && git commit -qm "verify(m24): record"
+check "backticked domain term containing a caveat word passes" 0
+
+# 25. A bare trailing caveat still fails (case 7 keeps the original anti-pattern line
+#     byte-identical; this one asserts the failure message teaches the backtick escape).
+fresh c25-bare-caveat
+echo "code" > src/bc.ts
+echo "# m25" > specs/milestones/m25.md
+sha="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-12, via verifier — pending the runtime walk\n' "$sha" >> specs/milestones/m25.md
+git add -A && git commit -qm "m25 bare caveat pin"
+check "bare trailing caveat still fails" 1
+check_msg "caveat failure teaches the backtick escape" "must be backticked"
+
+# 26. First-match SHA parse: a carry-forward clause mentioning a second SHA in the
+#     ' at <hex>,' shape later on the line must NOT outrank the real pin (the old
+#     greedy sed took the LAST match → 'deadbee' → non-ancestor → false fail).
+fresh c26-carry-forward
+echo "code" > src/cf.ts
+echo "# m26" > specs/milestones/m26.md
+git add -A && git commit -qm "m26 code"
+sha="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-12, via verifier (evidence in PR #26) — carried forward from deadbee: previously at deadbee, 2026-07-01\n' "$sha" >> specs/milestones/m26.md
+git add -A && git commit -qm "verify(m26): record"
+check "carry-forward second SHA parses to the first (pin stays valid)" 0
+
+# 27. No ' at <sha>,' shape at all still fails with the no-parseable-sha message.
+fresh c27-no-sha
+echo "code" > src/ns.ts
+echo "# m27" > specs/milestones/m27.md
+printf 'verified: clean, trust me\n' >> specs/milestones/m27.md
+git add -A && git commit -qm "m27 shapeless pin"
+check "no-parseable-sha line still fails" 1
+check_msg "no-parseable-sha failure keeps its message" "no parseable pinned"
+
+# 28. Best-effort base-ref freshness: BASE_REF=origin/<branch> is fetched from origin
+#     before the diff. Stale local origin/main (rewound to A below) used to make the
+#     three-dot diff span the already-merged sibling mb and report FALSE drift on it;
+#     the refreshed ref diffs only the PR's own milestone → pass.
+R="$TMP/remote28"; L="$TMP/local28"
+git init -q --bare "$R"
+git clone -q "file://$R" "$L" 2>/dev/null
+cd "$L"
+git config user.email t@example.com
+git config user.name tester
+git checkout -qb main
+mkdir -p specs/milestones src
+echo "# product" > specs/00-product.md
+echo "# m0" > specs/milestones/m0.md
+git add -A && git commit -qm base
+printf 'verified: clean at %s, 2026-07-12, via verifier (evidence in PR #0)\n' "$(git rev-parse --short HEAD)" >> specs/milestones/m0.md
+git add -A && git commit -qm "m0 pin (window closed)"
+A28="$(git rev-parse HEAD)"
+echo "b" > src/b.ts
+echo "# mb" > specs/milestones/mb.md
+git add -A && git commit -qm "mb code (sibling, merged on main)"
+shb="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-12, via verifier (evidence in PR #1)\n' "$shb" >> specs/milestones/mb.md
+git add -A && git commit -qm "mb pin"
+git push -q origin main
+git checkout -qb mc
+echo "c" > src/c.ts
+echo "# mc" > specs/milestones/mc.md
+git add -A && git commit -qm "mc code"
+shc="$(git rev-parse --short HEAD)"
+printf 'verified: clean at %s, 2026-07-12, via verifier (evidence in PR #2)\n' "$shc" >> specs/milestones/mc.md
+git add -A && git commit -qm "mc pin"
+git update-ref refs/remotes/origin/main "$A28"   # simulate the stale remote-tracking ref
+check "stale origin/main is refreshed via fetch — no false drift on the merged sibling" 0 origin/main
+
+# 29. Remote deleted: the fetch fails → WARN on stderr, proceed with the local ref.
+#     The retained ref is re-staled to A, so proceeding means the stale diff runs (and
+#     fails on the sibling's false drift) — proving the gate went past the fetch rather
+#     than hard-failing on it, and that case 28's pass came from the refresh.
+rm -rf "$R"
+git update-ref refs/remotes/origin/main "$A28"
+check "deleted remote proceeds with the local (stale) ref — the fetch is never a hard failure" 1 origin/main
+check_msg "deleted remote warns on stderr and names the fallback" "proceeding with the local ref" origin/main
+cd "$TMP"
+
 # HEAD-side closure of the window (a PR that itself adds the first milestone spec is
 # validated normally, never exempted) is covered by cases 2 (with pin → pass) and
 # 3 (without pin → fail); chore specs closing the window by case 9.

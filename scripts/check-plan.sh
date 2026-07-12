@@ -120,12 +120,16 @@ done
 for spec in ${chores[@]+"${chores[@]}"}; do
   line="$(grep -m1 '^verified:' "$spec" || true)"
   [ -z "$line" ] && continue
-  case "$line" in
+  # Caveat scan + SHA extraction are IDENTICAL to check-verified-pin.sh's — the two
+  # shipped scripts must never disagree about one line. Whole line minus backticked
+  # spans; first ' at <hex>,' occurrence, never the last.
+  scrubbed="$(printf '%s\n' "$line" | sed 's/`[^`]*`//g')"
+  case "$scrubbed" in
     *pending*|*unverified*|*"to be verified"*)
-      fail "$spec — verified: line carries a pending/unverified caveat: $line"
+      fail "$spec — verified: line carries a pending/unverified caveat (a domain term that merely contains a caveat word must be backticked, e.g. \`pending-leads\`): $line"
       continue ;;
   esac
-  sha="$(printf '%s\n' "$line" | sed -nE 's/.* at ([0-9a-f]{7,40}),.*/\1/p')"
+  sha="$(printf '%s\n' "$line" | grep -oE ' at [0-9a-f]{7,40},' | head -n1 | sed -E 's/ at ([0-9a-f]+),/\1/' || true)"
   if [ -z "$sha" ]; then
     fail "$spec — verified: line has no parseable ' at <short-sha>,': $line"
   fi

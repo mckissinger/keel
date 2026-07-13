@@ -239,7 +239,7 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
   this answer names where that line lives, so a fresh checkout, worktree, or session re-derives
   mechanically instead of improvising.
 - **Known-failure-signature table.** Signature → classified remedy (e.g. "gateway 502 → a second
-  local stack is running; stop it", "auth failure on seed → stale env file; re-derive it"),
+  **unisolated** stack is running; stop it", "auth failure on seed → stale env file; re-derive it"),
   consulted before any diagnosis and **accreting like the ⚠ scars**: every newly diagnosed
   substrate failure adds a row.
 - **Per-suite duration budgets — and the timeout rule, owned here.** A rough expected duration
@@ -255,7 +255,8 @@ are **finalized at provision** — a derived profile carrying "finalized at prov
 placeholders for those is well-formed, not incomplete. Which singletons exist here feeds the
 spine's serialization rule (see "What stays in the methodology" below), and the flake
 *mitigations* stay baked at provisioning (provision's step 6) — this question records the
-**contract**, not the mitigations.
+**contract**, not the mitigations. How a *second, simultaneous* session derives its own
+instance from this contract's base is Q13's question, below.
 
 > ⚠ **Config discovery can silently fall back to another project's ports.** A stack invoked from
 > the wrong directory can miss its config, fall back to defaults, and talk to *another project's*
@@ -273,6 +274,57 @@ spine's serialization rule (see "What stays in the methodology" below), and the 
   assignments as the identity; the host-env pull command (e.g. `vercel env pull .env.local`) as
   the env re-derivation.
 
+**Q13 — Parallel-session (worktree) isolation contract.** The recorded recipe for standing up
+**instance N of the local stack, isolated** — how a second simultaneous session (a parallel
+worktree, a sweep's verifier) gets its own substrate instead of colliding with the primary's.
+This question is **opt-in**: a stack that can't isolate cheaply (a single-socket daemon, a
+licensed simulator) answers **"not provided — runtime-proof stays serial"** and everything
+behaves exactly as today — the serial rule is the permanent safe default, not a legacy mode.
+When provided, record:
+
+- **Instance identity.** How instance N derives its own port block / project identity from
+  Q12's base assignment (e.g. base + a per-instance offset), collision-free against sibling
+  instances *and* the user's other projects.
+- **Datastore isolation recipe.** How an instance gets its own datastore state — a
+  branch/namespace/schema/container per instance, seeded per Q5 — such that writes in one
+  instance are invisible to the others.
+- **Per-instance env derivation.** Q12's env re-derivation command, parameterized by instance
+  identity, producing the worktree's own env file.
+- **Teardown.** The one command that returns instance N's resources (ports, datastore,
+  processes) — run on **every** exit path, a crashed or failed session included. A leaked
+  instance is a named failure signature: Q12's signature table gains a leaked-instance row
+  (e.g. "ports busy at claim → a prior session leaked its instance; run its teardown").
+- **Allocation.** Instance identity is **ephemeral, claimed per session** — never a recorded
+  assignment: workflows assign it by dispatch index; an attended session probes before
+  claiming.
+- **The proven flag.** The contract is *unproven* until a sitting has run **two simultaneous
+  instances green** — both health checks green at once, one instance's writes invisible to the
+  other — recorded in the profile as `proven at <date>`. An unproven or absent contract changes
+  nothing anywhere. And the flag proves the *recipe class* only: **every per-instance run opens
+  with an instance-scoped substrate assertion** — health green + these-ports-are-instance-N's,
+  the Q12 preflight parameterized by identity — and a failed assertion is classified
+  environment/blocked, never walked against (a rotted recipe that silently falls back to the
+  shared primary is Q12's config-discovery scar in per-instance form — re-checked per run,
+  never inferred from the flag).
+
+**Authorship split.** Like Q12's provision-owned parts, this answer is **finalized at
+provision** — derivation records the question with its default ("not provided — runtime-proof
+stays serial") or a "finalized at provision" placeholder; `provision` asks it, authors the
+recipe when the user opts in, and runs the two-instances proof (its step 6). What a proven
+contract relaxes is the spine's serialization rule (see "What stays in the methodology" below)
+— nothing else consumes the flag.
+
+> ⚠ **Teardown that only runs on clean exits is teardown that leaks.** A crashed or killed
+> session never reaches its cleanup line; its instance's ports stay claimed and its datastore
+> branch stays live, and the *next* session's claim then fails in ways that read as fresh
+> mysteries. Wire teardown into every exit path, and when a claim does fail, consult the
+> leaked-instance signature row before diagnosing anything else.
+- *Web reference:* a datastore whose hosting offers cheap branching (e.g. a branch-per-instance
+  feature on a hosted database) or a container-per-instance of the local backend stack as the
+  datastore recipe; ports derived as Q12's base plus a fixed per-instance offset; Q12's env
+  pull re-run with the instance's identity into the worktree's own env file; teardown via the
+  stack CLI's stop/delete for that one instance.
+
 ---
 
 ## What stays in the methodology (not the profile)
@@ -281,7 +333,10 @@ These rules are already stack-neutral and live in the spine. The profile only fe
 
 - **Runtime-proof runs serially** against shared local singletons (a DB/emulator, dev-server
   ports) — the profile names *which* singletons (Q12; informs Q3–Q6); the serialization rule is
-  the spine's.
+  the spine's. One condition relaxes it: a profile carrying a Q13 contract **marked proven**
+  lets each parallel session stand up its own instance per that contract — serial remains the
+  default for every other case (no Q13, an unproven Q13, or a stack that answered "not
+  provided").
 - **A route/asset the build needs must be git-*tracked*,** not just present on disk — git-level,
   not stack-level.
 - **Flaky-by-construction tests** (async propagation: cache reloads, eventual consistency, races)

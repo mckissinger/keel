@@ -44,3 +44,4 @@ merge-decision mechanism is touched by a version string → no `/security-review
 version-visible-to-the-installed-runtime effect is a [runtime] property that only a
 reinstall proves — carried into the post-merge install (tag + plugin update on merge),
 correctly out of branch scope.
+verified: clean at 24905bf, 2026-07-13, via fresh-context keel:verifier subagent — branch changes exactly two files vs main (plugin.json + this chore spec); the plugin.json diff is the single version 1.10.0→1.11.0 line, JSON valid, marketplace.json unchanged; plugin validate + check-neutral + check-plan green; content-type inventory + Phase 4 primitives + hierarchy-carriers line present; history eafd744..HEAD~1 is exactly PR #127; one commit ahead of main. Runtime pickup deferred to post-merge tag + reinstall per this spec (evidence in PR #128)

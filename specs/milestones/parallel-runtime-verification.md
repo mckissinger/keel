@@ -97,3 +97,5 @@ is provisioned serial-sized).
 verifier subagent against this file's done-conditions (all `[auto]`; prose + prompt
 strings + bounded workflow code — closable by reading the named files and running the
 named checks).
+
+verified: clean at 08a2c14, 2026-07-13, via verifier subagent against this spec's done-conditions — all 11 conditions evidenced with file:line, default fail-safe paths proven byte-identical to main by extracted-string diff, node --check green, 5 repo checks + 11 script self-tests green (evidence in PR #124)

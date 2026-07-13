@@ -91,3 +91,5 @@ skill body cites the digest files, never the dogfood projects' names — those n
 
 verifier subagent against this file's done-conditions (all `[auto]`; the new skill is
 prose + frontmatter, closable by reading the named files and running the named checks).
+
+verified: clean at a4f026f, 2026-07-12, via verifier subagent against this spec's done-conditions — all 12 conditions evidenced with file:line, 5 repo checks + 11 script self-tests green (evidence in PR #113)

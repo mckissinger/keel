@@ -22,7 +22,7 @@ Feature    spec-feature → implement-feature → [you merge] → land-feature �
 Milestone  implement-milestone → verify-milestone   (+ verify-all-milestones sweep)
 Change     spec-change → implement-milestone → verify-milestone
 Chore      punch-list → one verified chore PR (batch pin)   ← many tiny changes at once
-Cross-cut  debug · status · provision (miniature)
+Cross-cut  debug · status · harvest · provision (miniature)
                                         * design track runs only when the deliverable has a UI
 ```
 
@@ -42,13 +42,13 @@ hardcoded to any framework.
 
 ## What's in the plugin
 
-**18 skills**, grouped by grain:
+**19 skills**, grouped by grain:
 - **Kickoff** — `kickoff` (greenfield) / `adopt` (brownfield), `interview`, `spec-foundation`, `app-design-directions`, `provision`
 - **Feature** — `spec-feature`, `implement-feature`, `land-feature`, `review-feature`
 - **Milestone** — `implement-milestone`, `verify-milestone`
 - **Change** — `spec-change`
 - **Chore** — `punch-list` (a batch of tiny changes → one verified chore PR)
-- **Cross-cutting** — `debug`, `status` (read-only "where are we / what's next" derivation)
+- **Cross-cutting** — `debug`, `status` (read-only "where are we / what's next" derivation), `harvest` (transcript-mining retrospective → a proposed improvement slate; human-triggered only)
 - **Autonomy** — `auto` (posture switch), `auto-merge` (attended merge toggle) — both human-triggered only
 
 Plus the **`verifier`** agent, the **`verify-all-milestones`** + **`punch-list`** workflows, the canonical **`scripts/check-verified-pin.sh`** gate (copy into your project; its chore-lane accepts a `specs/chores/` batch pin), and shared references: the **profile interface**, the **milestone/verification rules**, and the **interaction-craft** + **motion-cookbook** craft layer.

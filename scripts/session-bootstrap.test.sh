@@ -51,6 +51,9 @@ else bad "bootstrap carries the grain ladder + invariants"; fi
 if printf '%s' "$OUT" | grep -q 'status'; then
   ok "bootstrap names status on the Cross-cut line"
 else bad "bootstrap names status on the Cross-cut line"; fi
+if printf '%s' "$OUT" | grep -q 'harvest'; then
+  ok "bootstrap names harvest on the Cross-cut line"
+else bad "bootstrap names harvest on the Cross-cut line"; fi
 
 # 2b. The disable-model-invocation skills stay discoverable: each flagged skill's
 #     frontmatter carries the flag AND the bootstrap still names it (the [auto] half
@@ -138,6 +141,9 @@ else bad "mode: the grain ladder survives the swap"; fi
 if printf '%s' "$OUT" | grep -q 'status'; then
   ok "mode: the Cross-cut line names status"
 else bad "mode: the Cross-cut line names status"; fi
+if printf '%s' "$OUT" | grep -q 'harvest'; then
+  ok "mode: the Cross-cut line names harvest"
+else bad "mode: the Cross-cut line names harvest"; fi
 if printf '%s' "$OUT" | grep -qF 'fresh-session verified pin' \
    && printf '%s' "$OUT" | grep -qi 'drift'; then
   ok "mode pin line names both halves (fresh-session pin + drift gate)"

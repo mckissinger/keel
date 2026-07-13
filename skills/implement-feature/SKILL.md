@@ -1,6 +1,6 @@
 ---
 name: implement-feature
-description: Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge. Spawns fresh-context verifier subagents ([auto] parallel, [runtime] serial). Defaults to interleaved cadence but ALWAYS asks. Never merges.
+description: Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge. Spawns fresh-context verifier subagents ([auto] parallel; [runtime] serial unless the profile's isolation contract is proven). Defaults to interleaved cadence but ALWAYS asks. Never merges.
 when_to_use: After spec-feature has authored a whole feature's milestone specs, to build and verify them end-to-end. NOT for a single milestone (that's implement-milestone), NOT for checking one completed milestone (that's verify-milestone), and NOT for merging the reviewed PRs (that's land-feature, under the user's per-merge approval).
 hooks:
   PreToolUse:
@@ -37,7 +37,7 @@ For each milestone, in dependency order (bottom-up for a stack):
 1. **Build** — dispatch `implement-milestone` (its own branch; off `main` if independent, off the parent if it genuinely stacks, off a conflict-free **integration branch** — merge of all its parents — if it's a multi-parent diamond).
 2. **Verify in a fresh context** — dispatch verification as a **subagent with its own context window** (this is the proven pattern — `verify-all-milestones` already spawns fresh-context `verifier` agents in worktrees; a worktree-isolated verifier *is* the "fresh session" the rule protects). Prompt it from the **spec's done-conditions + the checkout**, never from the builder's claims.
    - **`[auto]` conditions** → verifier subagents can run in **parallel** (worktrees).
-   - **`[runtime]` conditions** → run **serially**, one at a time, because the runtime-proof needs sole access to the shared local services (the single backend stack, dev-server ports). Parallel runtime walks collide — this is exactly why the parallel sweep can't close `[runtime]`.
+   - **`[runtime]` conditions** → run **serially**, one at a time, because the runtime-proof needs sole access to the shared local services (the single backend stack, dev-server ports) — **unless** the profile carries a **proven Q13 isolation contract** (`specs/stack-profile.md`, per the profile interface), in which case each verifier subagent claims its own instance per that contract and `[runtime]` milestones verify in **parallel**. Otherwise parallel runtime walks collide — this is exactly why the default parallel sweep can't close `[runtime]`.
 3. **Pin bottom-up** — on a clean verdict, the orchestrator writes the `verified:` pin (the verifier subagent is read-only) and runs the mechanical postcondition checks (`HEAD^` == verified SHA, working tree clean). For a stack, write pins in stack order via clean rebases onto the plan-only pin commits.
 4. **Open the PR** — base `main` for an independent milestone; base the parent branch for a stacked one. Quote the done-conditions + verification evidence in the body.
 

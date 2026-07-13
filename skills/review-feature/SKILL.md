@@ -37,6 +37,8 @@ These become a **refinement milestone** for the feature (its own branch + PR + `
 
 **Every finding that reflects a defect *class* graduates into a no-fixture e2e in the stack's test driver** (Q3) (the empty state renders, the create-from-empty action exists and works), so the class is regression-locked in CI where vision review can't go — the same discipline as the verify-milestone walk.
 
+**When the gate passes** — no findings, or the refinement milestone closed and re-reviewed — **record the closure in the feature spec's Lifecycle section** (`specs/features/<feature>.md`): a fact with evidence (the date + what was reviewed), committed as a **plan-only commit made directly**, under the same recorded carve-out as `land-feature`'s reconciliation step — plan-only by construction, it carries no code and needs no pin. That entry is the durable answer to "did we do feature review?".
+
 ## Relationship to the other gates
 
 - **`verify-milestone`** (per milestone, autonomous) — invariants + logic + mechanical design-application. Runs first, per milestone.

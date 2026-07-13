@@ -54,6 +54,9 @@ else bad "bootstrap names status on the Cross-cut line"; fi
 if printf '%s' "$OUT" | grep -q 'harvest'; then
   ok "bootstrap names harvest on the Cross-cut line"
 else bad "bootstrap names harvest on the Cross-cut line"; fi
+if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
+  ok "bootstrap carries the five summary-block labels inline"
+else bad "bootstrap carries the five summary-block labels inline"; fi
 
 # 2b. The disable-model-invocation skills stay discoverable: each flagged skill's
 #     frontmatter carries the flag AND the bootstrap still names it (the [auto] half
@@ -144,6 +147,9 @@ else bad "mode: the Cross-cut line names status"; fi
 if printf '%s' "$OUT" | grep -q 'harvest'; then
   ok "mode: the Cross-cut line names harvest"
 else bad "mode: the Cross-cut line names harvest"; fi
+if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
+  ok "mode bootstrap carries the five summary-block labels inline"
+else bad "mode bootstrap carries the five summary-block labels inline"; fi
 if printf '%s' "$OUT" | grep -qF 'fresh-session verified pin' \
    && printf '%s' "$OUT" | grep -qi 'drift'; then
   ok "mode pin line names both halves (fresh-session pin + drift gate)"

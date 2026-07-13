@@ -141,6 +141,7 @@ Standing invariants — these hold no matter what else the session is doing:
 - Never commit to main; builds run on branches.
 - A milestone's code merges only under the two-part control: a fresh-session verified pin (the verification half) plus the pin gate's drift check (no code changed since the pin). Neither half alone proves the other.
 - Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."
+- Attended gates end on the five-line summary block: Done / Decision / Recommend / Glance / Next (references/gate-presentation.md defines it).
 
 Specs live under specs/. When work matches a keel verb, invoke that skill rather than improvising the process.
 EOF
@@ -164,6 +165,7 @@ Standing invariants — these hold no matter what else the session is doing:
 - Never commit to main; builds run on branches.
 - A milestone's code merges only under the two-part control: a fresh-session verified pin (the verification half) plus the pin gate's drift check (no code changed since the pin). Neither half alone proves the other.
 - Attended gates stop and ask; they are never silently deferred.
+- Attended gates end on the five-line summary block: Done / Decision / Recommend / Glance / Next (references/gate-presentation.md defines it).
 - Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."
 
 Specs live under specs/. When work matches a keel verb, invoke that skill rather than improvising the process.

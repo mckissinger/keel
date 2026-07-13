@@ -87,3 +87,5 @@ and evidence sources, never narrative status.
 
 verifier subagent against this file's done-conditions (all `[auto]`; prose-only —
 closable by reading the named files and running the named checks).
+
+verified: clean at ef7efe4, 2026-07-13, via verifier subagent against this spec's done-conditions — all 9 conditions evidenced with file:line, block byte-identical to the agreed quote, 5 repo checks + 11 script self-tests green (evidence in PR #115)

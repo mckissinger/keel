@@ -133,7 +133,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Milestone: implement-milestone → verify-milestone
 - Change:    spec-change (a sub-feature tweak → one milestone, then the milestone verbs)
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
-- Cross-cut: debug
+- Cross-cut: debug · status
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:
@@ -156,7 +156,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Milestone: implement-milestone → verify-milestone
 - Change:    spec-change (a sub-feature tweak → one milestone, then the milestone verbs)
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
-- Cross-cut: debug
+- Cross-cut: debug · status
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:

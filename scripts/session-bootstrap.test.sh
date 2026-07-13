@@ -48,6 +48,9 @@ if printf '%s' "$OUT" | grep -q 'implement-milestone' \
    && printf '%s' "$OUT" | grep -qi 'never merge'; then
   ok "bootstrap carries the grain ladder + invariants"
 else bad "bootstrap carries the grain ladder + invariants"; fi
+if printf '%s' "$OUT" | grep -q 'status'; then
+  ok "bootstrap names status on the Cross-cut line"
+else bad "bootstrap names status on the Cross-cut line"; fi
 
 # 2b. The disable-model-invocation skills stay discoverable: each flagged skill's
 #     frontmatter carries the flag AND the bootstrap still names it (the [auto] half
@@ -132,6 +135,9 @@ else bad "mode framing: --auto delegation + would-be-ask ledger + stop-points st
 if printf '%s' "$OUT" | grep -q 'implement-milestone'; then
   ok "mode: the grain ladder survives the swap"
 else bad "mode: the grain ladder survives the swap"; fi
+if printf '%s' "$OUT" | grep -q 'status'; then
+  ok "mode: the Cross-cut line names status"
+else bad "mode: the Cross-cut line names status"; fi
 if printf '%s' "$OUT" | grep -qF 'fresh-session verified pin' \
    && printf '%s' "$OUT" | grep -qi 'drift'; then
   ok "mode pin line names both halves (fresh-session pin + drift gate)"

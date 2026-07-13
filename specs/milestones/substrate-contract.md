@@ -94,3 +94,5 @@ orient step and must stay in sync.
 
 verifier subagent against this file's done-conditions (all `[auto]`; prose-only —
 closable by reading the named files and running the named checks).
+
+verified: clean at db5fdcd, 2026-07-12, via verifier subagent against this spec's done-conditions — all 11 conditions evidenced with file:line, 5 repo checks + 11 script self-tests green (evidence in PR #111)

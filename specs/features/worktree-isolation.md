@@ -99,14 +99,15 @@ serial path exactly as today.
 
 ## Lifecycle
 
-- Plan PR (this spec + both milestone specs) — merged by Michael.
-- `isolation-contract`: built (fresh context) → verified (pin + code PR) → merged.
-- `parallel-runtime-verification`: built → verified (pin + code PR) → merged.
-- Post-wave consolidated check: the full check suite green on `main` after both
-  merges (the repo's checks are its suite; evidence: the second code PR's CI on the
-  merged base).
-- Spec reconciliation: feature spec updated to merged reality + both milestone specs
-  archived to `specs/milestones/_landed/` in one plan-only commit (land-feature's
-  reconciliation step).
-- No review-feature gate (no UI); feature closes when both pins are on `main` and a
-  release bump surfaces them.
+- Plan PR: #122, merged 2026-07-13.
+- `isolation-contract`: verified clean at b65b807, merged in PR #123 (2026-07-13);
+  spec archived in `specs/milestones/_landed/`.
+- `parallel-runtime-verification`: verified clean at 08a2c14, merged in PR #124
+  (2026-07-13); spec archived in `specs/milestones/_landed/`.
+- Post-wave consolidated check: full check suite (plugin validate, 4 lints,
+  `node --check`, all 11 script self-tests) run green on `main` at 97a78ad after
+  both merges, 2026-07-13.
+- Spec reconciliation: this commit (plan-only — this Lifecycle update + the
+  `_landed/` archive moves).
+- No review-feature gate (no UI). Remaining: a release bump surfaces the feature to
+  the installed runtime.

@@ -39,3 +39,5 @@ hook behavior is touched by a version string → no `/security-review`. The
 version-visible-to-the-installed-runtime effect is a [runtime] property that only a
 reinstall proves — carried into the post-merge install (tag + plugin update on
 merge), correctly out of branch scope.
+
+verified: clean at 4c99858, 2026-07-13, via fresh-context keel:verifier subagent — branch changes exactly two files vs main (plugin.json + this chore spec); the plugin.json diff is the single version 1.8.0→1.9.0 line, JSON valid, marketplace.json unchanged; plugin validate + check-neutral + check-plan green; demo/test-health skills present, README reads 21 skills; history fe402d8..HEAD~1 is exactly PRs #118 and #120; one commit ahead of main. Runtime pickup deferred to post-merge tag + reinstall per this spec (evidence in PR #121)

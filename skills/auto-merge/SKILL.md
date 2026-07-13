@@ -58,7 +58,24 @@ delegation shape, which is meaningful only where branch protection makes `--auto
    guards. If the project tracks `.claude/` (check with `git ls-files -- .claude/`), add
    `/.claude/keel-attended-merge.json` to `.gitignore`. **Never `git add` or commit the marker.**
 4. Report that attended auto-merge is on for this session, and that an instructed, gate-passing
-   `gh pr merge <pr> --auto` will now land without the per-merge tap.
+   `gh pr merge <pr> --auto` will now land without the per-merge tap. **Announce the marker's
+   concrete expiry time** — `created` + 8h, stated as an actual clock time (e.g. "expires at
+   2026-07-12T06:30Z"), not just "in 8 hours" — so the user knows exactly when the tap returns.
+
+### Expiry vs. pending merges
+
+The marker lapsing must never silently strand green PRs. When PRs in flight are expected to go
+green near or after the marker's expiry (long CI, an overnight wave), the session must do one of
+two things **while the marker is still valid**:
+
+- queue the server-side handoff now — issue the instructed, gate-passing
+  `gh pr merge <pr> --auto` (per the rules above) before the marker lapses, so GitHub's required
+  checks land the PR whenever they pass, marker or no marker; or
+- prompt the user to re-arm — a fresh `keel:auto-merge on` — while the current marker is still
+  present, rather than letting it expire and discovering the stranded PRs later.
+
+Doing neither and letting the marker quietly expire over a wave of pending PRs is a failure mode,
+not a safe default.
 
 ## `off` — remove the marker
 

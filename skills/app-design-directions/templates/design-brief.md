@@ -23,6 +23,7 @@
 - **Core entities:** [e.g., Properties, Deals, Contacts, Loans]
 - **Sample real data for mockups:** [pull actual names/values from the codebase or seed data]
 - **Domain artifacts worth drawing from visually:** [e.g., rent rolls, plat maps, term sheets]
+- **Content types:** [the kinds of content the screens render — e.g., an email/message view, rich text, a timeline, an activity feed, a chat transcript — distinct from entities and screens; each becomes a themed workbench primitive in Phase 4]
 
 ## Platform & stack
 - **Platform target:** [web / mobile / cross-platform] — from the stack profile (Q8.1 has-UI?, Q8.6 platform-convention verb)

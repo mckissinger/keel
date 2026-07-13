@@ -65,3 +65,5 @@ charter seed) — the pointer names the shared derivation only.
 
 verifier subagent against this file's done-conditions (all `[auto]`; the new skill is
 prose + frontmatter, closable by reading the named files and running the named checks).
+
+verified: clean at bca9552, 2026-07-12, via verifier subagent against this spec's done-conditions — all 8 conditions evidenced, 5 repo checks + 11 script self-tests green (evidence in PR #109)

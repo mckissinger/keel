@@ -85,3 +85,5 @@ prove-it-once pattern as step 7's ladder rungs and Q12's health checks.
 
 verifier subagent against this file's done-conditions (all `[auto]`; prose-only —
 closable by reading the named files and running the named checks).
+
+verified: clean at b65b807, 2026-07-13, via verifier subagent against this spec's done-conditions — all 8 conditions evidenced with file:line, diff exactly the 4 named files with milestone-2 files untouched, 5 repo checks + 11 script self-tests green (evidence in PR #123)

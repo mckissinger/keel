@@ -81,3 +81,4 @@ against.
 
 verifier subagent against this file's done-conditions (all `[auto]`; prose-only change —
 each condition is closable by reading the named files and running the named checks).
+verified: clean at a7e6143, 2026-07-13, via fresh-context keel:verifier subagent against this spec's done-conditions — all 6 prose conditions evidenced per-file/line, diff scope exactly the four named files, Phase 0 renumbering collateral-checked repo-wide (zero numeric references), 5 repo checks + 11 script self-tests green (348 tests) (evidence in PR #127)

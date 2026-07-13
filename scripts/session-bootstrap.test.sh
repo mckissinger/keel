@@ -54,6 +54,12 @@ else bad "bootstrap names status on the Cross-cut line"; fi
 if printf '%s' "$OUT" | grep -q 'harvest'; then
   ok "bootstrap names harvest on the Cross-cut line"
 else bad "bootstrap names harvest on the Cross-cut line"; fi
+if printf '%s' "$OUT" | grep -q 'demo'; then
+  ok "bootstrap names demo on the Cross-cut line"
+else bad "bootstrap names demo on the Cross-cut line"; fi
+if printf '%s' "$OUT" | grep -q 'test-health'; then
+  ok "bootstrap names test-health on the Cross-cut line"
+else bad "bootstrap names test-health on the Cross-cut line"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "bootstrap carries the five summary-block labels inline"
 else bad "bootstrap carries the five summary-block labels inline"; fi
@@ -147,6 +153,12 @@ else bad "mode: the Cross-cut line names status"; fi
 if printf '%s' "$OUT" | grep -q 'harvest'; then
   ok "mode: the Cross-cut line names harvest"
 else bad "mode: the Cross-cut line names harvest"; fi
+if printf '%s' "$OUT" | grep -q 'demo'; then
+  ok "mode: the Cross-cut line names demo"
+else bad "mode: the Cross-cut line names demo"; fi
+if printf '%s' "$OUT" | grep -q 'test-health'; then
+  ok "mode: the Cross-cut line names test-health"
+else bad "mode: the Cross-cut line names test-health"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "mode bootstrap carries the five summary-block labels inline"
 else bad "mode bootstrap carries the five summary-block labels inline"; fi

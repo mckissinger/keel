@@ -90,3 +90,5 @@ provenance, never the dogfood projects' names.
 verifier subagent against this file's done-conditions (all `[auto]`; the new skills
 are prose + frontmatter, closable by reading the named files and running the named
 checks).
+
+verified: clean at 49e52f2, 2026-07-13, via verifier subagent against this spec's done-conditions — all 12 conditions evidenced with file:line, 5 repo checks + 11 script self-tests green, diff exactly the 5 named files (evidence in PR #120)

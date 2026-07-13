@@ -219,6 +219,60 @@ its walk; deriving a profile with only a unit tier **must** record why the other
 > The walk is an *acceptance* layer; the committed tiers are the *regression* harness — never
 > let the first substitute for the second.
 
+**Q12 — Local substrate contract.** The recorded, checkable description of the **healthy local
+substrate** — the daemons, ports, env files, and toolchain that everything above the unit tier
+rests on and that no milestone owns. The build/verify verbs assert this contract at entry
+(seconds, not minutes), so drift is caught at session start instead of mid-run. Record:
+
+- **Shared local singletons + a one-line health check each.** Which shared local singletons the
+  runtime ladder assumes running (a local database/emulator stack, a dev server, a background
+  daemon), and for each the **one-line command** that asserts it healthy — up, responsive, and
+  answering on *this* project's ports.
+- **Unique port block / project identity.** The port block or project-identity assignment this
+  project's local stack owns, **collision-free against the user's other projects** — recorded so
+  "are these ports mine?" is checkable, never assumed.
+- **Canonical invocation path.** The path from which local-stack commands must run for the
+  stack's **config discovery to actually work** (e.g. the subdirectory holding the stack's
+  config, when that isn't the repo root).
+- **Env re-derivation command.** The one command that regenerates the local env file from the
+  host env store — the recipe the environment contract records at provisioning is the source;
+  this answer names where that line lives, so a fresh checkout, worktree, or session re-derives
+  mechanically instead of improvising.
+- **Known-failure-signature table.** Signature → classified remedy (e.g. "gateway 502 → a second
+  local stack is running; stop it", "auth failure on seed → stale env file; re-derive it"),
+  consulted before any diagnosis and **accreting like the ⚠ scars**: every newly diagnosed
+  substrate failure adds a row.
+- **Per-suite duration budgets — and the timeout rule, owned here.** A rough expected duration
+  for each Q11 tier's suite and for the runtime walk. The rule every suite-running verb points
+  at: **any suite/walk command runs bounded — exceeding roughly 2× its recorded budget means
+  kill it and classify as environment (signature table first), never an open-ended wait** — and
+  long suites run backgrounded with periodic progress checks where the harness supports it.
+
+**Authorship splits.** The structural answers — the singletons, the invocation path — are
+*derived* at spec time like every other question. The ports/identity assignment, the env
+command, the signature-table seeding, the duration budgets, and the proven-green health check
+are **finalized at provision** — a derived profile carrying "finalized at provision"
+placeholders for those is well-formed, not incomplete. Which singletons exist here feeds the
+spine's serialization rule (see "What stays in the methodology" below), and the flake
+*mitigations* stay baked at provisioning (provision's step 6) — this question records the
+**contract**, not the mitigations.
+
+> ⚠ **Config discovery can silently fall back to another project's ports.** A stack invoked from
+> the wrong directory can miss its config, fall back to defaults, and talk to *another project's*
+> database while every command appears to succeed — an earlier run lost days to exactly this.
+> The canonical invocation path + the ports-are-mine check turn it into a one-second assertion.
+> ⚠ **A stalled daemon reads as a hung run.** A background daemon blocked on an interactive
+> prompt (a sign-in, a first-run consent) produces the same silence as a long-running suite; the
+> singleton health checks distinguish the two in seconds — never diagnose a "hung" run before
+> asserting the singletons are actually up.
+> ⚠ **Never wait open-endedly on a status or suite command.** An unbounded wait on a slow status
+> command once burned hours of wall-clock on an earlier run. The duration budgets make "too
+> long" a measurable fact; apply the timeout rule above instead of waiting on hope.
+- *Web reference:* the local backend stack's CLI status command as each singleton's health check
+  (exit 0 + this project's ports in its output); the stack config's project-id / port
+  assignments as the identity; the host-env pull command (e.g. `vercel env pull .env.local`) as
+  the env re-derivation.
+
 ---
 
 ## What stays in the methodology (not the profile)
@@ -226,8 +280,8 @@ its walk; deriving a profile with only a unit tier **must** record why the other
 These rules are already stack-neutral and live in the spine. The profile only feeds them inputs:
 
 - **Runtime-proof runs serially** against shared local singletons (a DB/emulator, dev-server
-  ports) — the profile names *which* singletons (informs Q3–Q6); the serialization rule is the
-  spine's.
+  ports) — the profile names *which* singletons (Q12; informs Q3–Q6); the serialization rule is
+  the spine's.
 - **A route/asset the build needs must be git-*tracked*,** not just present on disk — git-level,
   not stack-level.
 - **Flaky-by-construction tests** (async propagation: cache reloads, eventual consistency, races)

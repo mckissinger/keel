@@ -30,6 +30,8 @@ The one exception a real dependency forces is a **diamond milestone (multi-paren
 
 ## The orchestration
 
+At orchestration start, read the feature spec's **Lifecycle** section (`specs/features/<feature>.md`) alongside the milestone specs — it enumerates this feature's gates and where each one's state derives from, so the handoff below can report them. A feature spec with **no** Lifecycle section (authored before the section existed) has its **absence surfaced in the handoff, never silently skipped** — `land-feature`'s reconciliation is the backfill moment.
+
 For each milestone, in dependency order (bottom-up for a stack):
 
 1. **Build** — dispatch `implement-milestone` (its own branch; off `main` if independent, off the parent if it genuinely stacks, off a conflict-free **integration branch** — merge of all its parents — if it's a multi-parent diamond).
@@ -52,4 +54,4 @@ Under an active `keel:auto` mode (per `decisions/2026-07-autonomy-modes.md`), tw
 
 ## Output
 
-A feature whose milestones are all built, independently verified, and pinned, with PRs open and correctly based — handed to the user for merge (`land-feature`), then `review-feature`.
+A feature whose milestones are all built, independently verified, and pinned, with PRs open and correctly based — handed to the user for merge (`land-feature`), then `review-feature`. The handoff reports **each lifecycle gate's derived state** — the pins and PRs this run produced, and the gates that remain **open** after the build: the user's merges, `land-feature`'s reconciliation + consolidated check, `review-feature`.

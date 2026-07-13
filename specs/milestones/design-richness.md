@@ -82,3 +82,5 @@ spec-feature/spec-change (ownership unchanged); review-feature's three-verdict s
 
 verifier subagent against this file's done-conditions (all `[auto]`; prose-only change —
 each condition is closable by reading the named files and running the named checks).
+
+verified: clean at 2e516b4, 2026-07-12, via verifier subagent against this spec's done-conditions — all 9 prose conditions evidenced, 5 repo checks + 11 script self-tests green (evidence in PR #106)

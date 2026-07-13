@@ -36,21 +36,24 @@ alone.
 ## The generous-volume rule
 
 When a reference source is available, pull **wide**: multiple queries spanning the app's screen
-archetypes (from the Phase 0 screen inventory — the dense table, the detail view, the dashboard,
-the form, whatever this app actually has), on the order of **10–20+ diverse screens**, plus
-flow-level pulls where a user journey matters (onboarding, a create flow, a checkout). Do
+archetypes **and its distinctive content types** (from the Phase 0 screen inventory and
+content-type inventory — the dense table, the detail view, the dashboard, the form, an
+email/message view, a timeline, an activity feed, whatever this app actually has), on the order
+of **10–20+ diverse screens**, plus flow-level pulls where a user journey matters (onboarding,
+a create flow, a checkout). Do
 **not** cap the pull small to save context — context cost is handled by delegation (below), not
 by starving the reference set. A thin reference set reproduces the text-only ceiling with extra
-steps.
+steps — and content novelty is orthogonal to screen archetype, so a screen-structural pull alone
+leaves a distinctive content type with no reference at all.
 
 ## Subagent delegation
 
 The pull **and** the deconstruction run in a **subagent**, which returns only the distilled
 extractions plus the chosen reference URLs. The main (attended) session never consumes the raw
 screenshot volume — that is what makes the generous-volume rule affordable. The subagent's
-contract: query the source across the archetypes, keep the strongest and most diverse
-references, deconstruct each kept reference (next section), and hand back the extractions +
-URLs as compact text.
+contract: query the source across the archetypes and the distinctive content types (the same
+span as the generous-volume rule), keep the strongest and most diverse references, deconstruct
+each kept reference (next section), and hand back the extractions + URLs as compact text.
 
 ## The mandatory deconstruction pass
 

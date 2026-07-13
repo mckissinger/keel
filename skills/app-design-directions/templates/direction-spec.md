@@ -18,6 +18,7 @@
 - **Type:** display: [face] · UI: [face] · data: [face, tabular figs ✓] — rationale: [...]
 - **Spacing base:** [4/8px] · **Radius:** [scale] · **Depth grammar:** [the one shadow/border recipe]
 - **Density:** [row height, body size]
+- **Hierarchy carriers:** [how this direction expresses hierarchy — type scale/weight / color / depth / spacing — name the carrier(s) that do the work; recorded in the Phase 3 decision file, where downstream gates read it]
 - **Motion stance:** [none / functional 150ms / one moment: ...]
 - **Interaction-state tokens:** [hover / pressed / focus / disabled deltas — named once at the token layer, inherited by every component]
 

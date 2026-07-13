@@ -20,7 +20,7 @@ Restate the change in one sentence (who it's for, what it enables). Surface the 
 
 For a no-UI change (the profile's has-UI? verb, Q8.1), skip this. For a UI change, compose the change's surface(s) from the **real workbench components** (the built gallery, Q8.3) — that **real workbench composition is the fidelity reference**. A bespoke throwaway mockup is optional; **ask** rather than always sketching — most of the time the gallery already carries the intent:
 
-- *"This change is [a novel layout archetype] / [pure composition of existing gallery components]. Generate a bespoke divergence sketch?"* — default **yes** for a novel archetype, **skip** for pure recomposition.
+- *"This change is [a novel layout archetype] / [pure composition of existing gallery components]. Generate a bespoke divergence sketch?"* — default **yes** for a novel archetype, **skip** for pure recomposition. **Judge that binary at content grain**, per the definition `spec-feature`'s Movement 2 owns: a change whose surface renders a **gallery-absent content type** is **not** pure composition — the incident shape, an email panel added to an existing screen, triggers the reference pull and the new-primitive rule at this grain too (the content type becomes a themed workbench primitive in the gallery, never an inline improvisation).
 - If generated: `design/mockups/<change>/<screen>.html` (real data, real states) — an **optional divergence sketch** that picks the direction cheaply and is **never re-implemented as the spec**: the moment the direction is chosen it converges into the real workbench composition, and *that* is the reference. Then *"review it now, or trust it and proceed?"* (open / capture it for review per Q8.4).
 - **Either way, keep a concrete fidelity reference — never nothing.** The fidelity done-condition points at the **real workbench composition or the named gallery components** it composes — **never a re-implemented static mockup, never nothing.** The build must have a fidelity target. **At spec time the reference is *named*, not built as code** — the composition is realized at build time, so the plan PR stays plan-only; a real composed preview, if genuinely wanted early, is design-gate infrastructure on `main`, never code in the plan PR (§6 of the shared rules).
 
@@ -35,7 +35,7 @@ One milestone (rarely two) per the shared rules:
 
 Write the milestone spec to `specs/milestones/<slug>.md` (self-contained) and any change context to `specs/changes/<slug>.md` if useful.
 
-Then, still in-session, **run the adversarial plan pass** (§5 of the shared rules — dispatch the read-only verifier with the five plan-shaped questions) and fix its findings before the plan PR opens.
+Then, still in-session, **run the adversarial plan pass** (§5 of the shared rules — dispatch the read-only verifier with the six plan-shaped questions) and fix its findings before the plan PR opens.
 
 ## Output + handoff
 

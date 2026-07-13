@@ -40,7 +40,7 @@ Run the saved workflow `punch-list` with `{ slug, items: [{ id, condition, files
 - runs one **worktree-isolated** subagent per group (make exactly the change, self-check, return a diff — no scope creep),
 - assembles the diffs onto one `chore/<slug>` branch, runs the **combined** checks, writes `specs/chores/<slug>.md` with **one batch pin**, and opens a single `chore` PR.
 
-`[runtime]` items can't be confirmed by the parallel sweep (shared local services) — verify those serially via the runtime walk, the same rule as everywhere else, before the batch pin stands.
+`[runtime]` items can't be confirmed by the parallel sweep (shared local services) unless the profile's Q13 isolation contract is proven (per `references/profile-interface.md`) — otherwise verify those serially via the runtime walk, the same rule as everywhere else, before the batch pin stands.
 
 ## Output + boundaries
 

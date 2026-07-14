@@ -238,10 +238,18 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
   host env store — the recipe the environment contract records at provisioning is the source;
   this answer names where that line lives, so a fresh checkout, worktree, or session re-derives
   mechanically instead of improvising.
+- **Env name-check command.** The one **committed** command that asserts every contracted
+  env-var **name** resolves — host env store or local env file — reporting names/status only,
+  **values never appearing in its output**. The implementation is stack-appropriate (a package
+  script, the stack's own env-schema validation, a small committed script); the command is
+  recorded, the implementation never mandated. And the direct-read ban lives here: sessions
+  never **read** `.env*` files directly — a permission denial on such a read is the posture
+  *working*, not an obstacle to route around, and this recorded command is the sanctioned path.
 - **Known-failure-signature table.** Signature → classified remedy (e.g. "gateway 502 → a second
-  **unisolated** stack is running; stop it", "auth failure on seed → stale env file; re-derive it"),
-  consulted before any diagnosis and **accreting like the ⚠ scars**: every newly diagnosed
-  substrate failure adds a row.
+  **unisolated** stack is running; stop it", "auth failure on seed → stale env file; re-derive it",
+  "a permission denial on a `.env*` read → working as intended; run the recorded env name-check
+  command instead"), consulted before any diagnosis and **accreting like the ⚠ scars**: every
+  newly diagnosed substrate failure adds a row.
 - **Per-suite duration budgets — and the timeout rule, owned here.** A rough expected duration
   for each Q11 tier's suite and for the runtime walk. The rule every suite-running verb points
   at: **any suite/walk command runs bounded — exceeding roughly 2× its recorded budget means
@@ -250,9 +258,9 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
 
 **Authorship splits.** The structural answers — the singletons, the invocation path — are
 *derived* at spec time like every other question. The ports/identity assignment, the env
-command, the signature-table seeding, the duration budgets, and the proven-green health check
-are **finalized at provision** — a derived profile carrying "finalized at provision"
-placeholders for those is well-formed, not incomplete. Which singletons exist here feeds the
+re-derivation command, the env name-check command, the signature-table seeding, the duration
+budgets, and the proven-green health check are **finalized at provision** — a derived profile
+carrying "finalized at provision" placeholders for those is well-formed, not incomplete. Which singletons exist here feeds the
 spine's serialization rule (see "What stays in the methodology" below), and the flake
 *mitigations* stay baked at provisioning (provision's step 6) — this question records the
 **contract**, not the mitigations. How a *second, simultaneous* session derives its own

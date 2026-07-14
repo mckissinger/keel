@@ -75,3 +75,4 @@ legitimately diverge — the parallelism obligation is on that shared span only.
 
 verifier subagent against this file's done-conditions (all `[auto]`; prose-only change —
 each condition is closable by reading the named files and running the named checks).
+verified: clean at da3279d, 2026-07-14, via fresh-context keel:verifier subagent against this spec's done-conditions — all 8 prose conditions evidenced per-file/line; diff scope exactly the six named files; the shared entry-preflight span proven byte-identical mechanically; read-ban scoped precisely (no collision with the three legitimate env-file write paths); 5 repo checks + 11 script self-tests green (348 assertions) (evidence in PR #130)

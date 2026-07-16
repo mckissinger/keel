@@ -118,3 +118,5 @@ never name dogfood projects or real client brands; example copy uses invented pr
 verifier subagent against this file's done-conditions (all `[auto]`; the new skill is
 prose + frontmatter + a template script, closable by reading the named files and
 running the named checks).
+
+verified: clean at 056ef9b, 2026-07-16, via verifier subagent against this spec's done-conditions — all 13 conditions evidenced with file:line, git-tracking asserted, 5 repo checks + 11 script self-tests green (evidence in PR #133)

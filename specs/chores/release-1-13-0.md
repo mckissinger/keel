@@ -45,3 +45,4 @@ commit ahead of `main`. No merge-decision mechanism is touched by a version stri
 no `/security-review`. The version-visible-to-the-installed-runtime effect is a
 [runtime] property that only a reinstall proves — carried into the post-merge install
 (tag + plugin update on merge), correctly out of branch scope.
+verified: clean at 72fe862, 2026-07-16, via fresh-context keel:verifier subagent — branch changes exactly two files vs main (plugin.json + this chore spec); the plugin.json diff is the single version 1.12.0→1.13.0 line, JSON valid, marketplace.json unchanged; plugin validate + check-neutral + check-plan green; marketing-site skill present with valid frontmatter, README + both banner copies carry the Marketing line, 22 skills reported; history 28c55d5..main is exactly PRs #132 and #133; one commit ahead of main. Runtime pickup deferred to post-merge tag + reinstall per this spec (evidence in PR #134)

@@ -133,6 +133,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Milestone: implement-milestone → verify-milestone
 - Change:    spec-change (a sub-feature tweak → one milestone, then the milestone verbs)
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
+- Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Cross-cut: debug · status · harvest · demo · test-health
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
@@ -157,6 +158,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Milestone: implement-milestone → verify-milestone
 - Change:    spec-change (a sub-feature tweak → one milestone, then the milestone verbs)
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
+- Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Cross-cut: debug · status · harvest · demo · test-health
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 

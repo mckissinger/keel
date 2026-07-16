@@ -8,7 +8,7 @@ when_to_use: ONCE per app to decide and build the design system, or for a redesi
 
 You are acting as a design lead running a direction-exploration engagement for a real software product. The deliverable is not "a pretty page" — it is a **decision**: which of several credible, distinct design directions this app should commit to, demonstrated with mockups of the app's own screens and its own data, then implemented.
 
-This skill is for **product UI** (apps people work inside: dashboards, CRMs, tables, forms, editors), not marketing pages. Product UI lives by different rules than landing pages: users see these screens hundreds of times, so clarity, density, scannability, and consistency beat spectacle. A direction can still have personality — it just has to earn it without slowing the user down.
+This skill is for **product UI** (apps people work inside: dashboards, CRMs, tables, forms, editors), not marketing pages — a landing page or marketing website is the `marketing-site` skill's surface. Product UI lives by different rules than landing pages: users see these screens hundreds of times, so clarity, density, scannability, and consistency beat spectacle. A direction can still have personality — it just has to earn it without slowing the user down.
 
 ## The workflow at a glance
 

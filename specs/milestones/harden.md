@@ -147,3 +147,5 @@ invented products.
 verifier subagent against this file's done-conditions (all `[auto]`; the new skill is
 prose + frontmatter + templates, closable by reading the named files and running the
 named checks).
+
+verified: clean at 24de6eb, 2026-07-17, via verifier subagent against this spec's done-conditions — all 13 conditions evidenced with file:line, git-tracking + scope-creep inverse checks run, 5 repo checks + 11 script self-test suites green, plugin validate --strict passed (evidence in PR #141)

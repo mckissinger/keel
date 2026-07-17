@@ -66,6 +66,9 @@ else bad "bootstrap names marketing-site on the Marketing line"; fi
 if printf '%s' "$OUT" | grep -q 'product-video'; then
   ok "bootstrap names product-video on the Video line"
 else bad "bootstrap names product-video on the Video line"; fi
+if printf '%s' "$OUT" | grep -q 'harden'; then
+  ok "bootstrap names harden on the Harden line"
+else bad "bootstrap names harden on the Harden line"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "bootstrap carries the five summary-block labels inline"
 else bad "bootstrap carries the five summary-block labels inline"; fi
@@ -171,6 +174,9 @@ else bad "mode: the Marketing line names marketing-site"; fi
 if printf '%s' "$OUT" | grep -q 'product-video'; then
   ok "mode: the Video line names product-video"
 else bad "mode: the Video line names product-video"; fi
+if printf '%s' "$OUT" | grep -q 'harden'; then
+  ok "mode: the Harden line names harden"
+else bad "mode: the Harden line names harden"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "mode bootstrap carries the five summary-block labels inline"
 else bad "mode bootstrap carries the five summary-block labels inline"; fi

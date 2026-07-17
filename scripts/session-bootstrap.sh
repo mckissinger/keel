@@ -135,6 +135,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
 - Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Video:     product-video (how-to / onboarding / demo videos from committed, regenerable sources — post-app)
+- Harden:    harden (pre-launch production-readiness audit → grain-mapped remediation slate — post-app)
 - Cross-cut: debug · status · harvest · demo · test-health
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
@@ -161,6 +162,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
 - Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Video:     product-video (how-to / onboarding / demo videos from committed, regenerable sources — post-app)
+- Harden:    harden (pre-launch production-readiness audit → grain-mapped remediation slate — post-app)
 - Cross-cut: debug · status · harvest · demo · test-health
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 

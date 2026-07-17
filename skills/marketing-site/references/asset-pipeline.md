@@ -46,4 +46,6 @@ mid-2026 prices) is **off by default** and only ever an **attended offer**: name
 cost, generate one candidate, judge it live. CSS/WebGL motion is the default motion
 channel — cheaper to art-direct, token-driven, and weightless next to a video file.
 A video that survives the offer still obeys the hero guardrails (static poster
-fallback, reduced-motion state, weight budget).
+fallback, reduced-motion state, weight budget). This offer covers generative hero
+video only — product walkthrough, demo, and onboarding video is `product-video`'s
+verb, so route there.

@@ -23,6 +23,7 @@ Milestone  implement-milestone → verify-milestone   (+ verify-all-milestones s
 Change     spec-change → implement-milestone → verify-milestone
 Chore      punch-list → one verified chore PR (batch pin)   ← many tiny changes at once
 Marketing  marketing-site → plan PR → the milestone verbs   ← landing page or full site, usually post-app
+Video      product-video → plan PR → the milestone verbs    ← how-to, onboarding, demo videos — post-app
 Cross-cut  debug · status · harvest · demo · test-health · provision (miniature)
                                         * design track runs only when the deliverable has a UI
 ```
@@ -43,13 +44,14 @@ hardcoded to any framework.
 
 ## What's in the plugin
 
-**22 skills**, grouped by grain:
+**23 skills**, grouped by grain:
 - **Kickoff** — `kickoff` (greenfield) / `adopt` (brownfield), `interview`, `spec-foundation`, `app-design-directions`, `provision`
 - **Feature** — `spec-feature`, `implement-feature`, `land-feature`, `review-feature`
 - **Milestone** — `implement-milestone`, `verify-milestone`
 - **Change** — `spec-change`
 - **Chore** — `punch-list` (a batch of tiny changes → one verified chore PR)
 - **Marketing** — `marketing-site` (landing page or full marketing website, usually after the app is built — reads the specs + design system, screenshots the shipped app, explores variants, generates assets attended, then authors the milestones the normal pipeline builds)
+- **Video** — `product-video` (product education video for a shipped app — feature how-to / knowledge-base videos, an onboarding sequence, a marketing demo reel, companion step-docs — scripts derived from the feature specs, recorded against the seeded app, narrated and brand-composited through a committed regenerable pipeline; ends on a plan PR the normal pipeline builds)
 - **Cross-cutting** — `debug`, `status` (read-only "where are we / what's next" derivation), `harvest` (transcript-mining retrospective → a proposed improvement slate; human-triggered only), `demo` (attended, gateless "show me the app, now" — boot, seed, demo card, live finding triage), `test-health` (suite-wide flakiness/efficiency audit → a grain-mapped remediation slate)
 - **Autonomy** — `auto` (posture switch), `auto-merge` (attended merge toggle) — both human-triggered only
 

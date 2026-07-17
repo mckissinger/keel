@@ -54,3 +54,5 @@ branch is one commit ahead of `main`. No merge-decision mechanism is touched by 
 version string → no `/security-review`. The version-visible-to-the-installed-runtime
 effect is a [runtime] property that only a reinstall proves — carried into the
 post-merge install (tag + plugin update on merge), correctly out of branch scope.
+
+verified: clean at 7b73512, 2026-07-17, via fresh-context verifier subagent — branch changes exactly two files vs main (plugin.json + this chore spec); the plugin.json diff is the single version 1.14.0→1.15.0 line (first pass bounced a description re-encoding, fixed by amend and re-verified), JSON valid, marketplace.json unchanged; plugin validate --strict + check-neutral + check-plan green; harden skill + reference-research file present, README + both banner copies carry the Harden line, 24 skills reported; history 280e693..main is exactly PRs #138-#141; one commit ahead of main. Runtime pickup deferred to post-merge tag + reinstall per this spec (evidence in PR #142)

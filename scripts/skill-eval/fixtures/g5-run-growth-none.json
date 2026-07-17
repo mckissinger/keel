@@ -1,0 +1,5 @@
+{
+  "prompt": "Run this week's growth cycle — pull the campaign numbers, prep the next batch, and get it out the door.",
+  "expected": "none",
+  "boundary": "run-growth (human-triggered only — the execution verb never fires by inference)"
+}

@@ -50,8 +50,9 @@ stay clear of the neutrality denylist.
   pre-authorized envelope covers it.
 - [auto] **Ladder wiring.** `README.md`'s grain ladder gains a `Growth:` line naming
   `gtm → spec-campaign → run-growth`, the skills list gains a Growth bullet naming
-  all three verbs, **and the skill count reads 26** (no stale count text survives
-  anywhere in the file); both orientation-banner copies in
+  all three verbs, **and the skill count reads 27** (run-discovered correction: a
+  `harden` verb landed on `main` after the plan PR, so 26 existing + `run-growth`
+  = 27) — no stale count text survives anywhere in the file; both orientation-banner copies in
   `scripts/session-bootstrap.sh` carry the same Growth line (with `run-growth`
   marked human-triggered alongside the existing autonomy verbs); and
   `scripts/session-bootstrap.test.sh` gains an assertion that the emitted banner
@@ -90,3 +91,5 @@ stay clear of the neutrality denylist.
 verifier subagent against this file's done-conditions (all `[auto]`; the milestone is
 prose, wiring, fixtures, and ledger entries, closable by reading the named files and
 running the named checks — including the session-bootstrap and skill-eval self-tests).
+
+verified: clean at 66061b5, 2026-07-17, via verifier subagent against this spec's done-conditions — all 9 conditions evidenced with file:line, anchor verbatim-matched, single-sentence routing diff confirmed, 5 repo checks + 11 script self-tests + skill-eval self-tests green (evidence in PR #146)

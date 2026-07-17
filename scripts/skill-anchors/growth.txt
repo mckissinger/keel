@@ -1,0 +1,6 @@
+# growth — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+# The doctrine's queue invariant — the grain's never-delegated line, pinned VERBATIM
+# (the source sentence wraps across two physical lines; both halves are pinned).
+references/growth-operations.md	**No send, post, or spend ever executes without either an approval record on its
+references/growth-operations.md	queue or a standing-envelope class covering it.**

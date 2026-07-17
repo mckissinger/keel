@@ -140,3 +140,5 @@ uses invented products.
 verifier subagent against this file's done-conditions (all `[auto]`; the new skill is
 prose + frontmatter + a template script, closable by reading the named files and
 running the named checks).
+
+verified: clean at bcfd5b2, 2026-07-16, via verifier subagent against this spec's done-conditions — all 12 conditions evidenced with file:line, git-tracking asserted, 5 repo checks + 11 script self-test suites green; first pass bounced the orchestrator-template stub, fixed and re-verified (evidence in PR #136)

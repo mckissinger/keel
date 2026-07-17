@@ -83,3 +83,5 @@ never as requirements; no dogfood projects or real client brands.
 verifier subagent against this file's done-conditions (all `[auto]`; the change is
 prose in two files, closable by reading the named files and running the named
 checks).
+
+verified: clean at d5702eb, 2026-07-17, via verifier subagent + named repo checks (all `[auto]` done-conditions MET, ownership seams byte-identical to main, check-neutral/check-plan/check-skill-frontmatter/check-skill-anchors + all scripts/*.test.sh + plugin validate --strict green) (evidence in PR #138 branch)

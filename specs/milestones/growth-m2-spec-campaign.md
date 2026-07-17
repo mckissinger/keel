@@ -96,3 +96,5 @@ dogfood projects or real brands.
 verifier subagent against this file's done-conditions (all `[auto]`; the milestone is
 prose plus two template scripts, closable by reading the named files — including the
 approval-record refusal logic in `push-approved.mjs` — and running the named checks).
+
+verified: clean at 9551eff, 2026-07-17, via verifier subagent against this spec's done-conditions — all 8 conditions evidenced with file:line, approval-gate refusal exercised empirically, 5 repo checks + 11 script self-tests + node --check green (evidence in PR #145)

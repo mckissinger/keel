@@ -98,3 +98,5 @@ appear only as hedged, as-of-2026-07 examples; no dogfood projects or real brand
 verifier subagent against this file's done-conditions (all `[auto]`; the milestone is
 prose in all-new files, closable by reading the named files and running the named
 checks).
+
+verified: clean at ef296f7, 2026-07-17, via verifier subagent against this spec's done-conditions — all 8 conditions evidenced with file:line, 5 repo checks + 11 script self-tests green, neutrality reword delta re-verified at HEAD (evidence in PR #144)

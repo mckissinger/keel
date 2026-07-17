@@ -1,0 +1,5 @@
+{
+  "prompt": "Our positioning is decided — set up an outreach campaign for the product: who exactly gets it, the message sequence, the sending schedule, and the caps.",
+  "expected": "spec-campaign",
+  "boundary": "spec-campaign/gtm/run-growth"
+}

@@ -69,6 +69,12 @@ else bad "bootstrap names product-video on the Video line"; fi
 if printf '%s' "$OUT" | grep -q 'harden'; then
   ok "bootstrap names harden on the Harden line"
 else bad "bootstrap names harden on the Harden line"; fi
+if printf '%s' "$OUT" | grep -q 'Growth:' \
+   && printf '%s' "$OUT" | grep -q 'gtm' \
+   && printf '%s' "$OUT" | grep -q 'spec-campaign' \
+   && printf '%s' "$OUT" | grep -q 'run-growth'; then
+  ok "bootstrap names the Growth grain (gtm → spec-campaign → run-growth)"
+else bad "bootstrap names the Growth grain (gtm → spec-campaign → run-growth)"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "bootstrap carries the five summary-block labels inline"
 else bad "bootstrap carries the five summary-block labels inline"; fi
@@ -177,6 +183,9 @@ else bad "mode: the Video line names product-video"; fi
 if printf '%s' "$OUT" | grep -q 'harden'; then
   ok "mode: the Harden line names harden"
 else bad "mode: the Harden line names harden"; fi
+if printf '%s' "$OUT" | grep -q 'Growth:' && printf '%s' "$OUT" | grep -q 'run-growth'; then
+  ok "mode: the Growth grain survives the swap (Growth line + run-growth)"
+else bad "mode: the Growth grain survives the swap (Growth line + run-growth)"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "mode bootstrap carries the five summary-block labels inline"
 else bad "mode bootstrap carries the five summary-block labels inline"; fi

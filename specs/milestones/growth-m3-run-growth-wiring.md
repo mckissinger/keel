@@ -91,3 +91,5 @@ stay clear of the neutrality denylist.
 verifier subagent against this file's done-conditions (all `[auto]`; the milestone is
 prose, wiring, fixtures, and ledger entries, closable by reading the named files and
 running the named checks — including the session-bootstrap and skill-eval self-tests).
+
+verified: clean at 66061b5, 2026-07-17, via verifier subagent against this spec's done-conditions — all 9 conditions evidenced with file:line, anchor verbatim-matched, single-sentence routing diff confirmed, 5 repo checks + 11 script self-tests + skill-eval self-tests green (evidence in PR #146)

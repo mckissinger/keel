@@ -1,7 +1,7 @@
 # Growth operations — the operate-grain rules (shared)
 
 The single source of truth for **how keel's growth verbs operate** — the doctrine the
-three growth skills (`gtm`, `spec-campaign`, `run-growth`) cite and never restate,
+four growth skills (`gtm`, `spec-campaign`, `run-growth`, `measure`) cite and never restate,
 exactly as `spec-feature` and `spec-change` cite `milestones-and-verification.md`.
 Build verbs end when a milestone lands; growth is an **operate grain**: recurring,
 gated cycles over live external channels, where the failure mode is not a broken
@@ -137,3 +137,33 @@ it is **never a silent refresh**. Positioning drift is a strategy question, not 
 sync job: an invented example — *Ledgerline* repositions from bookkeepers to
 fractional CFOs — should pause a mid-flight sequence for a human, not have its
 in-flight copy quietly rewritten under the pinned approval.
+
+## 10. Measurement
+
+Measurement closes the loop from dispatch to product truth — did the people a
+campaign touched sign up, activate, retain? Its rules extend the grain without
+widening it:
+
+- **Analytics providers are canonical for *product* outcomes** — signups,
+  activation events, retention — exactly as sending platforms are canonical for
+  delivery outcomes (§3). **The repo is canonical for metric *definitions***:
+  the north-star, the activation definition, the funnel stages, and the
+  canonical event names live in the product repo's committed
+  `specs/gtm/metrics.md`. A readout that computes a metric any way the
+  committed definition doesn't state is reporting a number nobody agreed to.
+- **Attribution is cohort-level only: the readout joins campaigns to product outcomes at campaign/channel granularity via tagged links, and never links an outreach contact's identity to a product account.**
+  This is the measurement analog of the queue invariant (§1) — the
+  grain-line no readout script,
+  campaign spec, or session may widen past. Person-level linkage is a privacy
+  decision, not a data join; it happens, if ever, only through an attended
+  decision on the record.
+- **Measurement reads provider APIs and never writes provider state.** Pause
+  (§2, §4) remains the grain's only unattended write, and measurement adds
+  none. A readout script containing any provider write call is malformed —
+  read-only by construction, not by convention.
+- **Readout snapshots are file-per-entry** — one new file per readout, never an
+  edit to a shared growing file; §8's collision discipline applies unchanged.
+  And consumers of `specs/gtm/metrics.md` **pin its path + commit** exactly as
+  campaign specs pin positioning: staleness is surfaced as a flag for the
+  attended sitting, never silently refreshed (§9). A funnel number whose
+  definition moved under it is a flag, not a fact.

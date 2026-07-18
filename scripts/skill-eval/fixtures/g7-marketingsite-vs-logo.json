@@ -1,0 +1,5 @@
+{
+  "prompt": "Build us a landing page for the product — it needs our logo in the header and a hero that sells the value proposition.",
+  "expected": "marketing-site",
+  "boundary": "marketing-site/logo"
+}

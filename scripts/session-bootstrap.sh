@@ -135,6 +135,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
 - Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Video:     product-video (how-to / onboarding / demo videos from committed, regenerable sources — post-app)
+- Logo:      logo (brand mark + versioned logo kit under design/brand/ — SVG-direct, attended art direction; ends on a plan PR)
 - Harden:    harden (pre-launch production-readiness audit → grain-mapped remediation slate — post-app)
 - Growth:    gtm → spec-campaign → run-growth → measure (positioning → one campaign → one gated operating cycle → metrics + cohort readout; run-growth human-triggered only)
 - Cross-cut: debug · status · harvest · demo · test-health
@@ -163,6 +164,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Chore:     punch-list (a batch of tiny changes → one verified chore PR)
 - Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Video:     product-video (how-to / onboarding / demo videos from committed, regenerable sources — post-app)
+- Logo:      logo (brand mark + versioned logo kit under design/brand/ — SVG-direct, attended art direction; ends on a plan PR)
 - Harden:    harden (pre-launch production-readiness audit → grain-mapped remediation slate — post-app)
 - Growth:    gtm → spec-campaign → run-growth → measure (positioning → one campaign → one gated operating cycle → metrics + cohort readout; run-growth human-triggered only)
 - Cross-cut: debug · status · harvest · demo · test-health

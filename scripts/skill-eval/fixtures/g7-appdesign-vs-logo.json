@@ -1,0 +1,5 @@
+{
+  "prompt": "Help us decide the app's visual design system — the overall look, palette, and type direction the product UI should follow.",
+  "expected": "app-design-directions",
+  "boundary": "app-design-directions/logo"
+}

@@ -90,3 +90,5 @@ verifier subagent against this file's done-conditions (all `[auto]`; the milesto
 prose in new files plus one appended doctrine section, closable by reading the named
 files, diffing `references/growth-operations.md` §1–§9 against `main`, and
 running the named checks).
+
+verified: clean at 61314a5, 2026-07-18, via verifier subagent against this spec's done-conditions — all 6 conditions evidenced with file:line, §1–§9 byte-unchanged vs main, plugin validate + 4 repo checks + 11 script self-tests green (evidence in PR #149)

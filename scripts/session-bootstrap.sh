@@ -136,7 +136,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Video:     product-video (how-to / onboarding / demo videos from committed, regenerable sources — post-app)
 - Harden:    harden (pre-launch production-readiness audit → grain-mapped remediation slate — post-app)
-- Growth:    gtm → spec-campaign → run-growth (positioning → one campaign → one gated operating cycle; run-growth human-triggered only)
+- Growth:    gtm → spec-campaign → run-growth → measure (positioning → one campaign → one gated operating cycle → metrics + cohort readout; run-growth human-triggered only)
 - Cross-cut: debug · status · harvest · demo · test-health
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
@@ -164,7 +164,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Marketing: marketing-site (landing page or full marketing site — usually after the app is built)
 - Video:     product-video (how-to / onboarding / demo videos from committed, regenerable sources — post-app)
 - Harden:    harden (pre-launch production-readiness audit → grain-mapped remediation slate — post-app)
-- Growth:    gtm → spec-campaign → run-growth (positioning → one campaign → one gated operating cycle; run-growth human-triggered only)
+- Growth:    gtm → spec-campaign → run-growth → measure (positioning → one campaign → one gated operating cycle → metrics + cohort readout; run-growth human-triggered only)
 - Cross-cut: debug · status · harvest · demo · test-health
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 

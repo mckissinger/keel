@@ -62,7 +62,10 @@ mechanical (the committed scripts do the work); 3 drafts; 4 is the human gate;
    contact enters a queue unverified — and draft the next batch: new queue
    files plus a **cycle brief** that lays out drafts, flags (staleness,
    stop-condition proximity, drift), and drafted reply responses for review.
-   Prep writes drafts and briefs; it approves nothing.
+   Prep writes drafts and briefs; it approves nothing. When the campaign's
+   pinned product repo carries `specs/gtm/metrics.md`, the brief cites the
+   latest cohort readout — produced by `measure`'s readout mode, never by
+   this verb.
 4. **The attended approval gate.** The user reviews the brief and the queues.
    **Approval writes an approval record** (the hash-matched record the push
    script demands); edits and kills need no record — only approval does.

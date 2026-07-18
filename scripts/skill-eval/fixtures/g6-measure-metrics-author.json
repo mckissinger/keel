@@ -1,0 +1,5 @@
+{
+  "prompt": "Campaigns start next month and we still haven't defined what counts as an activated user or which growth metrics we track — set our funnel definitions up before anything goes out.",
+  "expected": "measure",
+  "boundary": "measure/gtm"
+}

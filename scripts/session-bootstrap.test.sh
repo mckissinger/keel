@@ -75,6 +75,9 @@ if printf '%s' "$OUT" | grep -q 'Growth:' \
    && printf '%s' "$OUT" | grep -q 'run-growth'; then
   ok "bootstrap names the Growth grain (gtm → spec-campaign → run-growth)"
 else bad "bootstrap names the Growth grain (gtm → spec-campaign → run-growth)"; fi
+if printf '%s' "$OUT" | grep -q 'measure'; then
+  ok "bootstrap names measure on the Growth line"
+else bad "bootstrap names measure on the Growth line"; fi
 if printf '%s' "$OUT" | grep -qF 'Done / Decision / Recommend / Glance / Next'; then
   ok "bootstrap carries the five summary-block labels inline"
 else bad "bootstrap carries the five summary-block labels inline"; fi

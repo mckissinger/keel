@@ -51,4 +51,4 @@ wiring, fixtures, and a ledger entry, closable by reading the named files, diffi
 the one-sentence seam against `main`, and running the named checks — including the
 session-bootstrap and skill-eval self-tests).
 
-verified: clean at d740ae4, 2026-07-18, via verifier subagent against this spec's done-conditions — all 5 conditions evidenced with file:line, seam strictly one added sentence vs main, scope exactly the 8 owned files, plugin validate + 4 repo checks + 11 script self-tests + eval self-tests green (evidence in PR #154)
+verified: clean at 2f0dff0, 2026-07-18, via verifier subagent against this spec's done-conditions — all 5 conditions evidenced with file:line, seam strictly one added sentence vs main, scope exactly the 8 owned files, plugin validate + 4 repo checks + 11 script self-tests + eval self-tests green (evidence in PR #154) — carried forward from d740ae4: clean rebase onto main after #153 squash; tree byte-identical, suites re-run green

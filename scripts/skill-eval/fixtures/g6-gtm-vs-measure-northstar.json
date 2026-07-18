@@ -1,0 +1,5 @@
+{
+  "prompt": "What should our product's north-star metric be, and how do we pin down the definition so everyone measures it the same way?",
+  "expected": "measure",
+  "boundary": "gtm/measure"
+}

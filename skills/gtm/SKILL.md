@@ -21,7 +21,9 @@ page or site, and its generated art) and consumes `specs/gtm/positioning.md` as 
 input when it exists; `spec-campaign` owns one *campaign* (audience slice,
 sequence, envelope, stop-conditions) in the central growth-ops repo. `gtm` owns
 the strategy layer under both — so neither verb absorbs it, and it authors
-neither of theirs.
+neither of theirs. The metrics layer — the activation definition, the funnel,
+the readout — is `measure`'s, downstream, and `gtm` never authors
+`specs/gtm/metrics.md`.
 
 This verb is deliberately **model-invocable** (no `disable-model-invocation`): the
 session is attended, its output is plan-only (`specs/gtm/` on a branch, via a plan

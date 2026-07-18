@@ -25,7 +25,7 @@ Chore      punch-list → one verified chore PR (batch pin)   ← many tiny chan
 Marketing  marketing-site → plan PR → the milestone verbs   ← landing page or full site, usually post-app
 Video      product-video → plan PR → the milestone verbs    ← how-to, onboarding, demo videos — post-app
 Harden     harden → triage → grain-mapped slate + report    ← pre-launch production-readiness audit
-Growth     gtm → spec-campaign → run-growth                 ← positioning → one campaign → gated operating cycles
+Growth     gtm → spec-campaign → run-growth → measure       ← positioning → one campaign → gated operating cycles → metrics + cohort readout
 Cross-cut  debug · status · harvest · demo · test-health · provision (miniature)
                                         * design track runs only when the deliverable has a UI
 ```
@@ -46,7 +46,7 @@ hardcoded to any framework.
 
 ## What's in the plugin
 
-**27 skills**, grouped by grain:
+**28 skills**, grouped by grain:
 - **Kickoff** — `kickoff` (greenfield) / `adopt` (brownfield), `interview`, `spec-foundation`, `app-design-directions`, `provision`
 - **Feature** — `spec-feature`, `implement-feature`, `land-feature`, `review-feature`
 - **Milestone** — `implement-milestone`, `verify-milestone`
@@ -55,7 +55,7 @@ hardcoded to any framework.
 - **Marketing** — `marketing-site` (landing page or full marketing website, usually after the app is built — reads the specs + design system, screenshots the shipped app, explores variants, generates assets attended, then authors the milestones the normal pipeline builds)
 - **Video** — `product-video` (product education video for a shipped app — feature how-to / knowledge-base videos, an onboarding sequence, a marketing demo reel, companion step-docs — scripts derived from the feature specs, recorded against the seeded app, narrated and brand-composited through a committed regenerable pipeline; ends on a plan PR the normal pipeline builds)
 - **Hardening** — `harden` (pre-launch production-readiness audit, re-run per major release — a profile-derived, evidence-backed sweep across application security including supply chain and the AI surface, reliability + data safety, and operations + launch readiness; findings triaged attended into a grain-mapped remediation slate plus a dated go/no-go report under `specs/reviews/`)
-- **Growth** — `gtm` (one product's positioning / ICP / channel plan, interviewed and authored in that product's own repo as `specs/gtm/`), `spec-campaign` (ONE campaign — audience slice, source ladder, copy, cadence, envelope, stop-conditions — authored in the central growth-ops repo against a pinned gtm), `run-growth` (one gated operating cycle of an authored campaign — readback → stop-condition enforcement → prep → attended approval → push via the committed scripts → dispatch record; human-triggered only, per `references/growth-operations.md`)
+- **Growth** — `gtm` (one product's positioning / ICP / channel plan, interviewed and authored in that product's own repo as `specs/gtm/`), `spec-campaign` (ONE campaign — audience slice, source ladder, copy, cadence, envelope, stop-conditions — authored in the central growth-ops repo against a pinned gtm), `run-growth` (one gated operating cycle of an authored campaign — readback → stop-condition enforcement → prep → attended approval → push via the committed scripts → dispatch record; human-triggered only, per `references/growth-operations.md`), `measure` (the growth funnel's metrics spec — north-star, activation definition, stages — authored in the product repo as `specs/gtm/metrics.md`, plus read-only cohort-level readouts of what campaigns actually produced)
 - **Cross-cutting** — `debug`, `status` (read-only "where are we / what's next" derivation), `harvest` (transcript-mining retrospective → a proposed improvement slate; human-triggered only), `demo` (attended, gateless "show me the app, now" — boot, seed, demo card, live finding triage), `test-health` (suite-wide flakiness/efficiency audit → a grain-mapped remediation slate)
 - **Autonomy** — `auto` (posture switch), `auto-merge` (attended merge toggle) — both human-triggered only
 

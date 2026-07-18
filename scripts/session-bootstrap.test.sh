@@ -66,6 +66,9 @@ else bad "bootstrap names marketing-site on the Marketing line"; fi
 if printf '%s' "$OUT" | grep -q 'product-video'; then
   ok "bootstrap names product-video on the Video line"
 else bad "bootstrap names product-video on the Video line"; fi
+if printf '%s' "$OUT" | grep -q 'Logo:      logo'; then
+  ok "bootstrap names logo on the Logo line"
+else bad "bootstrap names logo on the Logo line"; fi
 if printf '%s' "$OUT" | grep -q 'harden'; then
   ok "bootstrap names harden on the Harden line"
 else bad "bootstrap names harden on the Harden line"; fi
@@ -183,6 +186,9 @@ else bad "mode: the Marketing line names marketing-site"; fi
 if printf '%s' "$OUT" | grep -q 'product-video'; then
   ok "mode: the Video line names product-video"
 else bad "mode: the Video line names product-video"; fi
+if printf '%s' "$OUT" | grep -q 'Logo:      logo'; then
+  ok "mode: the Logo line names logo"
+else bad "mode: the Logo line names logo"; fi
 if printf '%s' "$OUT" | grep -q 'harden'; then
   ok "mode: the Harden line names harden"
 else bad "mode: the Harden line names harden"; fi

@@ -1,0 +1,5 @@
+{
+  "prompt": "Design a logo for my product — we need a real brand mark, plus the favicon set that goes with it.",
+  "expected": "logo",
+  "boundary": "logo/marketing-site"
+}

@@ -62,4 +62,4 @@ wiring, fixtures, and ledger entries, closable by reading the named files, diffi
 two one-sentence seams against the base branch, and running the named checks —
 including the session-bootstrap and skill-eval self-tests).
 
-verified: clean at 4bc6f03, 2026-07-18, via verifier subagent against this spec's done-conditions — all 7 conditions evidenced with file:line, both one-sentence seams byte-identical-otherwise vs main, anchor verbatim-matched, plugin validate + 4 repo checks + 11 script self-tests + eval self-tests green (evidence in PR #150)
+verified: clean at 8a50a84, 2026-07-18, via verifier subagent against this spec's done-conditions — all 7 conditions evidenced with file:line, both one-sentence seams byte-identical-otherwise vs main, anchor verbatim-matched, plugin validate + 4 repo checks + 11 script self-tests + eval self-tests green (evidence in PR #150) — carried forward from 4bc6f03: clean rebase onto main after #149 squash; tree byte-identical, suites re-run green

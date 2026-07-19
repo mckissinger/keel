@@ -117,6 +117,34 @@ run_in "$TMP/m4"
 if [ "$RC" -eq 0 ] && [ -z "$OUT" ]; then ok "plain CLAUDE.md is not a marker: silent"
 else bad "plain CLAUDE.md is not a marker (rc=$RC, out=${#OUT} bytes)"; fi
 
+# 5a-nested. No marker HERE but an immediate subdirectory is keel-managed → say so,
+#            name the subdirectory, and name the entry verb (cd in, then /keel:status).
+mkdir -p "$TMP/nest/app/specs/milestones" "$TMP/nest/notes"
+run_in "$TMP/nest"
+if [ "$RC" -eq 0 ] && [ -n "$OUT" ] \
+   && printf '%s' "$OUT" | grep -qF 'app' \
+   && printf '%s' "$OUT" | grep -qF 'cd app' \
+   && printf '%s' "$OUT" | grep -qF '/keel:status'; then
+  ok "nested keel repo: names the subdirectory and the cd + /keel:status entry"
+else bad "nested keel repo: names the subdirectory and the cd + /keel:status entry (rc=$RC, out=${#OUT} bytes)"; fi
+# It is the nested notice, not the full orientation (no grain ladder).
+if ! printf '%s' "$OUT" | grep -q 'implement-milestone'; then
+  ok "nested notice is the short form, not the full orientation"
+else bad "nested notice is the short form, not the full orientation"; fi
+
+# Nested detection is one level only: a marker two levels down stays silent.
+mkdir -p "$TMP/deep/a/b/specs/milestones"
+run_in "$TMP/deep"
+if [ "$RC" -eq 0 ] && [ -z "$OUT" ]; then ok "marker two levels down: still silent"
+else bad "marker two levels down: still silent (rc=$RC, out=${#OUT} bytes)"; fi
+
+# A marked dir is NOT diverted by a marked subdirectory — it gets the full orientation.
+mkdir -p "$TMP/both/specs/milestones" "$TMP/both/inner/specs/milestones"
+run_in "$TMP/both"
+if [ "$RC" -eq 0 ] && printf '%s' "$OUT" | grep -q 'implement-milestone'; then
+  ok "marked dir with a marked subdirectory: full orientation wins"
+else bad "marked dir with a marked subdirectory: full orientation wins (rc=$RC)"; fi
+
 # 5b. Autonomy mode (contract in scripts/merge-guard.sh, the reading owner):
 #     a VALID .claude/keel-autonomy.json swaps the never-merge invariant for the
 #     mode framing; any defect in the file → today's text byte-identical.

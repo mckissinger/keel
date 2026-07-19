@@ -1,0 +1,24 @@
+# Chore batch — harvest-e-tier
+
+Punch-list batch: six E-tier harvest items — a mockup-affordance disclosure in spec-feature, the Next-line verb naming contract, deferral surfacing in status, nested-repo detection in the session-bootstrap hook, the auto-merge TTL rationale + slow-CI pattern, and the never-paste-secrets path through provision.
+
+## Applied items
+
+- **E2-mockup-affordance** — `skills/spec-feature/SKILL.md`: Movement 2 now opens by stating out loud that the session ships no standalone mockup artifact — what the user is shown is the real workbench composition, and the named workbench components are the fidelity reference; the optional throwaway divergence sketch is called out as the one exception and explicitly not a deliverable.
+  - Done-condition: the spec-feature screen-design movement states that no mockup artifact is produced and names the workbench composition as the fidelity reference the user reviews instead.
+- **E4-next-verb-naming** — `references/gate-presentation.md`: the summary block's **Next** line is redefined from "what happens on approval" to the single next keel verb, written as the invocable `/keel:<verb>` command, with the semantics paragraph requiring a finishing verb to volunteer that next verb unprompted.
+  - Done-condition: the gate-presentation summary-block contract defines Next as one invocable `/keel:<verb>` rather than a prose description of a next step.
+- **E5-deferral-surfacing** — `skills/status/SKILL.md`: the deferrals ledger input now names the concrete open-entry path (`specs/deferrals/<slug>.md`, with `_closed.md` out of scope), and a fourth report section requires listing every open deferral one line each — triggered entries first — appearing even when nothing is triggered.
+  - Done-condition: the status skill's report structure includes an open-deferrals section that appears unconditionally, with triggered entries ordered first.
+- **E6-nested-repo-detection** — `scripts/session-bootstrap.sh`, `scripts/session-bootstrap.test.sh`: `is_keel_managed` takes an optional directory argument, and a new `nested_keel_dir` scans immediate subdirectories so a session opened one level above a keel project prints a short notice naming the subdirectory plus the `cd <dir>` + `/keel:status` entry instead of staying silent. Detection is one level only, hidden directories are skipped, and a marked directory is never diverted by a marked child.
+  - Done-condition: the bootstrap self-test asserts the nested notice names the subdirectory and the `cd` + `/keel:status` entry, stays the short form (no grain ladder), stays silent two levels down, and lets the full orientation win in a marked directory that also has a marked child.
+- **E7b-automerge-ttl** — `skills/auto-merge/SKILL.md`, `decisions/2026-07-04-attended-auto-merge.md`: both now record why the TTL is 8h — sized to one attended sitting, bounded so a forgotten marker dies before the next session — and state the binding constraint that the TTL must exceed the project's end-to-end CI duration. A slow-CI section makes handoff-first (`gh pr merge <pr> --auto` as soon as the PR is up and the gate passes, not after green) the default working pattern, explicitly rejecting a longer TTL as the fix.
+  - Done-condition: the auto-merge skill and its decision record both justify the 8h value against CI duration and name handoff-first as the slow-CI answer rather than a longer marker.
+- **E7c-secret-path** — `skills/provision/SKILL.md`: steps 2, 3, 5 and the auto-posture secrets bullet now forbid tokens or key values entering chat and name the exact user-terminal shape instead (`gh secret set NAME`, `vercel env add NAME`, `supabase secrets set NAME`, `gh auth login --with-token`), leaving the agent's role at naming the variable and confirming it resolves by name.
+  - Done-condition: provision's login, dev-resource, bounded-spend, and auto-posture secrets guidance each state the value never enters agent context and name the user-terminal command that sets it.
+
+## Combined checks
+
+`bash scripts/check-verified-pin.test.sh` (36 passed), `bash scripts/check-neutral.test.sh` (17 passed), `bash scripts/check-neutral.sh` (PASS), `bash scripts/session-bootstrap.test.sh` (61 passed), `bash scripts/merge-guard.test.sh` (102 passed), `bash scripts/guard-branch-rules.test.sh` (55 passed), `bash scripts/attended-marker-parity.test.sh` (12 passed), `bash scripts/check-auto-preflight.test.sh` (20 passed), `bash scripts/check-plan.test.sh` (21 passed), `bash scripts/check-plan.sh` (PASS), `bash scripts/check-skill-frontmatter.test.sh` (12 passed), `bash scripts/check-skill-frontmatter.sh` (PASS), `bash scripts/check-skill-anchors.test.sh` (14 passed), `bash scripts/check-skill-anchors.sh` (PASS), `claude plugin validate --strict .` (Validation passed) — all green on the combined branch.
+
+verified: clean at 01d4112, 2026-07-19, via punch-list (evidence in PR #157)

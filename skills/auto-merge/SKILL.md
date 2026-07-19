@@ -54,6 +54,15 @@ delegation shape, which is meaningful only where branch protection makes `--auto
    The guards honor the marker only while `created` is within 8 hours of now; past that it is
    treated as absent and the per-merge tap returns. There is no refresh path — re-run
    `keel:auto-merge on` (a fresh human invocation) to renew it for another session.
+
+   **Why 8h.** The TTL exists to bound how long a marker can outlive the human who minted it, so
+   it is sized to one attended working day: long enough that a single sitting never has the tap
+   reappear mid-run, short enough that a marker forgotten at end of day is dead before the next
+   one starts. **The TTL must exceed the project's own end-to-end CI duration** — otherwise a PR
+   opened under a valid marker can go green *after* the marker expires, and the merge the user
+   already authorized hits the approval prompt anyway. 8h clears typical CI (minutes to ~1h) by a
+   wide margin. If this project's CI is slow enough that the gap between opening a PR and its
+   checks going green approaches 8h, that assumption no longer holds — see below.
 3. **Confirm the path stays untracked.** A git-tracked copy is a spoof and is ignored by both
    guards. If the project tracks `.claude/` (check with `git ls-files -- .claude/`), add
    `/.claude/keel-attended-merge.json` to `.gitignore`. **Never `git add` or commit the marker.**
@@ -76,6 +85,17 @@ two things **while the marker is still valid**:
 
 Doing neither and letting the marker quietly expire over a wave of pending PRs is a failure mode,
 not a safe default.
+
+**Slow-CI repos.** Where a full check run can take hours, the ordinary case — not the edge case —
+is a PR going green *after* the marker expires, landing the user back at the approval prompt for
+a merge they already authorized. In such a project, queue the server-side handoff (the first
+bullet above) as the default rather than the fallback: issue the instructed `gh pr merge <pr>
+--auto` as soon as the PR is up and the gate passes, while the marker is unambiguously valid, and
+let GitHub's required checks land it whenever they finish. Do not wait for checks to go green
+before issuing the handoff — that wait is exactly what burns the TTL. Before starting a wave in a
+slow-CI repo, check the marker's remaining life against the expected check duration; if the
+remaining life is shorter, ask the user to re-arm first. The 8h TTL is not adjustable per
+invocation — the handoff-first pattern, not a longer marker, is the answer for slow CI.
 
 ## `off` — remove the marker
 

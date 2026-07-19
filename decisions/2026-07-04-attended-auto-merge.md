@@ -50,6 +50,22 @@ delegation-to-required-checks backstop holds it: a stale/forged marker cannot la
 required checks reject. The shared stale/forged-marker + trigger-binding concern is recorded in
 `specs/deferrals/mode-file-binding-ttl.md` (referenced here, not re-argued).
 
+This marker does carry a TTL of its own: **8h**, checked by both guards against `created`. The
+value is sized to one attended sitting — long enough that the tap never reappears mid-run, short
+enough that a marker forgotten at end of day is dead before the next session. The binding
+constraint is that **the TTL must exceed the project's own end-to-end CI duration**. If it does
+not, a PR opened under a valid marker goes green *after* the marker expires and the merge the
+user already authorized hits the approval prompt anyway — the toggle silently fails to do the one
+thing it was invoked for. 8h clears typical CI (minutes to ~1h) with wide margin, which is why it
+is the chosen value rather than something shorter.
+
+For repos whose checks run long enough to approach that margin, the fix is **not** a longer TTL —
+lengthening it trades away the bound on how long a marker outlives its human, which is the whole
+point of having one. The fix is to queue the server-side `--auto` handoff as soon as the PR is up
+and the gate passes, rather than waiting on green: once GitHub holds the handoff, the required
+checks land the PR whenever they pass, marker or no marker. `skills/auto-merge/SKILL.md` records
+this as the default working pattern for slow-CI projects.
+
 ## (e) Explicitly out of scope
 
 The **per-project, committed** variant of this toggle — always-on for every session in a repo,

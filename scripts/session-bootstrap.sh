@@ -21,17 +21,43 @@ set -euo pipefail
 # The harness sets CLAUDE_PROJECT_DIR for hook processes; fall back to cwd.
 ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 
-is_keel_managed() {
-  [ -d "$ROOT/specs/milestones" ] && return 0
-  [ -f "$ROOT/specs/stack-profile.md" ] && return 0
-  if [ -f "$ROOT/CLAUDE.md" ] && grep -qiE 'verified[- ]pin' "$ROOT/CLAUDE.md"; then
+is_keel_managed() { # [dir] → defaults to $ROOT
+  local d="${1:-$ROOT}"
+  [ -d "$d/specs/milestones" ] && return 0
+  [ -f "$d/specs/stack-profile.md" ] && return 0
+  if [ -f "$d/CLAUDE.md" ] && grep -qiE 'verified[- ]pin' "$d/CLAUDE.md"; then
     return 0
   fi
   return 1
 }
 
-# Not a keel-managed project → stay silent.
-is_keel_managed || exit 0
+# Nested-repo case: the session opened one level ABOVE a keel project (a
+# containing folder, a multi-repo workspace). Naming the subdirectory and the
+# entry verb beats the silence that reads as "keel isn't here".
+nested_keel_dir() { # → prints the first immediate subdirectory that is keel-managed
+  local sub
+  for sub in "$ROOT"/*/; do
+    [ -d "$sub" ] || continue # no matches → the literal glob
+    sub="${sub%/}"
+    case "${sub##*/}" in .*) continue ;; esac
+    if is_keel_managed "$sub"; then
+      printf '%s' "${sub##*/}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Not a keel-managed project → point at a nested one if there is one, else stay silent.
+if ! is_keel_managed; then
+  NESTED="$(nested_keel_dir)" || exit 0
+  cat <<EOF
+keel is not active in this directory, but the subdirectory ./${NESTED} is keel-managed (spec markers found there).
+
+To work in it: cd ${NESTED}, then run /keel:status to orient — it derives where the project stands and names the next keel verb.
+EOF
+  exit 0
+fi
 
 # --- autonomy mode -------------------------------------------------------------
 # The mode-file contract lives in scripts/merge-guard.sh (the reading owner):

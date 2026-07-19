@@ -9,12 +9,15 @@ session-ending report in a keel-managed project ends on the **summary block** �
 > **Decision:** the one question needing the user — or "none."
 > **Recommend:** the pick + one-line why.
 > **Glance:** the single artifact to check for proof (file, PR, screenshot) — never "see above."
-> **Next:** what happens on approval.
+> **Next:** the single next keel verb to run (e.g. `/keel:verify-milestone`).
 
 The header line is part of the block. The **labels, order, and per-line semantics are
 the contract**; the bold markup is presentational, per the output medium. **Decision is
 always present**, even when the answer is "none." **Glance names exactly one artifact**
-— a file, a PR, a screenshot — never "see above."
+— a file, a PR, a screenshot — never "see above." **Next names the single next keel
+verb**, written as the invocable command (`/keel:<verb>`), not a vague description of a
+next step; a verb that ends its run volunteers that next verb unprompted rather than
+leaving the line open.
 
 **Placement:** dense detail stays above the block, optional to read; the block is last.
 **Why:** supervision is glance-and-proceed, often from a phone — five fixed lines answer

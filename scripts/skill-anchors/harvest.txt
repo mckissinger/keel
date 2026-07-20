@@ -1,0 +1,56 @@
+# harvest — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# Positive anchors are full sentences carrying their rule's operative clause: a
+# concept-named anchor (e.g. the word "enumerate") survives any rewrite that guts
+# the rule it was meant to hold.
+#
+# Every literal below was confirmed to occur on a SINGLE line, correct case, in
+# the file it names — check-skill-anchors.sh matches fixed strings line-by-line
+# and case-sensitively, so a literal spanning a line break guards nothing.
+
+# --- step 0: enumeration, and the two real-layout guards ---
+skills/harvest/SKILL.md	The sweep set is derived from the filesystem at the start of every run, never from a list.
+skills/harvest/SKILL.md	**`-maxdepth 1`** — nested subagent transcripts are not sessions.
+skills/harvest/SKILL.md	**The directory argument is always a full path, never a bare basename**
+skills/harvest/SKILL.md	**Quoting does not fix this**
+skills/harvest/SKILL.md	**Mine every source the command returns.**
+
+# --- the zero-row discriminator ---
+skills/harvest/SKILL.md	**Zero rows is ambiguous — disambiguate before reporting it.**
+skills/harvest/SKILL.md	there means the root is broken — stop and ask
+
+# --- step 1: the human-origin filter ---
+skills/harvest/SKILL.md	**`type=="user"` alone is not a human-input filter.**
+skills/harvest/SKILL.md	**The path is `.origin.kind`, top-level — not `.message.origin.kind`.**
+skills/harvest/SKILL.md	**Every miner's dispatch prompt carries step 1's extraction recipe verbatim**
+
+# --- the watermark-advance rule ---
+skills/harvest/SKILL.md	The discriminator is **returned vs did-not-return, not findings vs no findings**
+specs/reviews/harvest-cursor.md	**The watermark advances only when every enumerated source produced a returned miner report**
+
+# --- the write-off must stay stated, not silent ---
+specs/reviews/harvest-cursor.md	**Sessions older than the watermark are out of scope permanently, by decision, not because
+specs/reviews/harvest-cursor.md	never as "everything below is covered."
+
+# --- retained guarantees the change must not weaken ---
+skills/harvest/SKILL.md	**No cursor in the target repo =
+skills/harvest/SKILL.md	**Nothing secret-shaped is ever
+
+# --- RETIREMENT anchors: the name-matching mechanism, removed and staying removed.
+# Each was confirmed present at the merge-base before removal (git show
+# "$(git merge-base HEAD main)":<path> | grep -cF), NOT against post-change
+# content, which returns 0 by construction for anything just deleted.
+!skills/harvest/SKILL.md	per-source through-mark
+!skills/harvest/SKILL.md	never re-mine covered sessions
+!specs/reviews/harvest-cursor.md	so a run can match them mechanically
+!specs/reviews/harvest-cursor.md	newer than each source's through-mark
+!specs/reviews/harvest-cursor.md	reconcile them against this table
+!specs/reviews/harvest-cursor.md	Until harvest resolves sources by project identity
+!specs/reviews/harvest-cursor.md	remains available to a later run
+
+# --- PROHIBITION anchor: a hardcoded floor makes the advance rule inert.
+# Exempt from the confirm-present rule by definition — this literal has never
+# occurred in SKILL.md, and requiring a forward-looking prohibition to have
+# existed first is unsatisfiable.
+!skills/harvest/SKILL.md	2026-07-18

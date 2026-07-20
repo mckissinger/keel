@@ -82,15 +82,23 @@ against a pre-change ref, and reads.
   satisfies every count assertion identically to a correct one — and silently makes the whole
   watermark-advance rule inert, since advancing a value nothing reads changes nothing.
 - [auto] **`skills/harvest/SKILL.md`'s `allowed-tools` grant covers every command the committed
-  blocks invoke — stated as a closure rule, not a fixed list.** The condition is: *every
-  executable named in the committed enumeration and extraction blocks has a matching
-  `Bash(<cmd> *)` entry in the frontmatter grant.* A fixed list goes stale the moment the
-  builder's pipeline differs by one utility — draft 8 named `find` and `stat` and missed `sort`,
-  which the `newest-date` derivation needs — and a skill that prompts on every run breaks the
-  grant's own stated rationale ("so the mining runs promptless") through the very change that
-  depends on it. The verifier checks the closure mechanically: extract command names from the
-  blocks, diff against the grant, assert empty. Grant additions are the one frontmatter change
-  the no-weakening condition below licenses.
+  blocks invoke — stated as a closure rule with its extraction procedure defined.** The
+  condition: *every **external executable** invoked in the committed enumeration and extraction
+  blocks has a matching `Bash(<cmd> *)` entry in the frontmatter grant.* A fixed list goes stale
+  the moment the builder's pipeline differs by one utility — draft 8 named `find` and `stat` and
+  missed `sort`, which the `newest-date` derivation needs. The extraction procedure, because
+  "names an executable" was otherwise readable two ways:
+  - **Counted:** the first word of every simple command, including inside `$(...)`, after a pipe,
+    and as the command word of `find -exec`.
+  - **Not counted:** shell keywords and builtins (`for`, `do`, `done`, `if`, `read`, `printf`,
+    `[`), which cannot be granted and must not be looked for.
+
+  **What this condition does not claim:** that the mining runs prompt-free. A compound statement
+  (a `for` loop wrapping the enumeration) may not prefix-match any `Bash(<cmd> *)` entry
+  regardless of grant contents — that is a harness matching property, not something this
+  milestone can assert or a verifier can observe. The condition is grant coverage of the named
+  executables, no more. Grant additions are the one frontmatter change the no-weakening condition
+  below licenses.
 - [auto] **The two real-layout hazards are stated as two separate guards, correctly attributed.**
   (a) **`-maxdepth 1`** — nested subagent transcripts are not sessions; one directory holds 10
   top-level entries against a recursive total an order of magnitude larger. (b) **The directory
@@ -136,8 +144,10 @@ against a pre-change ref, and reads.
   carries the retired literals as a record of what was decided then, and stays as it is.
 - [auto] **The cursor's `through` column is removed, the table is relabelled** a historical
   coverage record — read for provenance, never consulted to decide what to mine — **and its
-  duplicate rows are collapsed.** Three directories currently occupy two rows each, the second
-  carrying a `+N` session count that only parses against the through-mark being deleted. One row
+  duplicate rows are collapsed.** **Two** directories occupy two rows each
+  (`-Users-michaelkissinger-Dev-Projects-keel` and
+  `-Users-michaelkissinger-Dev-Projects-new-test-proj`), the second row of each carrying a `+N`
+  session count (`+6`, `+8`) that only parses against the through-mark being deleted. One row
   per directory, with the total sessions covered and the date range spanned. Draft 7 removed the
   column and left the `+N` notation orphaned.
 - [auto] **The signal ladder's step 1 carries the executed recipe.** Inclusion: entries whose
@@ -220,15 +230,21 @@ against a pre-change ref, and reads.
   — creating nothing, mutating nothing.** It runs the committed command twice: once with the
   variable unset (the cursor's seed), once with it set to **one day before the oldest top-level
   `*.jsonl` mtime anywhere under `~/.claude/projects/`**, measured at run time so the second run
-  is guaranteed to admit strictly more sessions rather than depending on a lucky pick. It asserts
+  admits a superset rather than depending on a lucky pick — strictly larger for as long as any
+  pre-seed session exists on the store, which today it does by a wide margin. It asserts
   the two runs **emit different row counts**. A build with the date typed into the command emits
   identical output both times and is bounced. Measured at draft-9 authoring, the spread is wide:
   the seed yields 7 rows, the floor-date run 39. Combined with the no-date-literal assertion
   above, this closes the hardcoded-watermark hole that draft 6 left and drafts 7 and 8 each
   stated in a form the verifier could not execute.
 - [auto] **The verifier proves the sweep set is derived from the filesystem, not from the
-  cursor.** The committed enumeration command's text contains **no reference to the cursor's
-  table**, and its output contains **more than one row**. This is the property the whole change
+  cursor.** The committed enumeration command **reads exactly one thing from the cursor — the
+  watermark line — and never parses the table.** The distinction is mechanical, not
+  interpretive: the command's cursor read must target the `**Watermark:**` line specifically, and
+  the command text must contain no row-parsing construct (no split on `|`, no directory-name
+  literal from the table). Naming the cursor file is required — the watermark lives there — so a
+  verifier that greps for `harvest-cursor` and bounces on a hit is checking the wrong thing.
+  Alongside this, the command's output contains **more than one row**. This is the property the whole change
   exists for; draft 5 asserted only on a single directory already listed in the cursor, which an
   enumeration that read the old list would have satisfied.
 - [auto] **The `newest-date` column is asserted, not merely specified.** For the selected

@@ -7,11 +7,13 @@ everything, and extracts human input rather than machine text sharing the user r
 **Change:** `specs/changes/harvest-source-resolution.md`. **No-UI** → two-dimension
 done-conditions. **Depends on:** none. **Parallelizable:** n/a (single milestone).
 
-**Draft 6.** Five prior drafts failed; their reports are in this branch's history. Draft 5's
-empirical claims all verified independently, but its two behavioral-completeness conditions were
-passed by the broken builds they named, its complete-run rule would have frozen the watermark
-permanently, and it credited the leading-dash hazard to the wrong guard. Those three plus seven
-lesser findings are addressed below.
+**Draft 7.** Six prior drafts failed; their reports are in this branch's history. Draft 6 closed
+the leading-dash attribution, the watermark-advance rule, the retro over-specification and the
+non-discriminating shape bound — all verified independently. Its remaining defects were an
+**undefined freshness predicate** (the one number every assertion rests on had three legal
+readings), a hardcoded-watermark build that passed every executed assertion, and a negative
+anchor quoting a string that spans a line break. Those three plus six lesser findings are
+addressed below.
 
 ## Done-conditions
 
@@ -22,12 +24,27 @@ lesser findings are addressed below.
   form `**Watermark:** YYYY-MM-DD`. `skills/harvest/SKILL.md` carries the literal command that
   reads it. Draft 5 said "one labelled watermark line" and left the label, format, and position
   open — three builders, three unparseable files.
+- [auto] **"Newer than the watermark" is defined exactly, in one sentence in
+  `skills/harvest/SKILL.md`: file mtime, inclusive of the watermark date itself** — a session
+  file counts if its mtime falls on or after the watermark day. Both axes are pinned deliberately,
+  because both have live divergence on the real store and each was silently readable three ways:
+  - **mtime, not the session's internal timestamp.** They differ by days in both directions on
+    real files (a resumed session gets a fresh mtime). mtime is chosen because its error direction
+    is **over-inclusion** — a resumed old session gets re-swept, costing spend. The internal
+    timestamp's error direction is under-inclusion, which is the exact defect this change exists
+    to end. When the two candidate predicates fail differently, take the one that fails toward
+    waste.
+  - **Inclusive, not strictly-after.** 8 top-level files sit exactly on 2026-07-18; strict
+    comparison drops a full day at every advance, silently.
+
+  The verifier computes its own counts with **this same stated predicate**, so a build reading it
+  either other legal way is bounced rather than accommodated.
 - [auto] **The watermark is seeded `2026-07-18`, and the seed is recorded as a deliberate
-  write-off**: ~27 never-listed directories hold older sessions
-  (`-Users-michaelkissinger-keel` 21, `-Users-michaelkissinger-cre-list` 33, `-jarvis-2-0` 13,
-  and others) which this floor places permanently out of scope. Enumeration fixes the defect
-  **prospectively only**, and the file says so — an unstated floor reads as verified coverage,
-  which is precisely the failure this change exists to end.
+  write-off**: **26** never-listed directories hold **93** older sessions
+  (`-Users-michaelkissinger-keel` 21, `-Users-michaelkissinger-cre-list` 33,
+  `-Users-michaelkissinger-jarvis-2-0` 13, and others) which this floor places permanently out of
+  scope. Enumeration fixes the defect **prospectively only**, and the file says so — an unstated
+  floor reads as verified coverage, which is precisely the failure this change exists to end.
 - [auto] **The watermark advances only when every enumerated source produced a returned miner
   report.** The discriminator is **returned vs did-not-return, not findings vs no findings**: a
   miner that reports "nothing of note in these sessions" is a *complete* result and does not hold
@@ -35,12 +52,18 @@ lesser findings are addressed below.
   incomplete run the watermark does not advance and the digest names the uncovered sources.
   Draft 5 said "returns empty or errors", which would have frozen the floor forever — most miners
   legitimately return little (the 2026-07-18 run: eleven miners, roughly ten claims).
-- [auto] **The mining method begins with enumeration, and the command is committed literally.**
-  `skills/harvest/SKILL.md` carries the exact command returning
-  `directory<TAB>count<TAB>newest-date` per immediate subdirectory of `~/.claude/projects/`
-  holding at least one top-level `*.jsonl` newer than the watermark. **`count` is the
-  watermark-filtered top-level session count** — the number the sweep and the scope announcement
-  both need.
+- [auto] **The mining method begins with enumeration, and the command is committed verbatim into
+  `skills/harvest/SKILL.md`** — returning `directory<TAB>count<TAB>newest-date` per immediate
+  subdirectory of `~/.claude/projects/` holding at least one top-level `*.jsonl` newer than the
+  watermark. **`count` is the watermark-filtered top-level session count**; `newest-date` is the
+  newest qualifying file's mtime, and both are used in the scope announcement.
+- [auto] **The watermark is a parameter the command reads, never a date typed into the command.**
+  The committed command extracts the date from `specs/reviews/harvest-cursor.md` into a variable
+  and compares against that variable; **no literal `2026-07-18` (or any other date) appears in
+  `skills/harvest/SKILL.md`**, enforced by a negative anchor on `2026-07-18`. Without this, a
+  build with the seed hardcoded satisfies every count assertion identically to a correct one —
+  and silently makes the whole watermark-advance rule inert, since advancing a value nothing
+  reads changes nothing.
 - [auto] **The two real-layout hazards are stated as two separate guards, correctly attributed.**
   (a) **`-maxdepth 1`** — nested subagent transcripts are not sessions; one directory holds 10
   top-level entries against a recursive total an order of magnitude larger. (b) **The directory
@@ -62,19 +85,27 @@ lesser findings are addressed below.
   **re-run the enumeration with no floor** — zero rows there means a broken or mistyped root and
   the run stops and asks; non-zero means genuinely nothing new since the watermark.
 - [auto] **Every enumerated source is mined, and the retired name-matching mechanism is removed
-  wherever it appears.** Four sites, all named because a fifth pass found each of them still
-  standing behind a narrower removal scope:
+  wherever it appears.** Five sites, all named because successive passes found each still standing
+  behind a narrower removal scope:
   1. `skills/harvest/SKILL.md` — the `per-source through-mark` rule.
-  2. `skills/harvest/SKILL.md` — the cursor section's framing that it "records per transcript
-     source which sessions are already covered" and its "never re-mine covered sessions" heading,
-     both of which describe the retired lookup.
+  2. `skills/harvest/SKILL.md` — the cursor section's framing of the file as a per-source coverage
+     lookup, **and both occurrences** of `never re-mine covered sessions` (the section heading and
+     the prose sentence below it). Naming only the heading leaves the prose standing and the
+     negative anchor then fails the build it was meant to pass.
   3. `specs/reviews/harvest-cursor.md` — the contract sentence stating sources are identified by
-     directory name "so a run can match them mechanically", and the `newer than each source's
-     through-mark` rule.
+     directory name `so a run can match them mechanically`, and the
+     `newer than each source's through-mark` rule.
   4. `specs/reviews/harvest-cursor.md` — the ⚠ Path drift section's interim instruction to
-     "reconcile them against this table", whose `until harvest resolves sources by project
+     `reconcile them against this table`, whose `until harvest resolves sources by project
      identity` clause this change satisfies. The incident narrative stays as provenance; the
      instruction goes.
+  5. `specs/reviews/harvest-cursor.md` — the closing note that the 2026-07-18 harvesting session
+     `remains available to a later run`. Under an inclusive 2026-07-18 floor that promise is now
+     kept by the floor itself rather than by the note; either way the note must be reconciled
+     rather than left as an unbacked commitment.
+
+  **Merged milestone specs are historical and are not edited** — `specs/milestones/harvest-verb.md`
+  carries the retired literals as a record of what was decided then, and stays as it is.
 - [auto] **The cursor's `through` column is removed and the table is relabelled** a historical
   coverage record — read for provenance, never consulted to decide what to mine. Draft 5 removed
   the column without saying what the table then is, leaving three columns of directory names with
@@ -86,7 +117,10 @@ lesser findings are addressed below.
   local-command-caveat envelopes, injected skill bodies. The path is `.origin.kind`, **not**
   `.message.origin.kind` — the latter returns nothing for all 617 user entries in the sampled
   session, so that one wrong character yields zero human entries while satisfying every prose
-  condition.
+  condition. **The sampled session is named in the spec, not left for the verifier to find**:
+  `~/.claude/projects/-Users-michaelkissinger-Dev-Projects-cre-list/d89b3abb-b161-4557-b589-73f9fdec3e66.jsonl`
+  — 617 user entries, and it also carries the two non-empty `<command-args>` entries the
+  inclusion arm needs.
 - [auto] **The step states plainly that `type=="user"` alone is not a human-input filter**,
   carrying the measured scar: 26 `human`, 46 `task-notification`, 545 with no origin field, of
   which 521 are `tool_result` — roughly 24× more than actual human input.
@@ -94,18 +128,26 @@ lesser findings are addressed below.
   miners inherit the harness and not the skill body.
 - [auto] **The run announces scope before dispatching any subagent**: session count, source
   count, watermark date.
-- [auto] **`retro` scope is an open deferral, not a guess.** A `specs/deferrals/` entry records
+- [auto] **`retro` scope is an open deferral, not a guess.** `specs/deferrals/harvest-retro-scope.md`
+  records
   that `retro`'s narrowing rule is unresolved — name-matching is what broke, and the two CRE
   Launch directories share no discriminating substring — closing condition: the first genuine
   `retro` run, which asks the user for its bound. The skill points at it.
 - [auto] **`scripts/skill-anchors/harvest.txt` anchors verbatim sentences, not concepts.** Each
   positive anchor is a **full sentence carrying its rule's operative clause** — covering
   `-maxdepth 1`, the **full-path** guard (not the quoting guard), `.origin.kind`, the
-  enumerate-first rule, and the zero-row discriminator. **Negative anchors on all four retired
-  literals**, each named against the file it actually occurs in — verified at authoring:
-  `per-source through-mark` occurs only in `skills/harvest/SKILL.md`, while the cursor's wording
-  is `newer than each source's through-mark`, so one anchor covering both files passes vacuously
-  on one of them. `bash scripts/check-skill-anchors.sh` green.
+  enumerate-first rule, and the zero-row discriminator. **Negative anchors on every retired
+  literal plus `2026-07-18`**, each named against the file it actually occurs in. Two authoring
+  rules, both learned from anchors that would have passed vacuously:
+  - **Name the right file.** `per-source through-mark` occurs only in `skills/harvest/SKILL.md`;
+    the cursor's wording is `newer than each source's through-mark`. One anchor covering both
+    files passes vacuously on one of them.
+  - **Every anchor literal must occur on a single line in the file it names, confirmed by
+    `grep -cF` returning non-zero before the anchor is committed.** `check-skill-anchors.sh`
+    matches fixed strings line-by-line, so a literal spanning a line break matches nothing and
+    the negative anchor guards nothing.
+
+  `bash scripts/check-skill-anchors.sh` green.
 - [auto] **No weakening.** Unchanged in the diff: the secret rule, diff-against-HEAD, the
   writes-only-digest-and-cursor rule, **"No cursor in the target repo = ask"**,
   `disable-model-invocation: true`, the two-scope structure, and the
@@ -116,7 +158,7 @@ lesser findings are addressed below.
 - [auto] **The verifier proves the committed enumeration discriminates against both broken
   builds, by measurement rather than by a bound.** It computes three counts for one directory it
   selects at run time (any directory where the three differ — not hardcoded to keel, whose
-  activity varies):
+  activity varies), **each computed with the freshness predicate defined above: mtime, inclusive**:
   - **A** = top-level, watermark-filtered — what the committed command must emit for that row
   - **B** = recursive, watermark-filtered
   - **C** = top-level, unfiltered
@@ -126,16 +168,26 @@ lesser findings are addressed below.
   values, the verifier reports the check **inconclusive and escalates** — it does not pass by
   default. Draft 5 asserted only "emitted < unfiltered recursive", which measurement showed is
   satisfied by dropping `-maxdepth 1` (32 < 153) *and* by dropping the watermark (10 < 153) — it
-  passed both builds it existed to reject.
+  passed both builds it existed to reject. At draft-6 authoring six directories satisfied the
+  three-distinct-values requirement, so an inconclusive result is unlikely but not assumed away.
+- [auto] **The verifier proves the watermark is read, not hardcoded, by varying it.** It runs the
+  committed command twice against two different watermark values — the seed, and a date far
+  enough back to admit strictly more sessions — and asserts the two runs **emit different
+  counts**. A build with the date typed into the command emits identical output both times and is
+  bounced. Without this, every other count assertion is satisfied by a constant.
 - [auto] **The verifier proves the sweep set is derived from the filesystem, not from the
   cursor.** The committed enumeration command's text contains **no reference to the cursor's
   table**, and its output contains **more than one row**. This is the property the whole change
   exists for; draft 5 asserted only on a single directory already listed in the cursor, which an
   enumeration that read the old list would have satisfied.
-- [auto] **The verifier runs the committed extraction recipe against one real session and asserts
-  three things**: a **non-zero** count of `.origin.kind == "human"` entries; **at least one**
-  line derived from `<command-args>`, run against a session known to contain typed slash-command
-  arguments (the inclusion half, untested in draft 5); and **zero** lines matching
+- [auto] **The `newest-date` column is asserted, not merely specified.** For the selected
+  directory, the emitted `newest-date` equals the mtime date of the newest qualifying top-level
+  file, computed independently. Draft 6 specified the column and never checked it.
+- [auto] **The verifier runs the committed extraction recipe against the named session
+  (`d89b3abb-b161-4557-b589-73f9fdec3e66.jsonl`) and asserts three things**: a **non-zero** count
+  of `.origin.kind == "human"` entries; **at least one** line derived from `<command-args>` — that
+  session carries two non-empty ones, both with `origin.kind` absent, so the inclusion arm is
+  genuinely exercised rather than passing through the `human` branch; and **zero** lines matching
   `<command-name>`, `<command-message>`, `<local-command`, or `Base directory for this skill`.
   The first catches the wrong-field-path failure; the third catches envelope leakage that the
   first attempt at this recipe actually exhibited (38 lines where 28 were real).

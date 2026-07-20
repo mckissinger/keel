@@ -3,7 +3,7 @@
 **Origin:** `specs/reviews/2026-07-18-harvest.md` findings A1 + A2, both verified directly
 during that run. Slate Unit 1.
 
-**Draft 6.** Five earlier drafts failed their adversarial pass. This document is rewritten
+**Draft 7.** Six earlier drafts failed their adversarial pass. This document is rewritten
 rather than amended, because draft 3's failure included superseded text surviving in its
 earlier sections while only a later section reversed it — a builder reading top-down would
 have built the wrong thing.
@@ -50,13 +50,19 @@ the smallest thing that still defines where a run starts.
 - **Floor = one global watermark line**, seeded `2026-07-18`. For the sources the cursor already
   lists, the collapse is lossless: the only two still marked through 07-12 have zero sessions
   after that date (newest 2026-06-22 and 2026-07-06, verified).
-- **The pre-07-18 backlog is written off deliberately.** ~28 directories were never listed in the
+- **The pre-07-18 backlog is written off deliberately.** 26 directories were never listed in the
   cursor at all, holding sessions the floor now places permanently out of scope
-  (`-Users-michaelkissinger-keel` 21, `-Users-michaelkissinger-cre-list` 33, `-jarvis-2-0` 13,
+  (`-Users-michaelkissinger-keel` 21, `-Users-michaelkissinger-cre-list` 33, `-Users-michaelkissinger-jarvis-2-0` 13,
   `-Email-Assistan-comfort-ai` 11, `-x-big-proj` 10, and others). Mining them would cost more
   subagent spend than the findings are worth, and the material is months old. The user chose the
   write-off explicitly. The milestone requires the cursor to **say so** — a silent floor reads as
   verified coverage, which is exactly the failure mode this change exists to end.
+- **Freshness is file mtime, inclusive of the watermark day.** Both axes had live divergence on
+  the real store and both were readable more than one way, so both are pinned. mtime over
+  internal timestamp because mtime's error direction is over-inclusion — a resumed old session
+  gets re-swept and costs spend — while the internal timestamp under-includes, which is the
+  defect this change exists to end. Inclusive over strictly-after because 8 files sit exactly on
+  the seed date, and a strict comparison silently drops a full day at every advance.
 - **A zero-row enumeration is a stop-and-ask, never "nothing to mine."** Draft 3 had no condition
   here at all, which let a broken command reproduce the original symptom — silence read as
   dormancy — exactly.

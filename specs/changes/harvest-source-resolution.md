@@ -3,7 +3,7 @@
 **Origin:** `specs/reviews/2026-07-18-harvest.md` findings A1 + A2, both verified directly
 during that run. Slate Unit 1.
 
-**Draft 8.** Seven earlier drafts failed their adversarial pass. This document is rewritten
+**Draft 9.** Eight earlier drafts failed their adversarial pass. This document is rewritten
 rather than amended, because draft 3's failure included superseded text surviving in its
 earlier sections while only a later section reversed it — a builder reading top-down would
 have built the wrong thing.
@@ -87,6 +87,14 @@ the smallest thing that still defines where a run starts.
   several names containing spaces, but it is a *different* guard against a *different* hazard.
   Draft 5 credited the dash fix to quoting; a builder implementing that property literally ships
   a command that errors on every directory.
+- **The verification scheme is derived from `agents/verifier.md:12-13`, not from memory.** Three
+  consecutive drafts passed their content review and failed on the *verifier's* constraints:
+  each proposed a watermark-varying method the verifier may not perform (edit the tracked cursor;
+  then write scratch copies — the same prohibition one step apart, since the rule bars file
+  creation outright, not just touching tracked files), and one checked `git show HEAD:<path>` for
+  pre-change text when `HEAD` at verification time *is* the change commit. The settled shapes:
+  vary the watermark with an **environment variable**, and read pre-change text at the
+  **merge-base**. Both are pure observation.
 - **`<command-args>` is included, and needs care.** Slash-command arguments are human intent in
   a machine envelope. A first attempt at the inclusion also pulled in `<command-name>` and
   `<command-message>` wrappers and empty args — 38 lines where 28 were real. The committed

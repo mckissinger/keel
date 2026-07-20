@@ -7,13 +7,15 @@ everything, and extracts human input rather than machine text sharing the user r
 **Change:** `specs/changes/harvest-source-resolution.md`. **No-UI** → two-dimension
 done-conditions. **Depends on:** none. **Parallelizable:** n/a (single milestone).
 
-**Draft 8.** Seven prior drafts failed; their reports are in this branch's history. Draft 7's pass
-was the first with **no CRITICAL** — the freshness predicate closed cleanly and every empirical
-claim but one re-measured exactly. Its residue was two fixes stated in forms a builder could not
-carry out: a watermark-varying assertion whose only discriminating method the assigned verifier
-is forbidden to use, and an anchor-authoring rule that is a logical impossibility for negative
-anchors — which draft 7's own text then tripped over. Those two plus three lesser findings are
-addressed below.
+**Draft 9.** Eight prior drafts failed. Drafts 7 and 8 both returned no CRITICAL and every
+empirical claim re-measured exactly; what kept failing was the *verification scheme*, three
+drafts running, always the same way — **the plan reasoned about the verifier's constraints from
+memory rather than from `agents/verifier.md:12-13`**, so each fix assigned an action the verifier
+may not take (edit the tracked cursor → create scratch files) or checked a ref that cannot hold
+the content sought (`HEAD` is the change commit at verification time, so it shows post-change
+text). Draft 9 derives every verifier action from that file directly: **no file creation, no
+mutation, Bash for observation only.** Everything below is performable with env vars, `git show`
+against a pre-change ref, and reads.
 
 ## Done-conditions
 
@@ -61,16 +63,17 @@ addressed below.
   subdirectory of `~/.claude/projects/` holding at least one top-level `*.jsonl` newer than the
   watermark. **`count` is the watermark-filtered top-level session count**; `newest-date` is the
   newest qualifying file's mtime, and both are used in the scope announcement.
-- [auto] **The watermark is a parameter the command reads, and the cursor path is itself an
-  overridable variable.** The committed command resolves its cursor path from an environment
-  variable with the real path as the default — `CURSOR="${HARVEST_CURSOR:-specs/reviews/harvest-cursor.md}"`
-  — then extracts the date from `$CURSOR` into a second variable and compares against that. The
-  override exists for one reason: it is the **only way a read-only verifier can vary the
-  watermark**. Editing the tracked cursor is the obvious method and is forbidden to the verifier
-  the `verification:` line assigns; substituting a date into a copied command text is permitted
-  but does not discriminate, because a hardcoded build's literal is exactly what gets substituted.
-  Pointing `HARVEST_CURSOR` at a scratch copy leaves every tracked file untouched and *does*
-  discriminate.
+- [auto] **The watermark is a parameter the command reads, overridable by one environment
+  variable.** The committed command resolves it as
+  `WM="${HARVEST_WATERMARK:-$(<extraction from specs/reviews/harvest-cursor.md>)}"` and compares
+  against `$WM` — the cursor is the default and the only source a real run uses. The override
+  exists for exactly one reason: it is the **only discriminating watermark-varying method a
+  read-only verifier can perform.** `agents/verifier.md:12` bars editing files, writing files,
+  and file creation outright — not merely touching tracked files — so both earlier proposals were
+  dead: editing the tracked cursor (draft 6) and writing scratch cursor copies (draft 8) are the
+  same prohibition one step apart. Substituting a date into copied command text is permitted but
+  does not discriminate, since a hardcoded build's literal is exactly what gets substituted.
+  Setting an env var mutates nothing and discriminates.
 - [auto] **No date literal appears anywhere in the committed command.** Enforced two ways, because
   a fixed-string anchor can only ever guard one spelling: a **negative anchor on `2026-07-18`**
   for the cheap case, plus a **verifier assertion that the command block matches no
@@ -78,12 +81,16 @@ addressed below.
   every other spelling a `grep -F` anchor cannot. Without this, a build with the seed hardcoded
   satisfies every count assertion identically to a correct one — and silently makes the whole
   watermark-advance rule inert, since advancing a value nothing reads changes nothing.
-- [auto] **`skills/harvest/SKILL.md`'s `allowed-tools` grant gains `Bash(find *)` and
-  `Bash(stat *)`.** The enumeration is `find`-based and `newest-date` needs `stat` (BSD `find`
-  has no `-printf`); neither is in the current grant, so without this every enumeration prompts
-  and the skill's own stated rationale — the grant exists "so the mining runs promptless" — is
-  broken by the change that depends on it. This is an addition to the grant, and is the one
-  frontmatter change the no-weakening condition below licenses.
+- [auto] **`skills/harvest/SKILL.md`'s `allowed-tools` grant covers every command the committed
+  blocks invoke — stated as a closure rule, not a fixed list.** The condition is: *every
+  executable named in the committed enumeration and extraction blocks has a matching
+  `Bash(<cmd> *)` entry in the frontmatter grant.* A fixed list goes stale the moment the
+  builder's pipeline differs by one utility — draft 8 named `find` and `stat` and missed `sort`,
+  which the `newest-date` derivation needs — and a skill that prompts on every run breaks the
+  grant's own stated rationale ("so the mining runs promptless") through the very change that
+  depends on it. The verifier checks the closure mechanically: extract command names from the
+  blocks, diff against the grant, assert empty. Grant additions are the one frontmatter change
+  the no-weakening condition below licenses.
 - [auto] **The two real-layout hazards are stated as two separate guards, correctly attributed.**
   (a) **`-maxdepth 1`** — nested subagent transcripts are not sessions; one directory holds 10
   top-level entries against a recursive total an order of magnitude larger. (b) **The directory
@@ -159,18 +166,30 @@ addressed below.
 - [auto] **`scripts/skill-anchors/harvest.txt` anchors verbatim sentences, not concepts.** Each
   positive anchor is a **full sentence carrying its rule's operative clause** — covering
   `-maxdepth 1`, the **full-path** guard (not the quoting guard), `.origin.kind`, the
-  enumerate-first rule, and the zero-row discriminator. **Negative anchors on every retired
-  literal plus `2026-07-18`**, each named against the file it actually occurs in. Two authoring
-  rules, both learned from anchors that would have passed vacuously:
+  enumerate-first rule, and the zero-row discriminator. **Negative anchors come in two classes,
+  and only one of them is confirmable** — draft 8 collapsed them and produced a condition no
+  assignment could satisfy:
+  - **Retirement anchors** guard text being *removed* (the five removal-site literals). These are
+    confirmed present in pre-change content, per the rule below.
+  - **Prohibition anchors** guard text that must *never* appear — here, `2026-07-18` in
+    `skills/harvest/SKILL.md`, where it has never occurred. **These are exempt from the
+    confirm-present rule by definition**: requiring a forward-looking prohibition to have existed
+    first is unsatisfiable, and chasing "the file it actually occurs in" instead lands the anchor
+    on the cursor, where the seed line guarantees permanent failure.
+
+  Two authoring rules, both learned from anchors that would have passed vacuously:
   - **Name the right file.** `per-source through-mark` occurs only in `skills/harvest/SKILL.md`;
     the cursor's wording is `newer than each source's through-mark`. One anchor covering both
     files passes vacuously on one of them.
   - **Every anchor literal must occur on a single line, confirmed by `grep -cF` returning
-    non-zero — but a negative anchor is confirmed against the file's *pre-change* content
-    (`git show HEAD:<path> | grep -cF`), never its post-change content.** A negative anchor
-    asserts absence, so at commit time the retired literal has just been deleted and a
-    post-change check returns 0 by construction: the rule would bounce every negative anchor, or
-    be quietly skipped, which restores the hazard it exists to prevent. `check-skill-anchors.sh`
+    non-zero — and for a retirement anchor the confirmation runs against the *merge-base*:
+    `git show "$(git merge-base HEAD main)":<path> | grep -cF`.** Not `HEAD`: by the time the
+    verifier runs, `HEAD` **is** the change commit, so `git show HEAD:<path>` returns the
+    post-change file with the literal already deleted and the check returns 0 by construction —
+    draft 8's rule bounced every retirement anchor for exactly the reason it was written to
+    prevent. The merge-base is the last commit before this change and is the only ref that holds
+    the pre-change text. It is read-only, satisfying `agents/verifier.md:12`.
+    `check-skill-anchors.sh`
     matches fixed strings line-by-line and case-sensitively, so a literal that spans a line break
     or differs in case matches nothing and guards nothing — draft 7 shipped one of each.
 
@@ -197,15 +216,16 @@ addressed below.
   satisfied by dropping `-maxdepth 1` (32 < 153) *and* by dropping the watermark (10 < 153) — it
   passed both builds it existed to reject. At draft-6 authoring six directories satisfied the
   three-distinct-values requirement, so an inconclusive result is unlikely but not assumed away.
-- [auto] **The verifier proves the watermark is read, not hardcoded, by varying it through
-  `HARVEST_CURSOR` — mutating nothing tracked.** It writes two scratch cursor copies outside the
-  repo, one carrying the seed date and one carrying **a date one day before the oldest top-level
-  `*.jsonl` mtime anywhere under `~/.claude/projects/`** (measured at run time, so the second run
-  is guaranteed to admit strictly more sessions rather than depending on a lucky pick). It runs
-  the committed command once against each and asserts the two runs **emit different row counts**.
-  A build with the date typed into the command emits identical output both times and is bounced.
-  Combined with the no-date-literal assertion above, this closes the hardcoded-watermark hole
-  that draft 6 left and draft 7 stated in an unexecutable form.
+- [auto] **The verifier proves the watermark is read, not hardcoded, by varying `HARVEST_WATERMARK`
+  — creating nothing, mutating nothing.** It runs the committed command twice: once with the
+  variable unset (the cursor's seed), once with it set to **one day before the oldest top-level
+  `*.jsonl` mtime anywhere under `~/.claude/projects/`**, measured at run time so the second run
+  is guaranteed to admit strictly more sessions rather than depending on a lucky pick. It asserts
+  the two runs **emit different row counts**. A build with the date typed into the command emits
+  identical output both times and is bounced. Measured at draft-9 authoring, the spread is wide:
+  the seed yields 7 rows, the floor-date run 39. Combined with the no-date-literal assertion
+  above, this closes the hardcoded-watermark hole that draft 6 left and drafts 7 and 8 each
+  stated in a form the verifier could not execute.
 - [auto] **The verifier proves the sweep set is derived from the filesystem, not from the
   cursor.** The committed enumeration command's text contains **no reference to the cursor's
   table**, and its output contains **more than one row**. This is the property the whole change

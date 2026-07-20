@@ -3,7 +3,7 @@
 **Origin:** `specs/reviews/2026-07-18-harvest.md` findings A1 + A2, both verified directly
 during that run. Slate Unit 1.
 
-**Draft 7.** Six earlier drafts failed their adversarial pass. This document is rewritten
+**Draft 8.** Seven earlier drafts failed their adversarial pass. This document is rewritten
 rather than amended, because draft 3's failure included superseded text surviving in its
 earlier sections while only a later section reversed it — a builder reading top-down would
 have built the wrong thing.
@@ -50,10 +50,14 @@ the smallest thing that still defines where a run starts.
 - **Floor = one global watermark line**, seeded `2026-07-18`. For the sources the cursor already
   lists, the collapse is lossless: the only two still marked through 07-12 have zero sessions
   after that date (newest 2026-06-22 and 2026-07-06, verified).
-- **The pre-07-18 backlog is written off deliberately.** 26 directories were never listed in the
-  cursor at all, holding sessions the floor now places permanently out of scope
+- **The pre-07-18 backlog is written off deliberately.** 27 directories are absent from the
+  cursor's table and so were never mined, holding **126** sessions the floor now places out of
+  scope permanently
   (`-Users-michaelkissinger-keel` 21, `-Users-michaelkissinger-cre-list` 33, `-Users-michaelkissinger-jarvis-2-0` 13,
-  `-Email-Assistan-comfort-ai` 11, `-x-big-proj` 10, and others). Mining them would cost more
+  `-Email-Assistan-comfort-ai` 11, `-x-big-proj` 10, and others). **"Never listed" means absent
+  from the table**, not unmentioned in the file — the table is what decided what got mined, and
+  one of these directories appears in the ⚠ prose without ever entering the table. Mining them
+  would cost more
   subagent spend than the findings are worth, and the material is months old. The user chose the
   write-off explicitly. The milestone requires the cursor to **say so** — a silent floor reads as
   verified coverage, which is exactly the failure mode this change exists to end.

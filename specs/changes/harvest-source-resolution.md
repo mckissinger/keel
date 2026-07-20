@@ -44,15 +44,32 @@ itself the gate. No threshold logic, no interruption.
 
 ## Milestones
 
-Two, not one. They share no file (apart from an append-only anchor file) and no failure mode:
+**One.** Both halves edit `skills/harvest/SKILL.md`, so there is no seam to split on.
 
-- **`harvest-source-resolution`** — the enumeration script, its test suite, CI wiring, the
-  watermark restructure, the skill's cursor section, `retro` scoping, and the anchors.
-- **`harvest-human-input-filter`** — the signal ladder's extraction recipe and the digest
-  citation.
+This went two → one after the design shrank. When A1 shipped a script, the two halves shared no
+file and the split was correct — the adversarial pass said so. Removing the script removed the
+split's only justification.
 
-The first draft bundled them into one milestone. The adversarial plan pass flagged the seam,
-pointing at this document's own use of the word "Separately" to introduce the second half.
+## Sizing — why the script was dropped
+
+Drafts 1 and 2 specified `scripts/harvest-sources.sh`, a nine-case test suite, a CI step, a
+global-watermark migration, and a `retro` filter design. Both failed their adversarial pass with
+three CRITICALs each. Read together, the six CRITICALs are all about the **script's contract** —
+where it lives (`${CLAUDE_PLUGIN_ROOT}` vs repo-relative, which breaks `retro` outright), what it
+counts (nested subagent transcripts inflate the count ~14×), how it fails (a missing root and an
+empty result sharing one observable), how `retro` narrows it (an asserted source count of 1 that
+is empirically false — keel spans four directories). **None questioned whether enumeration is the
+right fix.**
+
+The decisive observation: the entire A1 fix automates **one command, verified working on first
+run**. The machinery outweighed the problem for a verb that runs occasionally. So the command
+goes in the skill, and the repo maintains no program.
+
+The tradeoff is real and is recorded as an accepted limitation in the milestone: text cannot
+force a session to run the step. It is proportionate because harvest is human-triggered and
+attended and announces its scope before spending — and the milestone states the condition under
+which the tradeoff expires. Both verifier reports remain in this branch's history as the map of
+what the script version would have to get right.
 
 ## Decisions taken
 

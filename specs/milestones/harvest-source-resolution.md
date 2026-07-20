@@ -1,114 +1,101 @@
-# Milestone — Harvest asserts its own coverage
+# Milestone — Harvest enumerates its sources and filters for human input
 
-**Goal:** a harvest run can no longer under-report because a project's checkout moved or was
-never listed — coverage is enumerated, announced, and machine-checked rather than assumed.
+**Goal:** a harvest run derives its sweep set by enumeration rather than from a list that can
+go stale, and its highest-signal channel carries human input rather than machine text sharing
+the user role.
 
 **Change:** `specs/changes/harvest-source-resolution.md`. **No-UI** → two-dimension
-done-conditions. **Depends on:** none. **Parallelizable:** with
-`harvest-human-input-filter` (disjoint files apart from `scripts/skill-anchors/harvest.txt`,
-which is append-only — sequence them if built concurrently).
+done-conditions. **Depends on:** none. **Parallelizable:** n/a (single milestone).
 
-**Second draft.** The first failed its adversarial plan pass with three CRITICALs, two of
-which reproduced the very defect the milestone exists to fix. Conditions below carry the
-specific guards those findings demanded; the failure modes are named so a builder cannot
-re-open them by accident.
+**Third draft, deliberately smaller.** Drafts 1 and 2 shipped a script, a nine-case suite, CI
+wiring, a watermark migration and a `retro` filter design; both failed their adversarial pass,
+and every CRITICAL was about the *script's* contract rather than the idea. The fix is a command
+the skill runs, not a program the repo maintains. Both verifier reports are preserved in the
+branch history as the record of what the larger version would have had to get right.
 
 ## Done-conditions
 
 ### Logic / invariants
 
-- [auto] **`scripts/harvest-sources.sh` exists, is executable, and enumerates totally.** Given a
-  watermark date, it returns every immediate subdirectory of the transcript root (default
-  `~/.claude/projects/`, overridable by env var for testability) holding at least one `*.jsonl`
-  modified after that date. **Enumeration is unconditional**: the script reads no list of
-  expected sources, accepts no source-name list, and consults no cursor or record file — it
-  cannot inherit the staleness it exists to prevent. An optional **scope-filter path argument**
-  is applied strictly *after* enumeration, narrowing the result without narrowing the sweep.
-- [auto] **Output is parseable, not prose.** One line per source, **tab-delimited**:
-  `directory-name<TAB>session-count<TAB>newest-session-date`. Ordering is stable
-  (session-count descending, then name). The authoritative timestamp is the session file's
-  **mtime**, stated in the script's header comment, so counts cannot drift between readings.
-- [auto] **A missing or unreadable root fails loudly, and is distinguishable from an empty
-  result.** Root absent, unreadable, or mis-set → **nonzero exit** with a diagnostic on stderr.
-  A legitimate "nothing newer than the watermark" → exit 0, no output. *These two must not share
-  an observable*: the first draft made them identical, which reproduced the original defect
-  (silence read as dormancy) with a new cause.
-- [auto] **`scripts/harvest-sources.test.sh` is green and its cases discriminate.** Against a
-  fixture transcript root: (1) a directory with sessions newer than the watermark is listed;
-  (2) a directory whose sessions are all older is not; (3) **the decoy-record case — a
-  cursor-shaped file listing only a subset of the fixture's directories is present, and an
-  active directory absent from that file is still returned.** This is the regression lock: it
-  fails if the script ever learns to consult such a file, which is the coupling that caused the
-  observed miss. (4) a directory with no `*.jsonl` is not listed; (5) hidden directories are
-  skipped; (6) an empty result exits 0 and prints nothing; (7) **a nonexistent root exits
-  nonzero**; (8) the scope filter narrows the result to matching directories only, and the
-  unfiltered enumeration is unaffected by its presence; (9) output parses as tab-delimited
-  fields.
-- [auto] **The new suite is wired into CI.** `.github/workflows/ci.yml` gains a step running
-  `bash scripts/harvest-sources.test.sh`, matching the existing per-test-script pattern (the
-  workflow enumerates each suite explicitly and does **not** glob, so an unwired suite runs once
-  at verification and never again).
-- [auto] **`specs/reviews/harvest-cursor.md` carries a single global watermark**, explicitly
-  labelled authoritative, **seeded at `2026-07-18`**. That value is safe rather than assumed:
-  the only two sources still marked through 07-12 (`-Users-michaelkissinger-cre-launch`,
-  `-Users-michaelkissinger-new-test-proj`) have **zero** sessions after that date — verified,
-  newest 2026-06-22 and 2026-07-06 respectively — so the collapse loses no coverage. The
-  per-source table is retained but **demoted to a found-record**, and the file's own contract
-  text states that no run may derive its sweep set from it.
-- [auto] **`skills/harvest/SKILL.md`'s cursor section is replaced, not supplemented.** A run
-  reads the global watermark, invokes `scripts/harvest-sources.sh` (named by path) for its sweep
-  set, and mines every source returned. The prior per-source through-mark instruction is
-  **removed from the file** — a retired rule left in place is a rule a fresh session may follow.
-  A **nonzero exit from the script stops the run and reports**; there is no fallback to the
-  found-record, because a silent fallback restores the original bug.
-- [auto] **`retro` scope narrows by filter, not by a separate mechanism.** A `retro` run invokes
-  the same script with the scope-filter argument set to its own project's transcript
-  directory(ies), so enumeration stays total while the mined set stays local. The skill states
-  this explicitly. **Observable: a `retro` run's announced source count is 1.**
+- [auto] **The mining method begins with enumeration, and the command is given literally.**
+  `skills/harvest/SKILL.md` carries, as the first step of its ladder, the exact command that
+  returns the sweep set — every immediate subdirectory of `~/.claude/projects/` holding at least
+  one top-level `*.jsonl` newer than the run's floor, printed tab-delimited as
+  `directory<TAB>count<TAB>newest-date`. The committed form is the one verified working against
+  the real layout on 2026-07-20, and it must retain two properties the layout requires:
+  **`-maxdepth 1`** (nested subagent transcripts are not sessions — one directory holds 10
+  top-level session files and 140 nested, so omitting this inflates the count ~14×) and
+  **quoted directory expansion** (every transcript directory name begins with `-`, which an
+  unquoted or unguarded expansion feeds to tools as an option flag; several contain spaces).
+- [auto] **The skill states that every returned source is mined regardless of the cursor's
+  table**, and the prior instruction to mine only sessions newer than a per-source through-mark
+  is **removed from the file**, not supplemented. A retired rule left in place is a rule a fresh
+  session may follow.
+- [auto] **`specs/reviews/harvest-cursor.md` states its table is a found-record, not a sweep
+  input** — no run derives its sweep set from it. The existing per-source rows and the path-drift
+  warning stay; only their status changes.
+- [auto] **The `retro` scope narrows after enumerating, and does not assume one directory.** The
+  skill states that `retro` runs the same enumeration and then keeps the directories belonging to
+  the current project — **which is routinely more than one**: worktrees and moved checkouts each
+  produce additional directories (keel itself currently spans four). No fixed source count is
+  asserted anywhere, because asserting one would recreate the miss this milestone exists to fix.
+- [auto] **The signal ladder's step 1 carries a runnable extraction recipe, not a description.**
+  Inclusion: entries whose `origin.kind` is `human`, **plus** `<command-args>` content — typed
+  slash-command arguments, human intent inside a machine envelope, which a strict `origin.kind`
+  filter silently drops. Exclusion: `tool_result` content, `task-notification` origin,
+  local-command caveat and command-name/message envelopes, injected skill bodies.
+- [auto] **The step states plainly that `type=="user"` alone is not a human-input filter**,
+  carrying the measured scar: in one sampled session, user-role entries were **26 `human`, 46
+  `task-notification`, 545 with no origin field** — of which **521 were `tool_result`**. A naive
+  extraction ingests roughly **24×** more than actual human input.
+- [auto] **The fan-out dispatch guidance requires each miner to be given the recipe**, since
+  miners inherit the harness and not the skill body — one miner filtering while the others do not
+  is how the 2026-07-18 run produced unevenly-derived frequency claims.
 - [auto] **The run announces scope before dispatching any subagent**: session count, source
-  count, and watermark date. The skill states that this announcement — not a mid-run gate — is
-  where an unexpectedly large sweep is caught, and that it precedes spending.
-- [auto] **Watermark advance is defined and lossless at the edges.** The watermark advances to
-  the **enumeration-start timestamp**, written in the same commit as the digest. Sessions still
-  in flight at that timestamp are **recorded in the found-record as excluded and remain
-  available to a later run** — preserving the carve-out the per-source table used to express and
-  the first draft silently deleted.
-- [auto] **The found-record is maintained, not merely retained.** Each run appends its found
-  sources — directory, session count, digest that covered them — in the same commit as the
-  digest, so per-source provenance survives the demotion.
-- [auto] **`allowed-tools` names the script literally.** The frontmatter grant gains
-  `Bash(scripts/harvest-sources.sh *)` — **not** `Bash(bash *)`, which would be an unbounded
-  shell grant contradicting the skill's read-only sweep-set posture.
-- [auto] **`scripts/skill-anchors/harvest.txt` machine-checks the protected rules.** Positive
-  anchors for: the secret rule, the diff-against-HEAD requirement, the writes-only-digest-and-
-  cursor rule, **"No cursor in the target repo = ask"** (the only guard against a fresh `retro`
-  mining unbounded history), and the update-in-the-same-commit rule. **A negative anchor**
-  asserting the retired per-source through-mark instruction stays absent. `bash
-  scripts/check-skill-anchors.sh` green. This replaces prose "no weakening" conditions, which a
-  verifier closes by eyeballing a diff and which pass on a reworded gut.
-- [auto] **Unchanged in the diff:** `disable-model-invocation: true`, the two-scope structure,
-  and the fan-out-via-read-only-subagents instruction.
+  count, floor date. The skill states this announcement is where an unexpectedly large sweep is
+  caught, and that it precedes spending.
+- [auto] **`scripts/skill-anchors/harvest.txt` machine-checks the new rules and retires the old
+  one.** Positive anchors for the enumerate-first rule and the human-origin rule — the two
+  contracts this milestone adds, so a reword cannot quietly drop them. A **negative anchor** on
+  the distinctive substring `per-source through-mark`, asserting the retired instruction stays
+  absent. `bash scripts/check-skill-anchors.sh` green. Anchors are what make this milestone's
+  text durable rather than merely present; without them the "removed, not supplemented" and
+  "no weakening" conditions are closable by eyeballing a diff.
+- [auto] **No weakening.** Unchanged in the diff: the secret rule, the diff-against-HEAD
+  requirement, the writes-only-digest-and-cursor rule, **"No cursor in the target repo = ask"**
+  (the only guard against a fresh `retro` mining unbounded history), the update-in-the-same-commit
+  rule, `disable-model-invocation: true`, the two-scope structure, and the
+  fan-out-via-read-only-subagents instruction.
 
 ### Behavioral completeness
 
-- [auto] **The end-to-end miss is demonstrably closed**: with the fixture root containing a
-  directory that no record mentions, the script returns it and the skill's documented flow mines
-  it. Test case (3) is the mechanical half; the negative anchor is the textual half. Neither
-  alone closes this — the first draft claimed the test proved it, and it did not.
-- [auto] **A run whose transcript root does not exist stops and reports** rather than announcing
-  zero sources. Covered by test case (7) plus the skill's stop-on-nonzero contract.
+- [auto] **The documented command runs and returns sources.** The verifier executes the command
+  exactly as committed and confirms it returns at least one source with parseable tab-delimited
+  fields. It is read-only and cheap, so a command that has rotted cannot pass this milestone —
+  this is the condition that makes the enumeration real rather than aspirational.
+- [auto] **`specs/reviews/2026-07-18-harvest.md`'s existing caveat is upgraded to a citation.**
+  That digest already says frequency claims "should be re-derived once the filter exists" — a
+  condition merely requiring a note would close green with zero work. The delta: that line cites
+  the shipped recipe by location and states re-derivation is now available. No finding is
+  rewritten or removed here.
 
 ## Verification
 
-Verifier subagent against these done-conditions, **running `bash scripts/harvest-sources.test.sh`
-and `bash scripts/check-skill-anchors.sh` itself** rather than trusting a build narrative. Plus
-the standing suites: `check-skill-frontmatter`, `check-neutral`, `check-plan`, and `claude plugin
+Verifier subagent against these done-conditions, **running the committed enumeration command and
+`bash scripts/check-skill-anchors.sh` itself** rather than trusting a build narrative. Plus the
+standing suites: `check-skill-frontmatter`, `check-neutral`, `check-plan`, and `claude plugin
 validate --strict .`.
 
-No runtime walk: this milestone ships a shell script and skill/reference text, with no rendered
-surface and no server-side behaviour. The script's test suite is the runtime proof.
+No runtime walk: skill and reference text plus one anchor file, with no rendered surface and no
+server-side behaviour.
 
-**Not closable by inspection.** Conditions naming test cases require those cases to have been
-*executed* green; conditions naming anchors require `check-skill-anchors` to have been *run*. A
-verifier that reads the script and reasons that it "looks like it enumerates" has closed nothing
-— that was precisely the first draft's defect.
+## Accepted limitation — stated, not hidden
+
+**Text is a weaker control than a program.** Nothing here prevents a session from skipping the
+enumeration step; the anchors keep the instruction present and correct, not obeyed. Three things
+make that proportionate rather than negligent: harvest is `disable-model-invocation` and
+human-triggered, so a human is present at every run; the scope announcement surfaces the sweep
+set before any spending, so a skipped step is visible immediately; and the verb runs
+occasionally, not on a schedule. **If harvest ever becomes scheduled or self-invoked, this
+tradeoff expires** and the script version — already mapped in detail by two adversarial passes in
+this branch's history — is the correct successor.

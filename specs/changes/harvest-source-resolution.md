@@ -3,7 +3,7 @@
 **Origin:** `specs/reviews/2026-07-18-harvest.md` findings A1 + A2, both verified directly
 during that run. Slate Unit 1.
 
-**Draft 5.** Four earlier drafts failed their adversarial pass. This document is rewritten
+**Draft 6.** Five earlier drafts failed their adversarial pass. This document is rewritten
 rather than amended, because draft 3's failure included superseded text surviving in its
 earlier sections while only a later section reversed it — a builder reading top-down would
 have built the wrong thing.
@@ -70,6 +70,13 @@ the smallest thing that still defines where a run starts.
   path yields zero human entries — indistinguishable from "the user typed nothing," which is the
   class of unsafe finding this change exists to prevent. Hence the recipe is *executed* at
   verification, not merely read.
+- **The leading-dash hazard needs a full path, not quoting.** Every transcript directory name
+  begins with `-`, which `find` consumes as an option flag: `find "-Users-…" -maxdepth 1` errors
+  even though the argument is quoted. Reaching the same directory through
+  `~/.claude/projects/*/` expansion — a full path — works. Quoting is still required, for the
+  several names containing spaces, but it is a *different* guard against a *different* hazard.
+  Draft 5 credited the dash fix to quoting; a builder implementing that property literally ships
+  a command that errors on every directory.
 - **`<command-args>` is included, and needs care.** Slash-command arguments are human intent in
   a machine envelope. A first attempt at the inclusion also pulled in `<command-name>` and
   `<command-message>` wrappers and empty args — 38 lines where 28 were real. The committed

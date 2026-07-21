@@ -103,12 +103,19 @@ Q12/Q13's authorship pattern.
   `scripts/skill-anchors/verify-environment-integrity.txt` exists and declares a **positive**
   anchor for each of the four new mandate sentences (one per edited file) — each anchor a
   full single-line sentence carrying its rule's operative clause (the term *positive
-  control* and the negative-finding scope survive a reword), each confirmed present verbatim
-  and case-correct on a single line in the file it names. The file edits no other feature's
+  control* and the negative-finding scope survive a reword). The anchor for the site that
+  carries the **B2 tell** additionally carries the independent-signal-change-certifies-a-
+  reload / a-repetition-does-not clause, so that the sharpest finding in the corpus survives
+  a reword too (honouring the change spec's guarantee that the tell "is anchored so a reword
+  can't drop it") — not just the clean-tree/positive-control language. Each anchor is
+  confirmed present verbatim and case-correct on a single line in the file it names. The
+  file edits no other feature's
   anchor file (the §4 no-shared-file rule). No negative (retirement) anchors are required —
   the change retires no existing sentence. Falsifiable: `bash scripts/check-skill-anchors.sh`
   passes with these anchors, and each anchor's operative clause is verified by inspection.
-- [auto] **No weakening.** The edit preserves, verbatim in force: the verifier's
+- [auto] **No weakening.** The edit preserves, unchanged in force (semantic equivalence, not
+  byte-for-byte — a neighbouring sentence may be reworded while integrating the new rule so
+  long as its force is preserved): the verifier's
   **read-only** stance and its "classify infra-shaped failures as environment before
   recording any discrepancy" rule; the "**profile is runtime ground truth**" rule and the
   existing environment-assumption-mismatch classification in both `verifier.md` and
@@ -129,4 +136,10 @@ verifier subagent against this file's done-conditions (all `[auto]`; prose-only 
 each condition is closable by reading the four named files + the new anchor file and
 running the named standing checks). No `[runtime]` conditions exist (keel is no-UI); the
 standing suites plus a fresh-context verifier subagent are the verification. `check-neutral`
-guards the neutrality denylist across the edited prose.
+guards **only its fixed leak/scar denylist** across the edited prose (stale commands, hardcoded
+Next.js paths, retained project names, `@theme`/Lucide/Recharts in the spine); it does **not**
+denylist a stack-specific service-config path or term (`supabase/config.toml`, `service-role
+key`, `.env.local`, `vitest`) pasted into the neutral spine, so it cannot by itself catch this
+change's real leak vector. The guard against a hardcoded stack path in the neutral mandate is
+the **authorship-split** done-condition — verifier judgment cross-reading the four sites, not a
+mechanized check — which this milestone relies on, not `check-neutral`.

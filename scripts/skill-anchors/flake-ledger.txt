@@ -1,0 +1,15 @@
+# flake-ledger — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# Positive anchors are full single-line clauses carrying their rule's operative
+# meaning: a reword that guts the rule also drops the anchor. Each literal below was
+# confirmed present verbatim, correct case, on ONE physical line in its named file —
+# check-skill-anchors.sh matches fixed strings (grep -F) line-by-line, so a literal
+# spanning a line wrap would guard nothing. No negative anchors: pure adoption,
+# nothing is retired.
+
+# --- §8 rule 9: the flake is recorded with its measured rate, drained by a batch chore ---
+references/milestones-and-verification.md	A flake surfaced by a run-to-convergence check is recorded as a file in `specs/flakes/` carrying its measured reproduction rate, its hit count rising as it recurs, and closed in a batch chore
+
+# --- status open-flakes surfacing: slug + attached path + measured rate + hit count, hit-count-ordered ---
+skills/status/SKILL.md	Every open entry in `specs/flakes/` — one line each: slug, the attached spec-or-test path, its measured reproduction rate and hit count — **ordered highest hit count first**

@@ -227,10 +227,22 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
 - **Shared local singletons + a one-line health check each.** Which shared local singletons the
   runtime ladder assumes running (a local database/emulator stack, a dev server, a background
   daemon), and for each the **one-line command** that asserts it healthy — up, responsive, and
-  answering on *this* project's ports.
+  answering on *this* project's ports. The health check also asserts the running config's **target
+  matches the expected substrate** — the env's recorded target classification (under *unique port
+  block / project identity* below) is the substrate this run expects — so hosted keys pointed at a
+  local stack, or the reverse, is a named, checkable failure caught **before anything runs against
+  it**.
 - **Unique port block / project identity.** The port block or project-identity assignment this
   project's local stack owns, **collision-free against the user's other projects** — recorded so
-  "are these ports mine?" is checkable, never assumed.
+  "are these ports mine?" is checkable, never assumed. Derived by rule, never invented per project:
+  Derive the port block from the project name (hash the name into a fixed band below 32768): the result is effectively-random so no `/etc/services` entry claims it, derivable so every project gets its own with no registry and no drift between machines or checkouts, and below the lowest OS ephemeral-port floor (32768, where Linux begins allocating ephemeral outbound ports; macOS and Windows start higher, at 49152) so the OS never transiently takes it as an ephemeral outbound port.
+  Changing the port later requires updating **both** the local stack config (which needs a stack
+  restart to take effect) **and** the hosted dashboard when the env points there — omit either and
+  the running config and its declared target fall out of sync.
+  **Environment-target classification.** Also record which target this project's env points at, and
+  how to tell the two apart: a **local-target** env carries the local stack's URL/port signature, a
+  **hosted-target** env carries the hosted dashboard's URL — the fact the health check above asserts
+  the running config against.
 - **Canonical invocation path.** The path from which local-stack commands must run for the
   stack's **config discovery to actually work** (e.g. the subdirectory holding the stack's
   config, when that isn't the repo root).
@@ -245,11 +257,22 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
   recorded, the implementation never mandated. And the direct-read ban lives here: sessions
   never **read** `.env*` files directly — a permission denial on such a read is the posture
   *working*, not an obstacle to route around, and this recorded command is the sanctioned path.
+  Beside that ban, a rule for a **different actor**: committed **test setup** derives its config from
+  the running substrate's **status output** (mapped to the architecture contract's names,
+  **swallowing a non-zero exit when no stack is up**), **never** from `.env.local` — so a copied env
+  file carrying the wrong target can't steer the suite. The ban governs the session's own reads; this
+  governs test-setup code, so it neither duplicates nor weakens the ban.
 - **Known-failure-signature table.** Signature → classified remedy (e.g. "gateway 502 → a second
   **unisolated** stack is running; stop it", "auth failure on seed → stale env file; re-derive it",
   "a permission denial on a `.env*` read → working as intended; run the recorded env name-check
   command instead"), consulted before any diagnosis and **accreting like the ⚠ scars**: every
   newly diagnosed substrate failure adds a row.
+- **Fragile-gate preflight scripts.** Every runtime gate that carries a **remembered precondition** —
+  an env export, a datastore reset/clean step, a required key-prefix — names a **committed, executable
+  preflight script** that sets the precondition up, **asserts** it, and **fails loud** when it is
+  missing; a written-down step alone is not enough, because a precondition a run is merely trusted to
+  remember gets re-hit. The profile **lists each fragile gate → its script path**, and this list
+  **accretes like the signature table**: a newly discovered fragile gate adds its script and its row.
 - **Per-suite duration budgets — and the timeout rule, owned here.** A rough expected duration
   for each Q11 tier's suite and for the runtime walk. The rule every suite-running verb points
   at: **any suite/walk command runs bounded — exceeding roughly 2× its recorded budget means
@@ -277,6 +300,16 @@ instance from this contract's base is Q13's question, below.
 > ⚠ **Never wait open-endedly on a status or suite command.** An unbounded wait on a slow status
 > command once burned hours of wall-clock on an earlier run. The duration budgets make "too
 > long" a measurable fact; apply the timeout rule above instead of waiting on hope.
+> ⚠ **A copied env file can point the run at the wrong target.** A `.env.local` carrying **hosted**
+> keys, copied into a project whose stack is **local**, runs silently against the wrong substrate —
+> every command appears to succeed while talking to the wrong backend. The target-match assertion
+> turns it into a one-second failure at entry: classify the env's target, assert it matches the
+> expected substrate before anything runs.
+> ⚠ **A written-down gate step still re-bites — commit the script.** One documented gotcha re-hit on
+> its **fifth** recurrence because every mitigation lived in prose and none in a single script that
+> exports everything, preflights the precondition, and fails loud. Written down is not encoded: a
+> fragile gate is fixed only when its committed preflight script sets up the precondition, asserts it,
+> and fails loud on omission.
 - *Web reference:* the local backend stack's CLI status command as each singleton's health check
   (exit 0 + this project's ports in its output); the stack config's project-id / port
   assignments as the identity; the host-env pull command (e.g. `vercel env pull .env.local`) as

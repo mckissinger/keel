@@ -1,0 +1,7 @@
+# provision-hardening — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The name-derived port rule, promoted VERBATIM into Q12 and pinned so a later
+# reword can't silently drop it. The whole sentence lives on ONE physical line in
+# references/profile-interface.md; grep -F matches it there.
+references/profile-interface.md	Derive the port block from the project name (hash the name into a fixed band below 32768): the result is effectively-random so no `/etc/services` entry claims it, derivable so every project gets its own with no registry and no drift between machines or checkouts, and below the lowest OS ephemeral-port floor (32768, where Linux begins allocating ephemeral outbound ports; macOS and Windows start higher, at 49152) so the OS never transiently takes it as an ephemeral outbound port.

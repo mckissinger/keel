@@ -1,0 +1,30 @@
+# suite-execution-doctrine — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# Positive anchors are full single-line clauses carrying their rule's operative
+# meaning: a reword that guts the rule also drops the anchor. Each literal below was
+# confirmed present verbatim, correct case, on ONE physical line in its named file —
+# check-skill-anchors.sh matches fixed strings (grep -F) line-by-line, so a literal
+# spanning a line wrap would guard nothing. One negative anchor: Q12's unconditional
+# background clause is retired (confirmed present at the merge-base before removal).
+
+# --- Q6 (B3): the runtime proof runs against a fresh build served by a server this run started; never adopt, busy port fails loud ---
+references/profile-interface.md	The runtime proof runs against a build **freshly produced for the commit under test** (never a stale build), served by a server **this run started** — the run **never adopts an already-listening server**, and a busy port **fails loud** (a stop, not a fallback to the found server).
+
+# --- Q11 (C4): CI builds the production artifact once and shares it, caches browsers/deps, treats sharding as a fixed-cost multiplier ---
+references/profile-interface.md	In CI the production artifact is **built once and shared** across jobs/shards (never rebuilt per shard), browser binaries and dependency installs are **cached**, and **sharding multiplies the fixed per-job setup (build + install) rather than reducing it** — so a suite shards only once its per-shard variable cost dominates that fixed setup.
+
+# --- §9.1 (B4): proof run forbids a spec/milestone filter, with the explicit inner-loop exemption ---
+references/milestones-and-verification.md	the verification / fresh-context verifier / `verify-milestone` dispatch **forbids** a spec/milestone filter for the proof run, and a green filtered run is **not** a pass — the **inner-loop exemption**: the builder's own single-test-first dev loop **may** filter to the affected test, but the verification/proof run and any "runtime passed" claim (and therefore any pin, §5) are the **full** suite, never a filtered subset.
+
+# --- §9.2 (C3): a suite that would outlast supervision runs foreground with an explicit timeout, not backgrounded to poll ---
+references/milestones-and-verification.md	a suite or walk whose expected duration (per Q12's per-suite budgets) would outlast a single unattended supervision window — one that cannot be watched to completion within the harness's own `Monitor`/foreground timeout, so backgrounding it leaves the session **polling** "still running" instead of the harness supervising the run — runs **foreground with an explicit timeout**, not backgrounded to poll.
+
+# --- verify-milestone step-4 pointer at §9.1 (file-qualified) ---
+skills/verify-milestone/SKILL.md	The proof run is the **full** committed suite: this dispatch **forbids** a spec/milestone filter and a green filtered run is not a pass (`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §9.1 — the inner-loop dev filter never becomes the proof run or the pin).
+
+# --- implement-feature step-2 pointer at §9.1 (file-qualified) ---
+skills/implement-feature/SKILL.md	The fresh-context verifier's proof run is the **full** committed suite — its dispatch **forbids** a spec/milestone filter, never scoped to this milestone's own tests (`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §9.1).
+
+# --- NEGATIVE (C3): Q12's unconditional background clause is retired and stays retired ---
+!references/profile-interface.md	long suites run backgrounded with periodic progress checks where the harness supports it

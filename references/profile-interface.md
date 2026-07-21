@@ -73,6 +73,8 @@ production-equivalent build, how do you run each, and **what does each catch tha
 doesn't**? The runtime-proof runs against **both**.
 > ⚠ **Build divergence is real.** The production build/transform routinely catches breakage the
 > dev/test transform can't (and vice-versa). Prove against both fidelities, never just one.
+> ⚠ **A green run against a stale or adopted server proves nothing.** The runtime proof runs against a build **freshly produced for the commit under test** (never a stale build), served by a server **this run started** — the run **never adopts an already-listening server**, and a busy port **fails loud** (a stop, not a fallback to the found server).
+> Phrased against the profile's server-run mechanism and the production build, never a framework's server flag or CLI: a milestone's fidelity screenshot asserting against a build that predates the change, or against a leftover server on the port, passes identically on old and new code and flags nothing.
 
 **Q7 — Live/external proof.** If a milestone calls a paid/external/AI service, how do you run a
 **capped real call** within a pre-authorized spend envelope, asserting invariants over
@@ -218,6 +220,8 @@ its walk; deriving a profile with only a unit tier **must** record why the other
 > ~30-line component-render test would have caught both in under a second, on every future run.
 > The walk is an *acceptance* layer; the committed tiers are the *regression* harness — never
 > let the first substitute for the second.
+> ⚠ **CI topology is a fixed-cost problem, not a parallelism free-for-all.** In CI the production artifact is **built once and shared** across jobs/shards (never rebuilt per shard), browser binaries and dependency installs are **cached**, and **sharding multiplies the fixed per-job setup (build + install) rather than reducing it** — so a suite shards only once its per-shard variable cost dominates that fixed setup.
+> The scar: paying several redundant production builds per change because sharding multiplied the fixed setup instead of amortizing it, and browsers/deps re-installed per job. Phrased stack-neutrally — the profile answers it in its own runner/CI terms.
 
 **Q12 — Local substrate contract.** The recorded, checkable description of the **healthy local
 substrate** — the daemons, ports, env files, and toolchain that everything above the unit tier
@@ -276,8 +280,7 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
 - **Per-suite duration budgets — and the timeout rule, owned here.** A rough expected duration
   for each Q11 tier's suite and for the runtime walk. The rule every suite-running verb points
   at: **any suite/walk command runs bounded — exceeding roughly 2× its recorded budget means
-  kill it and classify as environment (signature table first), never an open-ended wait** — and
-  long suites run backgrounded with periodic progress checks where the harness supports it.
+  kill it and classify as environment (signature table first), never an open-ended wait**. A suite runs backgrounded with periodic progress checks **only** when the harness can watch it to completion within a single supervision/`Monitor` window; a suite whose expected duration would outlast that window runs **foreground with an explicit timeout** per `references/milestones-and-verification.md` §9.2 (the foreground-vs-poll choice lives there — Q12 owns the budgets and the 2×-budget kill-bound it defers back to here).
 
 **Authorship splits.** The structural answers — the singletons, the invocation path — are
 *derived* at spec time like every other question. The ports/identity assignment, the env

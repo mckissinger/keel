@@ -11,21 +11,30 @@ condition is `[auto]`: prose-only, closable by reading the named files and runni
 - Q12's existing parts (shared singletons + health checks, unique port block / project identity,
   canonical invocation path, env re-derivation command, env name-check command + direct-read ban,
   known-failure-signature table, per-suite duration budgets + timeout rule) — the additions
-  **extend** these (the port rule is the derivation for the *ports/identity* part; the target
-  classification rides the *health check*; the test-setup clause sits beside the *direct-read ban*),
-  and must not alter or weaken any of them.
+  **extend** these (the port rule is the derivation for the *ports/identity* part; the
+  target-classification **fact** — which env URLs/ports the stack owns and points at — is a facet of
+  that same *ports/identity* part, and its **assertion** joins the *health check*; the test-setup
+  clause sits beside the *direct-read ban*), and must not alter or weaken any of them.
 - Q12's **authorship split** and the profile's **"What stays in the methodology"** serialization
   rule — the additions touch neither; the port rule and target classification are finalized at
   provision like the ports/identity part they extend, and the serialization rule is not duplicated.
 - Provision **step 5** (capped-key / bounded spend) and **step 4** (spend-command allowlist) — the
   D3 capped-key concern is already fully covered there; this milestone does **not** touch step 5.
-- Provision **step 6** (bakes flake mitigations into config) and **step 7** (proves the ladder once)
-  — step 6 gains the new authoring clauses; the fragile-gate scripts cover the gates surfaced when
-  step 7 proves the ladder (the two owners stay distinct: step 6 authors, step 7 surfaces).
+- Provision **step 6** (bakes flake mitigations into config) gains the new authoring clauses. Step 6
+  already reasons about known-flake mitigations that carry a remembered precondition; the new clauses
+  have it **author a committed preflight script for each such fragile gate it identifies at
+  provisioning** and record it in the profile's declaration. The declaration **accretes like the
+  signature table**: any further fragile gate — including one surfaced by step 7's ladder run in the
+  same provision sitting, or by a later run — adds its script and row when discovered. Authoring is
+  anchored to step 6's own known-flake set plus the accretion rule, so nothing depends on editing
+  step 7 (its existing text — "run each declared rung green once" — is unchanged).
 - The **entry preflight** at `implement-milestone` (orient) and `verify-milestone` (dispatch) runs
   the Q12 health check already — the target-match assertion added *into* that health check therefore
   fires at both entry points **without editing either skill** (behavioral completeness rides the
-  existing invocation, no new call site).
+  existing invocation, no new call site). Both skills inline-restate the health check's assertions as
+  an **illustrative parenthetical** (daemon responsive, ports owned, toolchain resolves, env present,
+  env-var names asserted) — a pointer to the authoritative Q12 list, not a closed copy of it — so the
+  new target-match assertion lands in Q12 and needs no edit to those restatements.
 
 ## Done-conditions
 
@@ -35,7 +44,7 @@ condition is `[auto]`: prose-only, closable by reading the named files and runni
   `scripts/skill-anchors/provision-hardening.txt` carries a **positive** anchor
   (`references/profile-interface.md`<TAB>the sentence) so a later reword can't drop it. The pinned
   sentence is exactly:
-  `Derive the port block from the project name (hash the name into a fixed band below 49152): the result is effectively-random so no `` `/etc/services` `` entry claims it, derivable so every project gets its own with no registry and no drift between machines or checkouts, and below 49152 so the OS never transiently takes it as an ephemeral outbound port.`
+  `Derive the port block from the project name (hash the name into a fixed band below 32768): the result is effectively-random so no `` `/etc/services` `` entry claims it, derivable so every project gets its own with no registry and no drift between machines or checkouts, and below the lowest OS ephemeral-port floor (32768, where Linux begins allocating ephemeral outbound ports; macOS and Windows start higher, at 49152) so the OS never transiently takes it as an ephemeral outbound port.`
   **verification:** `scripts/check-skill-anchors.sh` passes with this anchor present; `grep -F` finds
   the sentence in `references/profile-interface.md`.
 - [auto] **The dual-update caveat is recorded.** Q12 states that changing the port requires updating
@@ -65,9 +74,12 @@ condition is `[auto]`: prose-only, closable by reading the named files and runni
 - [auto] **Provision step 6 authors all three additions.** `skills/provision/SKILL.md` step 6 (a)
   **applies the name-derivation rule** when it assigns the unique ports/identity (it no longer says
   only "assign … collision-free" with no method); (b) **records the environment-target classification
-  and the dual-update caveat** in the profile; (c) **authors the committed fragile-gate preflight
-  scripts** for the gates surfaced when step 7 proves the ladder, and records them in the profile's
-  fragile-gate declaration. All three clauses present; fails if any is missing.
+  and the dual-update caveat** in the profile; (c) **authors a committed fragile-gate preflight
+  script for each fragile gate it identifies at provisioning** (its known-flake mitigations that
+  carry a remembered precondition — an env export, a reset/clean step, a required key-prefix) and
+  records each in the profile's fragile-gate declaration, which **accretes** as further gates surface
+  (including any from step 7's ladder run in the same sitting). All three clauses present; fails if
+  any is missing.
 - [auto] **Home held — no unowned widening.** The milestone's diff touches only
   `references/profile-interface.md`, `skills/provision/SKILL.md`,
   `scripts/skill-anchors/provision-hardening.txt`, and `specs/**`. In particular

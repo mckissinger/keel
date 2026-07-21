@@ -19,10 +19,10 @@ re-bit the corpus repeatedly:
   (*"select a new standard port for this project we will use moving forward to not clash with
   other projects"*); build-time env inlining that ate a whole verify session and left **four**
   chore specs behind (BidLevel); and un-provisioned-vs-broken confusion at kickoff. The substrate
-  contract (Q12) already records *the healthy local substrate* and asserts *"ports owned by this
-  project's stack"* — but it never records **which target** an env points at, and it gives **no
-  derivation rule** for the port block it tells the project to own (so every project re-invents
-  one, and they collide).
+  contract (Q12) already records *the healthy local substrate* and its health check asserts each
+  singleton is *"answering on this project's ports"* (the "ports-are-mine check") — but it never
+  records **which target** an env points at, and it gives **no derivation rule** for the port block
+  it tells the project to own (so every project re-invents one, and they collide).
 
 - **Fragile runtime gates need committed preflight scripts, not written-down steps (D4).** Relay's
   mobile Release crash was the **fifth** recurrence of a *documented* gotcha; all five were written
@@ -38,8 +38,12 @@ re-bit the corpus repeatedly:
 Jarvis landed a rule worth promoting **verbatim**: derive the port from the **project name** (it
 landed on 24685). Two properties beat any specific number — *effectively-random* (no
 `/etc/services` claim) and *derivable* (any project gets its own, with no registry, and it never
-drifts between machines or checkouts) — and the band sits **below 49152**, where the OS begins
-allocating ephemeral outbound ports, so it can never be transiently taken. And Jarvis's committed
+drifts between machines or checkouts) — and the band sits **below the lowest OS ephemeral-port
+floor** (32768, where Linux begins allocating ephemeral outbound ports; macOS and Windows start
+higher, at 49152), so the OS can never transiently take it. (Jarvis scoped its note to macOS's 49152
+floor and landed 24685; promoting it into a machine-portable profile means deriving below the lowest
+floor any dev OS uses, so the rule holds on Linux too — 24685 already satisfies it.) And Jarvis's
+committed
 test-setup pattern — read the running stack's **status**, map names to the architecture contract,
 swallow non-zero when no stack is up — is the shape that makes a suite independent of `.env.local`.
 
@@ -56,12 +60,16 @@ swallow non-zero when no stack is up — is the shape that makes a suite indepen
 - **Environment-target classification joins Q12's health check.** Q12 records how to tell, from
   the env file / config, whether it targets the **local substrate** or a **hosted backend** (the
   local stack's URL/port signature vs the hosted dashboard URL), and the substrate health check —
-  which already asserts *"ports owned by this project's stack"* — gains one assertion: the running
-  config's target **matches the expected substrate**, so hosted keys against a local stack (or the
-  reverse) is a **named, checkable** condition, not a silent mis-point. A `⚠` scar generalizes the
-  copied-`.env.local` incident. This extends the existing *ports/identity* part rather than adding a
-  new provision-finalized artifact — so the `spec-foundation` / `adopt` derivation-list
-  enumerations need no change (see below).
+  which already asserts each singleton is *"answering on this project's ports"* — gains one
+  assertion: the running config's target **matches the expected substrate**, so hosted keys against a
+  local stack (or the reverse) is a **named, checkable** condition, not a silent mis-point. A `⚠`
+  scar generalizes the copied-`.env.local` incident. **Enumeration home:** the recorded
+  *classification fact* (which target the env points at, and the local-vs-hosted URL/port signature)
+  is a facet of the existing *ports/identity* part — the part **both** the `spec-foundation` and
+  `adopt` derivation lists already enumerate; the *assertion* is behavior added to the health check
+  over that fact, not a separate provision-finalized placeholder. Anchoring the fact to
+  *ports/identity* (rather than to the health check, which `adopt`'s list omits) is what keeps the
+  derivation-list enumerations unchanged (see below). Flagged for the reviewer under open questions.
 
 - **Test setup derives config from the running substrate, never `.env.local`.** A clause lands
   beside Q12's existing direct-read ban (*"sessions never read `.env*` directly"*): committed test
@@ -76,9 +84,14 @@ swallow non-zero when no stack is up — is the shape that makes a suite indepen
   **committed, executable preflight script** that sets up the precondition, **asserts** it, and
   **fails loud** — and the profile lists each fragile gate → its script path. The declaration
   **accretes like the signature table**: a newly discovered fragile gate adds its script and its
-  row. Provision (step 6, which already bakes mitigations into config) **authors the scripts for
-  the gates surfaced when it proves the ladder** (step 7) and records them in the profile's
-  declaration. A `⚠` scar generalizes Relay's fifth recurrence.
+  row. Provision **step 6** (which already bakes mitigations into config) **authors a committed
+  preflight script for each fragile gate it identifies at provisioning** — its known-flake
+  mitigations that carry a remembered precondition — and records each in the profile's declaration;
+  any further gate (including one surfaced by step 7's ladder run in the same sitting, or by a later
+  run) accretes its script and row when discovered. Anchoring authoring to step 6's own known-flake
+  set plus the accretion rule keeps step 6 the sole author with no forward-dependency on step 7's
+  unedited text ("run each declared rung green once"). A `⚠` scar generalizes Relay's fifth
+  recurrence.
 
 - **Home held to the two stated files.** All Q12 additions are facet extensions of parts the
   derivation lists already enumerate (the port rule and target classification extend
@@ -88,6 +101,12 @@ swallow non-zero when no stack is up — is the shape that makes a suite indepen
   `skills/spec-foundation/SKILL.md` and `skills/adopt/SKILL.md` are **not** touched — a deliberate
   call recorded here for the adversarial plan pass (contrast `env-check-preflight`, which *did*
   touch both because the env name-check command was a genuinely new provision-finalized placeholder).
+  The call turns on the target-classification fact being a facet of *ports/identity* — a part **both**
+  lists enumerate — rather than of the health check, which `adopt`'s list omits (spec-foundation's
+  list carries "the proven-green health check"; adopt's does not). If the reviewer reads these inline
+  lists as **closed enumerations** rather than illustrative pointers to Q12, both would need a
+  target-classification entry and adopt would additionally need a health-check entry — a follow-up
+  edit to those two skills, out of scope for this plan-only PR. Raised as an open question below.
 
 - **Stack-neutral throughout.** The port rule references the OS ephemeral-port band (an
   OS-mechanics fact, like Q12's existing web-reference examples) and hardcodes no framework;
@@ -112,6 +131,21 @@ swallow non-zero when no stack is up — is the shape that makes a suite indepen
   harvest's own note): the Google-console step-by-step checklist, OAuth-app ownership reporting,
   branch-protection read-modify-write, MCP/connector authorization in the preflight, and
   `provision`'s mid-project re-invocability. Not this unit.
+
+## Open questions for the reviewer
+
+- **Do the `spec-foundation` / `adopt` derivation lists need a target-classification (and, for
+  `adopt`, a health-check) entry?** This plan treats their inline enumerations of Q12's
+  provision-finalized parts as **illustrative pointers to the authoritative Q12**, so the
+  target-classification fact rides *ports/identity* (enumerated in both) and no skill edit is
+  needed — Home held. If instead those inline lists are the **closed enumerations** they can read
+  as, both would need a target-classification entry and `adopt`'s list — which omits the
+  proven-green health check `spec-foundation` carries — would also need that health-check entry. A
+  skill edit is out of scope for this plan-only PR; if the reviewer wants the lists updated, it is a
+  one-milestone follow-up. Default taken: treat them as pointers, leave both skills untouched.
+
+- **Capped-key sliver (D3):** already covered by provision **step 5** — no milestone authored (see
+  "Deliberately not in scope"). Flagged in case a strengthening beyond the landed step was intended.
 
 ## Milestone
 

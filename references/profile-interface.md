@@ -333,6 +333,40 @@ contract relaxes is the spine's serialization rule (see "What stays in the metho
   pull re-run with the instance's identity into the worktree's own env file; teardown via the
   stack CLI's stop/delete for that one instance.
 
+**Q14 — Verification-integrity contract (the poisoned-environment guard).** The recorded answer
+that lets the spine gate a `[runtime]`/environment-dependent **negative** verdict on proof the
+running environment reflects committed code. keel's spine mandates the requirement (see
+`references/milestones-and-verification.md` §3 and `agents/verifier.md`); this question supplies
+the two project-specific specifics that mandate consumes — it does **not** restate the mandate as
+a profile-owned rule. Declare both:
+
+- **Service-config paths.** The tracked paths whose uncommitted working-tree state makes the
+  running services reflect something other than committed code — the local-stack config, the
+  env-derivation source. A dirty tree at these paths is the environment poisoned, classified
+  environment, never a code defect.
+- **Positive-control probe.** The independent signal **and** the restart/probe recipe that prove
+  the environment reflects committed state: restart the service, probe the **gate** (hit the
+  endpoint, expect a real response) rather than trusting a CLI start banner, and require an
+  **independent signal to change** — never a repetition to recur. Only once that control has gone
+  from absent/stale to present may a negative `[runtime]` finding stand.
+
+A [runtime]/environment-dependent **negative** finding is gated on both the clean tree and the positive control — the requirement is the spine's; these two declarations are what it reads.
+The carve-out rides with the requirement: it gates a **negative** runtime finding **only** — never
+an `[auto]`/static finding, and **never a clean pass** (a passing walk already exercised the
+environment).
+
+> ⚠ **Reproduction count is not confidence (the B2 scar).** A verifier reported a probe returning
+> "no code found," reproduced it 4× across dev+prod and new+existing users, and concluded users had
+> no code — all inside one poisoned, un-restarted environment. After a restart on committed config
+> the same probe returned real results immediately; the tell of the genuine reload was an
+> **independent signal change** (an email subject changed), **not** the repetition. N poisoned reads
+> are one poisoned read.
+
+**Authorship split.** Like Q12/Q13's provision-owned parts, this answer is **derived at spec time**
+(which paths count as service-config, which independent signal proves a genuine reload) with the
+exact restart/probe **commands finalized at provision** — a derived profile carrying a "finalized at
+provision" placeholder for those commands is well-formed, not incomplete.
+
 ---
 
 ## What stays in the methodology (not the profile)

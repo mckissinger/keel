@@ -1,0 +1,16 @@
+# verify-environment-integrity — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The poisoned-environment guard: a [runtime]/environment-dependent NEGATIVE finding
+# may not stand until the working tree is clean for the profile's service-config paths
+# AND an independent positive control proves the environment reflects committed state.
+# One POSITIVE anchor per edited mandate sentence (one per file). Each is a full
+# single-line clause carrying the term "positive control" and the negative-finding
+# scope, so a reword can't gut the rule. The spine (§3) additionally pins the B2 tell —
+# an independent-signal-change certifies a reload / a repetition does not — the sharpest
+# finding in the corpus. No negative anchors: this change retires no existing sentence.
+references/profile-interface.md	A [runtime]/environment-dependent **negative** finding is gated on both the clean tree and the positive control
+references/milestones-and-verification.md	the positive control is the price of a *negative* runtime verdict, not of every verdict
+references/milestones-and-verification.md	An independent signal change certifies a genuine reload; a repetition does not.
+agents/verifier.md	Reproducing a failure N times inside one un-restarted environment is not confidence
+skills/verify-milestone/SKILL.md	control-less negative runtime finding as environment, not a discrepancy

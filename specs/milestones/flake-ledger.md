@@ -66,15 +66,21 @@ hooks, or templates move; no existing §-reference renumbers.
 - [auto] **`status` surfaces open flakes alongside deferrals.**
   `skills/status/SKILL.md` names `specs/flakes/` in its **Sources** sweep and adds an
   **open-flakes surfacing** to its Output contract — one line per open flake (slug,
-  the attached path, its measured rate and hit count), in the same read-only shape as
-  the deferrals section, appearing even when the list is empty-or-short as a count.
+  the attached path, its measured rate and hit count), **ordered highest hit count
+  first** (the escalation-relevant order, mirroring how the deferrals section surfaces
+  triggered entries first), in the same read-only shape as the deferrals section,
+  appearing even when the list is empty-or-short as a count.
   The existing deferrals sweep + section are unchanged. *Falsifiable:* status
   surfacing flakes only inside the deferrals bullet (conflated), or dropping/altering
   the deferrals surfacing, or adding any write/mutation to status, fails.
 - [auto] **No weakening of the contracts this edit borders.** The edit must preserve:
   (a) §8 rules 1–8 and §-reference stability across `skills/`, `references/`,
   `workflows/` — repo-wide grep finds no §-citation broken by the append, and no
-  pre-existing "§9" citation whose meaning the new rule breaks; (b)
+  citation of §8's rules *by number* (rules 1–8) is broken. (The new rule is
+  **rule 9 within §8**, a numbered list item; this file has sections §1–§8 only and
+  gains no section §9, so it is not a "§9" — any repo-wide `§9` hits cite
+  `references/growth-operations.md`'s §9, a different document, and are not in
+  collision.) (b)
   `verify-milestone`'s run-to-convergence hard rule, unmoved and unrestated; (c)
   status's **derive-don't-store / write-nothing / ~twenty-line** contract and its
   existing deferrals surfacing; (d) the `specs/deferrals/` convention (this change
@@ -86,6 +92,11 @@ hooks, or templates move; no existing §-reference renumbers.
   sentence from the §8 rule carrying its operative clause (measured reproduction rate
   + file-per-flake + batch-chore drain) and a full sentence from the status open-flakes
   surfacing — each confirmed present verbatim on a single line in its named file.
+  Because `check-skill-anchors.sh` matches with `grep -F` (a fixed contiguous
+  substring on one physical line), the §8 rule **must phrase the measured-rate +
+  file-per-flake + batch-chore triad as one contiguous clause on a single line** so a
+  single anchor string captures all three — the triad must not be split across
+  sentences. §8 rules are already single long physical lines, so this is buildable.
   `scripts/check-skill-anchors.sh` passes. No negative anchors are required (pure
   adoption; nothing is removed). *Falsifiable:* a missing anchor file, or an anchor
   string not present verbatim, fails the lint.

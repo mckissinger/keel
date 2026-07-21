@@ -1,7 +1,11 @@
 # Change — flake-ledger
 
-One milestone, prose-only (plus one new convention directory + one new anchor
-file): adopt CRE's concrete **flake-tracking practice** — flakes recorded as
+One milestone, no-UI — prose plus one new convention directory and one new anchor
+file. (Note: the *change grain* is documentation-only, but the milestone's **build**
+edits code paths — `references/milestones-and-verification.md` and
+`skills/status/SKILL.md` — not just plan paths, so the later build PR carries a
+`verified:` pin; only *this* plan PR is plan-only. It is not a "plan-only" build.)
+Adopt CRE's concrete **flake-tracking practice** — flakes recorded as
 **files carrying measured reproduction rates**, escalated by hit count, closed in
 a batch chore — as a lightweight `specs/flakes/` convention, referenced from the
 test-authoring doctrine (§8 of `references/milestones-and-verification.md`) and

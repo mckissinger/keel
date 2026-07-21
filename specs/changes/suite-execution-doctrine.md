@@ -77,25 +77,31 @@ build", never a framework's server flag or CLI.
      own single-test-first dev loop **may** filter to the affected test — but the
      **verification/proof run and any "runtime passed" claim (and therefore any pin)**
      are the **full** suite, never a filtered subset.
-  2. **A suite that exceeds the supervision budget runs foreground with an explicit
-     timeout (C3).** A suite/walk whose expected duration (the Q12 budgets) exceeds the
-     `Monitor`/supervision budget runs **foreground with an explicit timeout**, never
-     backgrounded to poll "still running." The **bound itself** (kill at ~2× the recorded
-     budget, classify as environment) stays **owned by Q12** — §9 references it, never
-     restates or relocates it.
+  2. **A suite that would outlast unattended supervision runs foreground with an explicit
+     timeout (C3).** A suite/walk whose expected duration (the Q12 budgets) would outlast a
+     single supervision window — one that cannot be watched to completion within the harness's
+     own `Monitor`/foreground timeout, so backgrounding it leaves the session **polling** "still
+     running" instead of the harness supervising the run — runs **foreground with an explicit
+     timeout**. The trigger is that concrete foreground-vs-poll boundary (the harness's
+     supervision/`Monitor` timeout), **not** a bare "supervision budget": Q12 records the
+     per-suite durations and the 2× kill-bound, and there is no separate named budget quantity to
+     look up. The **bound itself** (kill at ~2× the recorded budget, classify as environment)
+     stays **owned by Q12** — §9 references it, never restates or relocates it.
 - **`references/profile-interface.md` Q12's background clause is reconciled to §9 (C3).**
   Q12 today ends its duration-budget bullet with "long suites run backgrounded with
   periodic progress checks where the harness supports it" — an **unconditional**
   background instruction that now contradicts §9.2. It is amended so backgrounding
-  applies **only** when the run fits the supervision budget; a suite expected to exceed it
-  runs **foreground with an explicit timeout per §9.2**. The old unconditional clause is
+  applies **only** when the harness can watch the run to completion within a single
+  supervision/`Monitor` window; a suite expected to outlast that runs **foreground with an
+  explicit timeout per §9.2**. The old unconditional clause is
   **retired** (negative anchor); Q12 keeps ownership of the budgets and the kill-bound.
 - **Two dispatch skills carry the B4 rule so it bites, one line each.**
   `skills/verify-milestone/SKILL.md` (the proof-run owner — its step 4/5 runs the
-  committed suites and the walk) and `skills/implement-feature/SKILL.md` (step 2, where the
-  scoped filter was actually baked into the verifier dispatch) each gain **one sentence**
-  pointing at §9.1: the verifier dispatch forbids a spec/milestone filter; the proof run is
-  the full suite. No rule is restated — the pointer rides, the doctrine stays in §9.
+  committed suites and the walk) and `skills/implement-feature/SKILL.md` (step 2, whose
+  verifier dispatch prompts off a **single** milestone's done-conditions — the scoping to that
+  milestone is emergent, not a literal filter instruction in the prose today) each gain **one
+  sentence** pointing at §9.1: the verifier dispatch forbids a spec/milestone filter; the proof
+  run is the full suite. No rule is restated — the pointer rides, the doctrine stays in §9.
 - **Anchors.** A new `scripts/skill-anchors/suite-execution-doctrine.txt` (file-per-feature,
   never editing an existing anchor file — §4) carries **positive** anchors on each new
   load-bearing sentence (the Q6 server/build-freshness contract, the Q11 CI-topology

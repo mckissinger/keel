@@ -55,27 +55,38 @@ C3 (~246–257), C4 (~566–570).
   reducing it** — so a suite shards only once its per-shard variable cost dominates that fixed setup.
   Stack-neutral phrasing. *Falsifiable:* a version that omits build-once-and-share, omits the
   caching clause, or states sharding as a pure reducer, fails.
-- [auto] **M&V §9 exists with exactly the two suite-execution rules.**
+- [auto] **M&V §9 exists with the two suite-execution rules (§9.1 and §9.2).**
   `references/milestones-and-verification.md` gains a section headed **"## 9. Suite execution (how a
-  suite is run)"** placed **after §8**, containing exactly two rules:
+  suite is run)"** placed **after §8**, holding the two rules below. A brief framing sentence before
+  §9.1, or a short §9.0 pointer to §8's counterpart, is permitted — what's forbidden is the doctrine
+  sprawling into a *third* suite-execution rule. The two required rules:
   - **§9.1 — the proof run is the full suite, no filter (B4):** the verification / fresh-context
     verifier / `verify-milestone` dispatch **forbids** a spec/milestone filter for the proof run,
     and a green filtered run is not a pass — **with the explicit inner-loop exemption**: the
     builder's own single-test-first dev loop **may** filter to the affected test, but the
     verification/proof run and any "runtime passed" claim (and therefore any pin) are the **full**
     suite. Both halves (the prohibition **and** the inner-loop exemption) are present.
-  - **§9.2 — foreground-with-timeout for over-budget suites (C3):** a suite/walk whose expected
-    duration (per Q12's budgets) exceeds the supervision/`Monitor` budget runs **foreground with an
-    explicit timeout**, not backgrounded to poll; and it **defers the bound** (kill at ~2× the
-    recorded budget, classify as environment) to **Q12**, referencing rather than restating it.
+  - **§9.2 — foreground-with-timeout for suites that outlast supervision (C3):** a suite/walk whose
+    expected duration (per Q12's budgets) would **outlast a single unattended supervision window** —
+    concretely, one that cannot be watched to completion within the harness's own `Monitor`/foreground
+    timeout, so backgrounding it leaves the session **polling** "still running" instead of the harness
+    supervising the run — runs **foreground with an explicit timeout**, not backgrounded to poll; and
+    it **defers the bound** (kill at ~2× the recorded budget, classify as environment) to **Q12**,
+    referencing rather than restating it. The trigger is stated against that concrete
+    foreground-vs-poll boundary (the harness's supervision/`Monitor` timeout — the point past which a
+    backgrounded run can only be polled, not supervised), **never** against a bare "supervision budget"
+    quantity: Q12 records the per-suite expected durations and the 2× kill-bound, and there is **no
+    separate named supervision-budget quantity** in the corpus to compare against.
   *Falsifiable:* a §9 missing the inner-loop exemption, missing the no-filter prohibition, missing
-  the foreground/timeout rule, or that restates (rather than references) Q12's kill-bound, fails.
+  the foreground/timeout rule, that restates (rather than references) Q12's kill-bound, or whose §9.2
+  trigger hinges on an undefined "supervision budget" quantity rather than the concrete
+  foreground-vs-poll / harness-`Monitor`-timeout boundary, fails.
 - [auto] **Q12's unconditional background clause is retired and reconciled (C3).**
   `references/profile-interface.md` Q12 no longer states backgrounding **unconditionally**: the
   clause that read "long suites run backgrounded with periodic progress checks where the harness
-  supports it" is amended so backgrounding applies **only** when the run fits the supervision budget,
-  and a suite expected to exceed it runs **foreground with an explicit timeout per §9.2** (the
-  M&V §9 reference, file-qualified). Q12 **retains** ownership of the per-suite budgets and the
+  supports it" is amended so backgrounding applies **only** when the harness can watch the run to
+  completion within a single supervision/`Monitor` window, and a suite expected to outlast that runs
+  **foreground with an explicit timeout per §9.2** (the M&V §9 reference, file-qualified). Q12 **retains** ownership of the per-suite budgets and the
   kill-at-2×-budget rule. *Falsifiable:* if the unconditional background sentence survives verbatim,
   or Q12's budgets/kill-bound are removed, this fails.
 - [auto] **The two dispatch skills point at §9.1 (B4 bites).**

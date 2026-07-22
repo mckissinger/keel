@@ -54,6 +54,8 @@ Place boundaries where human review is cheap and being wrong is recoverable. Fin
 
 **Every done-condition must be satisfiable within the run's pre-authorized envelope.** A condition needing mid-run human authorization (live API spend, a paid action) is, for an autonomous run, *unsatisfiable* — the same class of blocker as a missing credential; drain it the same way (pre-authorized before launch via provision, not gated per-use). If a gate genuinely can't be pre-authorized, it is a **planned stop point** — flag it on the milestone so the run halts there. **Never let an acceptance gate be silently deferred while later milestones build on top** — that stacks work on unverified code. Deferring a gate is allowed only as a conscious, `decisions/`-recorded choice.
 
+**Route each milestone's build by grain via a `Routing:` header field.** A milestone header carries `Routing: mechanical | reasoning-heavy` (**default `mechanical` when omitted**). `implement-feature` reads it to choose the build subagent's model — `reasoning-heavy` → Opus, `mechanical` → Sonnet — and to set the verifier's escalation floor (dispatch the `verifier` at effort ≥ the builder's, `reasoning-heavy` → `xhigh`, `mechanical` → `high`). The tag is the same mechanical-vs-reasoning-heavy classification this section already makes at spec time (fine/correctness-critical vs recoverable/cheap-review); routing just reads what the grain ladder wrote down. The full policy, the resolution order, and the complete surface inventory live in `references/model-routing.md` (tied to `decisions/2026-07-21-model-effort-routing.md`).
+
 ## 5. The verified record — commit-pinned, one line per milestone
 
 In the milestone's spec file:

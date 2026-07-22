@@ -2,6 +2,7 @@
 name: spec-change
 description: Spec ONE small change — the sub-feature grain. A compressed feature-spec that fans into ONE milestone (rarely two) — focused mini-interview, workbench composition with a bespoke sketch optional-and-asked, then author the milestone against the shared rules.
 when_to_use: For a change below a whole feature — a tweak, a small addition, a fix that needs a spec. NOT for a whole feature (that's spec-feature) or the app foundation (that's spec-foundation).
+effort: high
 ---
 
 # Spec Change

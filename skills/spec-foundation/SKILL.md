@@ -2,6 +2,7 @@
 name: spec-foundation
 description: Stand up a project's FOUNDATIONAL specs/ once at kickoff — the product skeleton (a feature backlog, not a milestone list), the architecture + data model + environment contract, the decisions/deferrals conventions, and the project CLAUDE.md with the GitHub/CI/verified-pin process.
 when_to_use: At the start of a new project, after the app-skeleton interview and before the design system. NOT for per-feature milestones — those are authored later, one feature at a time, by the spec-feature skill.
+effort: xhigh
 ---
 
 # Spec — Foundation

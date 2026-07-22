@@ -2,6 +2,7 @@
 name: auto
 description: Enter one of keel's three human-triggered autonomy postures — `keel:auto feature <slug>` (unattended build-verify-pin-land of one feature), `keel:auto run [scope]` (from any project state, spec + build + land continuously, ledgering every would-be ask), or `keel:auto genesis "<idea>"` (a raw idea → an attended research + approval gate → an unattended bootstrap-and-build to a preview-deployed product) — audit the entry state, pass the preflight, write the mode file, orchestrate the existing verbs, and end at the mandatory per-feature debrief.
 when_to_use: Human-triggered only, when the user explicitly starts an autonomy run. Args — `feature <slug>` / `run [scope]` / `genesis "<idea>"`. NOT for an attended feature build (that's implement-feature) or a single milestone (implement-milestone). The agent never invokes this skill to escalate its own autonomy — the human invocation IS the authorization.
+effort: high
 disable-model-invocation: true
 ---
 
@@ -43,6 +44,8 @@ Both postures drive the existing verbs; the mode changes *which gates exist* (th
 ## 5. The ledger contract (owned here)
 
 **Every would-be ask becomes a recorded deferral.** Each gate that would have stopped for the user writes a **file-per-entry** record under **`specs/runs/<run-id>/`** (no-shared-file discipline) carrying the **decision**, the **rationale**, and **the artifact it would have shown** (by path or inline). Each entry is **committed with the work it explains**, on that work's branch. Silent deferral stays banned; *recorded* deferral is the mode's contract. The eight mode-aware skills reference this — specified here, once.
+
+**Cheap-model rework is ledgered too.** When a milestone built on a **cheaper-than-its-default** model (a `mechanical`-routed Sonnet build, per `${CLAUDE_PLUGIN_ROOT}/references/model-routing.md`) **bounces at verification**, record that bounce — **model + milestone slug** — as a file-per-entry record under `specs/runs/<run-id>/`, so a routing choice whose rework cost exceeds its token saving is visible at the debrief rather than hidden as sideways spend.
 
 ## 6. The debrief mandate (owned here)
 

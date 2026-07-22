@@ -37,7 +37,7 @@ Present the scoped list (conditions + files + what you routed out) and **get the
 
 Run the saved workflow `punch-list` with `{ slug, items: [{ id, condition, files }] }`. It:
 - groups items by file so parallel fixes never collide,
-- runs one **worktree-isolated** subagent per group (make exactly the change, self-check, return a diff — no scope creep),
+- runs one **worktree-isolated** subagent per group (make exactly the change, self-check, return a diff — no scope creep), each **dispatched with an explicit `model: sonnet` arg at `low`/`medium` effort** — the executor tier for mechanical batch work, per `${CLAUDE_PLUGIN_ROOT}/references/model-routing.md` (the per-invocation dispatch arg, top of the resolution order),
 - assembles the diffs onto one `chore/<slug>` branch, runs the **combined** checks, writes `specs/chores/<slug>.md` with **one batch pin**, and opens a single `chore` PR.
 
 `[runtime]` items can't be confirmed by the parallel sweep (shared local services) unless the profile's Q13 isolation contract is proven (per `references/profile-interface.md`) — otherwise verify those serially via the runtime walk, the same rule as everywhere else, before the batch pin stands.

@@ -56,3 +56,4 @@ hook, or guard *semantics* is touched by a version-string bump → no `/security
 The version-visible-to-the-installed-runtime effect is a [runtime] property that only a
 reinstall proves — carried into the post-merge install (tag + plugin update on merge),
 correctly out of branch scope.
+verified: clean at aec6419, 2026-07-22, via fresh-context keel:verifier subagent — confirmed the branch is one commit ahead of main changing only plugin.json (version 1.18.0→1.19.0) and the release spec, valid JSON, marketplace.json untouched with no version field, and all five combined checks green (30 chore specs, 29 skills).

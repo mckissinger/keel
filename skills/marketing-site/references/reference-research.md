@@ -81,6 +81,20 @@ paid MCP is **never a hard dependency**: the ladder's user-supplied-screenshots 
 text-only rungs (owned by `visual-reference.md`) apply unchanged, and **with no such MCP
 connected each movement proceeds text-only and records that mode.**
 
+**Corpus scoping — website pages only, never the mobile-app corpus.** Every marketing
+pull targets the **website / marketing-page corpus** and **never the mobile-app corpus**;
+a mobile-app screen is out of bounds for a marketing reference regardless of how apt it
+looks. Prefer a **website-section search verb**, which carries **no platform axis** and
+so can only return website pages. When the search verb *does* take a platform argument,
+**scope it to `web`, never the app/mobile platform.** As of 2026-07 the known instance
+(Mobbin) splits its corpus into **Sites** (website / marketing pages) and **Apps**
+(mobile-app screens); a marketing pull uses **Sites only** — its website-section verb,
+or `platform: web` on a screen/flow search. This scoping is **mode-disclosing** like the
+rest of the detection ladder: if the connected MCP can't be scoped to the website corpus,
+the pull falls back down the ladder and records the mode that actually ran rather than
+reaching into the mobile-app corpus, so the paid MCP stays a **soft dependency, never a
+hard one**.
+
 ## The first-pull probe
 
 Whether a connected MCP's search verbs actually reach the marketing-page corpus is not

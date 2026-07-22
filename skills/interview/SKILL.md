@@ -12,6 +12,7 @@ when_to_use: >-
   waste significant build time, or at a brand-new project's kickoff as the
   app-skeleton gate. The deep per-feature interview lives in spec-feature,
   not here. Do not use for small fixes or well-specified tasks.
+effort: high
 ---
 
 # Interview

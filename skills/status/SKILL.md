@@ -2,6 +2,7 @@
 name: status
 description: Read-only "where are we / what's next" — the canonical state derivation and resume entry point. Derives project state from spec + git + GitHub truth and leads with the single next keel verb.
 when_to_use: When the user asks where things stand or what's next, after a killed or compacted session, or whenever a session needs orientation before picking a verb. NOT for changing anything — it derives and reports only.
+effort: high
 allowed-tools: Bash(git status *), Bash(git log *), Bash(git branch *), Bash(git diff *), Bash(git rev-parse *), Bash(git worktree list*), Bash(gh pr list*), Bash(gh pr view*), Bash(gh pr checks*)
 ---
 

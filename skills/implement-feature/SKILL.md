@@ -2,6 +2,7 @@
 name: implement-feature
 description: Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge. Spawns fresh-context verifier subagents ([auto] parallel; [runtime] serial unless the profile's isolation contract is proven). Defaults to interleaved cadence but ALWAYS asks. Never merges.
 when_to_use: After spec-feature has authored a whole feature's milestone specs, to build and verify them end-to-end. NOT for a single milestone (that's implement-milestone), NOT for checking one completed milestone (that's verify-milestone), and NOT for merging the reviewed PRs (that's land-feature, under the user's per-merge approval).
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Bash"
@@ -32,14 +33,14 @@ At orchestration start, read the feature spec's **Lifecycle** section (`specs/fe
 
 For each milestone, in dependency order (bottom-up for a stack):
 
-1. **Build** — dispatch `implement-milestone` on its own branch: off `main` if independent, off the parent if it genuinely stacks, off the diamond's **integration branch** if multi-parent.
-2. **Verify in a fresh context** — dispatch verification as a **subagent with its own context window**. Prompt it from the **spec's done-conditions + the checkout**, never from the builder's claims. The fresh-context verifier's proof run is the **full** committed suite — its dispatch **forbids** a spec/milestone filter, never scoped to this milestone's own tests (`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §9.1).
+1. **Build** — dispatch `implement-milestone` on its own branch: off `main` if independent, off the parent if it genuinely stacks, off the diamond's **integration branch** if multi-parent. **Route the build subagent by the milestone's `Routing:` tag (§4):** set an explicit **`model` arg on the dispatch (Agent/Task) call** — `reasoning-heavy` → Opus at `xhigh`, `mechanical` → Sonnet at `high`. That per-invocation arg overrides `implement-milestone`'s own Sonnet frontmatter default per the resolution order (`${CLAUDE_PLUGIN_ROOT}/references/model-routing.md`) — it is the dispatch-call arg, not the dispatched skill's frontmatter, that lets a `reasoning-heavy` milestone run on Opus.
+2. **Verify in a fresh context** — dispatch verification as a **subagent with its own context window**. Prompt it from the **spec's done-conditions + the checkout**, never from the builder's claims. **Dispatch the `verifier` at effort ≥ the builder's effort for this milestone** — `reasoning-heavy` → `xhigh`, `mechanical` → `high`, never below the build it audits (`${CLAUDE_PLUGIN_ROOT}/references/model-routing.md`; the reason is `decisions/2026-07-01-model-capability-ledger.md` — an independent check weaker than the builder defeats the self-justification guard). The fresh-context verifier's proof run is the **full** committed suite — its dispatch **forbids** a spec/milestone filter, never scoped to this milestone's own tests (`${CLAUDE_PLUGIN_ROOT}/references/milestones-and-verification.md` §9.1).
    - **`[auto]` conditions** → verifier subagents run in **parallel** (worktrees).
    - **`[runtime]` conditions** → run **serially** — the runtime-proof needs sole access to the shared local services — **unless** the profile carries a **proven Q13 isolation contract** (`specs/stack-profile.md`), in which case each subagent claims its own instance and `[runtime]` milestones verify in **parallel**.
 3. **Pin bottom-up** — on a clean verdict, the orchestrator writes the `verified:` pin (the verifier subagent is read-only) and runs the mechanical postcondition checks (`HEAD^` == verified SHA, working tree clean). For a stack, write pins in stack order via clean rebases onto the plan-only pin commits.
 4. **Open the PR** — base `main` for an independent milestone, the parent branch for a stacked one. Quote the done-conditions + verification evidence in the body.
 
-Keep the orchestrator's retained state thin (a ledger: slug → branch → PR → verdict → SHA); build and verify detail lives in the subagents.
+Keep the orchestrator's retained state thin (a ledger: slug → branch → PR → verdict → SHA); build and verify detail lives in the subagents. **Rework visibility:** when a milestone built on a **cheaper-than-its-default** model (a `mechanical`-routed Sonnet build) **bounces at verification**, note that bounce (model + slug) against the milestone on that same ledger line — so a routing choice whose rework cost exceeds its token saving reaches the owner at the merge gate rather than hiding as sideways spend.
 
 ## Two hard boundaries
 

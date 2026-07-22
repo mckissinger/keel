@@ -2,6 +2,7 @@
 name: land-feature
 description: Drive the merge of a feature's reviewed PRs into main — the stacked-PR choreography (merge bottom-up, retarget before delete, close+reopen to re-fire CI, recreate closed children, re-pin after a forced rebase) plus the post-wave consolidated check on main.
 when_to_use: Human-triggered only, after the feature's milestones are built, verified, pinned, and reviewed by the user — per-merge approval is preserved, and agents never merge without the user's explicit instruction. NOT for building or verifying milestones (that's implement-feature / verify-milestone), and NOT the aesthetic/completeness gate (review-feature runs after landing).
+effort: high
 disable-model-invocation: true
 ---
 

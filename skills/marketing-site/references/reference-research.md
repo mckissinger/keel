@@ -72,9 +72,20 @@ structure-only rule the Discover pull exists to honor.
 
 Detection is **generic, not instance-specific**: the trigger is "a connected
 design-reference MCP whose corpus includes marketing pages," any server whose tools
-search marketing-page screenshots by query. As of 2026-07 the known instance
-(Mobbin) is observed to carry a **marketing-pages content type** with page patterns like
-"Landing Page" and **Sections / Styles filter taxonomies**, reached through a
+search marketing-page screenshots by query.
+
+**Every marketing pull scopes to the website / marketing-page corpus — never the
+mobile-app corpus.** Marketing references are landing pages and marketing sites; the
+mobile-app side of a reference corpus is the wrong raw material and is out of bounds for
+every pull this verb runs. Concretely: prefer a website-**section** search verb (one that
+searches the website corpus and carries no platform axis), and when a search verb does
+take a platform, scope it to **web** — never the app / mobile platform.
+
+As of 2026-07 the known instance (Mobbin) splits its corpus into **Sites** (websites)
+and **Apps** (mobile), and this verb uses **Sites only**: its website-section search verb
+(which has no platform axis) and, for any screen- or flow-level search, `platform: web`.
+Its Sites side is observed to carry a **marketing-pages content type** with page patterns
+like "Landing Page" and **Sections / Styles filter taxonomies**, reached through that
 section-search verb — but those capabilities are named here only as **as-of-2026-07
 observations**, never as a requirement, and the corpus's shape may have moved since. The
 paid MCP is **never a hard dependency**: the ladder's user-supplied-screenshots and

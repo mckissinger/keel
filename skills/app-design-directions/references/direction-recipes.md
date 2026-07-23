@@ -18,18 +18,9 @@ Every direction is a combination of positions on these axes. Two directions must
 | **Motion stance** | None (instant) / functional only (state transitions) / expressive moments | Apps usually want functional-only. An expressive direction must say where and why. |
 | **Voice** | Terse operator language / warm guide / institutional | Microcopy is part of the direction. |
 
-## Direction archetypes for product UI
+## Portfolio composition
 
-Useful starting skeletons — always re-derive the specifics from the app's domain rather than applying these as costumes:
-
-1. **The Terminal / Operator.** For power users living in the tool. Compact density, mono or mono-adjacent data face, keyboard-first affordances, command palette, functional color only, zero decoration. Optimizes throughput; trades approachability.
-2. **The Ledger / Institution.** For tools handling money, contracts, records (strong fit for real-estate/finance domains). Serif or strong-grotesque headers, ruled tables, generous tabular numerals, paper-tone or cool-neutral surfaces, formal labels. Optimizes trust and document-feel; trades playfulness.
-3. **The Instrument Panel.** For monitoring/decision tools. Information-forward: charts and numbers are the interface, chrome recedes. Often (justifiably) dark. Optimizes glanceability; trades warmth.
-4. **The Workshop.** Warm, material, humanist — for tools used long hours where fatigue matters. Comfortable density, soft depth, tactile controls. Optimizes livability; trades data density.
-5. **The Editorial System.** Strong typographic hierarchy, structure expressed by type scale and rules rather than boxes. For content-heavy or report-producing apps. Optimizes readability; trades compactness.
-6. **The Calm Default.** Deliberately quiet, near-monochrome, system-feeling — for tools where the user's content is the star and the UI should disappear. The risk: this is the direction most likely to drift generic, so its execution must be the most precise (spacing scale, type rhythm, perfect states).
-
-For 5 directions, a good portfolio spans the density axis (at least one compact, one spacious), spans warm/cool, includes one direction derived primarily from the domain's own materials, and includes one honest risk. Include one "closest to what they have now, but disciplined" direction when redesigning an existing app — incumbents deserve a fair hearing and it calibrates the user's appetite for change.
+Directions are derived fresh from the brief and the axes above — there is no menu of named looks to pick from (a named list anchors every app toward the same portfolio; the axes describe the space, the tests below reject sameness). For 5 directions, a good portfolio spans the density axis (at least one compact, one spacious), spans warm/cool, includes **at least one direction derived primarily from the domain's own materials** (the section below), and includes one honest risk. Include one "closest to what they have now, but disciplined" direction when redesigning an existing app — incumbents deserve a fair hearing and it calibrates the user's appetite for change.
 
 ## Deriving from the domain (the secret weapon)
 

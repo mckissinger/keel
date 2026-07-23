@@ -151,7 +151,7 @@ The workbench verb is **profile-driven**. On the hardened web stack it is a **`/
 |---|---|
 | `references/anti-slop.md` | Always, before Phase 1. The empirical list of AI-design fingerprints to avoid, and why. |
 | `references/visual-reference.md` | Phase 0.5. The source ladder, the generous-volume + subagent-delegation mechanics, and the mandatory deconstruction pass that turns references into direction-spec vocabulary. |
-| `references/direction-recipes.md` | Phase 1. Axes of variation, direction archetypes for app UI, how to make 5 directions truly different. |
+| `references/direction-recipes.md` | Phase 1. Axes of variation, portfolio composition, domain derivation — how to make 5 directions truly different. |
 | `references/product-ui-craft.md` | Phase 2 and 4. App-specific craft: density, hierarchy, tables, forms, states, color-as-meaning, typography for data, accessibility floor. |
 | `references/stack-and-mockups.md` | Phase 2 and 4. The **web** mockup + workbench mechanics — one instance of the profile's exploration/workbench verbs: mockup file rules, web token wiring, screenshot self-review. Mobile is derivable against the stack profile (Q8.2–Q8.4), not spelled out here. |
 

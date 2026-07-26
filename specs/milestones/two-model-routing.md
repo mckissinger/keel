@@ -118,3 +118,15 @@ verifier runs **Fable 5**, decorrelated from an Opus-5 build. **No `/security-re
 touches no hard invariant; the "gates untouched" condition is the proof (pin gate, merge guard, branch guard,
 never-auto list all unchanged). The `[attended]` dogfood is the owner's live confirmation that the runtime
 honors the new frontmatter at dispatch, which no CI check can observe.
+
+verified: clean at 43ffa6f, 2026-07-25, via fresh-context verifier subagent (keel:verifier, dispatched at
+`xhigh` per this milestone's own reasoning-heavy escalation rule) against this spec's done-conditions — all
+17 `[auto]` conditions evidenced with `file:line` (frontmatter model values, the reference table rows, the
+decorrelation-principle restatement, the strict no-Sonnet greps returning zero across all 8 live surfaces,
+the cheap-bounce-ledger removal, the decision-entry amends-by-reference with both prior decisions' diffs
+empty, gates-untouched git-diff, table↔frontmatter consistency, inherit-preservation across the named set,
+the complete 29-skill + verifier inventory). 8 self-test suites + `check-skill-frontmatter` + `check-neutral`
++ `check-skill-anchors` + `claude plugin validate --strict` all green. Prose/frontmatter-only — no
+`/security-review` (gates-untouched is the proof). The `[attended]` dogfood — that the runtime actually
+dispatches Fable 5 for the verifier and Opus 5 for builds — is explicitly **not** covered by this pin and
+remains the owner's live confirmation via `/cost` or the model indicator. (evidence: verifier report in PR)

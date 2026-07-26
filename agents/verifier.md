@@ -3,7 +3,7 @@ name: verifier
 description: Read-only verifier that checks completed work against the spec and reports discrepancies with file/line evidence. Use after a milestone or task is claimed complete, with the spec's done-conditions in the prompt. It finds problems; it never fixes them.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Edit, Write, NotebookEdit
-model: opus
+model: claude-fable-5
 effort: high
 ---
 

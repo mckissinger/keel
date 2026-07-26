@@ -45,8 +45,6 @@ Both postures drive the existing verbs; the mode changes *which gates exist* (th
 
 **Every would-be ask becomes a recorded deferral.** Each gate that would have stopped for the user writes a **file-per-entry** record under **`specs/runs/<run-id>/`** (no-shared-file discipline) carrying the **decision**, the **rationale**, and **the artifact it would have shown** (by path or inline). Each entry is **committed with the work it explains**, on that work's branch. Silent deferral stays banned; *recorded* deferral is the mode's contract. The eight mode-aware skills reference this — specified here, once.
 
-**Cheap-model rework is ledgered too.** When a milestone built on a **cheaper-than-its-default** model (a `mechanical`-routed Sonnet build, per `${CLAUDE_PLUGIN_ROOT}/references/model-routing.md`) **bounces at verification**, record that bounce — **model + milestone slug** — as a file-per-entry record under `specs/runs/<run-id>/`, so a routing choice whose rework cost exceeds its token saving is visible at the debrief rather than hidden as sideways spend.
-
 ## 6. The debrief mandate (owned here)
 
 **The run is not complete until the debrief happens.** Adjudication is batched per feature into a **`review-feature` sitting** — `auto:feature` at feature end; `auto:run` per feature, batched at run end. There the user judges the rendered features against their references **and adjudicates the run's ledger entries**. Until then a feature is *built-verified-merged* — **never *feature-done***; flagged gaps become refinement milestones. Specified here, once; `review-feature` schedules against it.

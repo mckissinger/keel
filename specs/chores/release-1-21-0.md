@@ -48,3 +48,13 @@ effect is a [runtime] property that only a reinstall proves — carried into the
 (tag + plugin update on merge), correctly out of branch scope. The routing change's own `[attended]`
 dogfood (runtime honors the Fable 5 / Opus 5 pins at dispatch) belongs to `two-model-routing`, already
 landed — not re-opened by a version bump.
+
+verified: clean at b417954, 2026-07-26, via fresh-context keel:verifier subagent — exactly two files change
+(`.claude-plugin/plugin.json` version line `1.20.1`→`1.21.0` only, valid JSON at 1.21.0; this chore spec);
+`marketplace.json` unchanged with no version field; one commit ahead of main; skill count 29; history since
+`v1.20.1` (`b069d8a`) is exactly #179 (`316a04b`) + #181 (`b069d8a`) with no omitted or phantom entries;
+neither `scripts/` nor `decisions/` in the diff (no gate/guard/hook semantics touched → no `/security-review`);
+all 5 combined checks green (71 milestone + 35 chore specs, 29 skills, 62 anchors) + `plugin validate --strict`
++ self-tests (check-verified-pin 36/0, check-plan 21/0, merge-guard 102/0, guard-branch-rules 55/0). The
+installed-runtime pickup of 1.21.0 is the [runtime] reinstall — out of branch scope, closed by the post-merge
+tag + plugin update.

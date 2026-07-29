@@ -81,3 +81,31 @@ regression-locked before the `verified:` record is written. Adversarial focus fo
 fallback direction (an unusable `cwd` must degrade to today's behavior, never to silence), and whether
 any crafted `cwd` value could be eval'd or could point branch-state reads at an attacker-chosen repo
 while markers still read project-local.
+
+verified: clean-with-notes at d9b273c, 2026-07-29, via fresh-context verifier subagent (keel:verifier,
+`claude-fable-5` at `xhigh` per this milestone's reasoning-heavy escalation floor, decorrelated from the Opus-5
+build) against this spec's done-conditions — every `[auto]` condition evidenced with `file:line`: the `cwd`
+extraction on both reader paths in both scripts (guard-branch-rules.sh:102,114-122; merge-guard.sh:175,187-195),
+the single `GIT_CTX` derivation + `gitc` funnel (gbr:132-151, mg:205-224) with every enumerated git read converted
+(including merge-guard's `resolve_gh_context` probes :620-629, `decide()`'s ref resolution :651-656, and the
+pin-gate invocation :663), markers provably still ROOT-rooted with behavioral locks (a marker planted in the
+worktree is not read), the reader-less degrade byte-identical (zero diff hunks in either `CMD_PARSED -ne 1`
+block), both headers carrying the four documented points, the four-class worktree test matrix in both suites on a
+real `git worktree add` fixture, purely additive test diffs (no pre-existing expectation weakened), and the diff
+scope confirmed — empty diffs for `check-verified-pin.sh`, `repin.sh`, `check-auto-preflight.sh`,
+`hooks/hooks.json`. Full unfiltered suite run: 11 suites green (guard-branch-rules 67/0 was 55, merge-guard 116/0
+was 102, attended-marker-parity 12/0, check-auto-preflight 20/0, check-verified-pin 36/0, session-bootstrap 61/0,
+repin 13/0, plus the four lint self-tests), and `check-neutral.sh` + `check-skill-anchors.sh` (62 anchors) +
+`check-plan.sh` + `claude plugin validate --strict .` all PASS. Adversarial focus closed: the fallback degrades to
+today's exact behavior and never to silence; no crafted `cwd` can be eval'd, word-split, option-injected into
+`git -C`, or redirect the marker/gate-script paths (both ROOT-derived). **`/security-review` ran pre-pin as this
+line requires: no HIGH or MEDIUM findings** — three candidates (foreign-`GIT_CTX` gate substrate, repo-local-config
+execution via the gate's `git fetch`, default-branch misclassification) were each independently adjudicated at
+2/10 and excluded: hook `cwd` is trusted harness metadata (the same class as `CLAUDE_PROJECT_DIR`, which main
+already trusted for these very reads), the outcomes are strictly dominated by the already-documented and
+test-pinned `sh -c`/`eval`/`xargs` bypasses, the only reachable `allow` row delegates to server-side required
+checks, and the config-execution primitive is pre-existing (git honors the local repo's config either way). Two
+carried notes, neither a discrepancy: `gh pr view` still runs from ROOT (spec-conformant — the condition
+enumerates git reads; a mismatch yields ask/deny, never allow), and `cd "$GIT_CTX"` at merge-guard.sh:663 lacks
+`--` (worst case deny; no path to allow). The two logged uncertainties were judged genuine spec-silent calls, not
+deviations. (evidence: verifier report + security-review report in PR)

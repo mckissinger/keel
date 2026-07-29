@@ -22,6 +22,24 @@ These are the same in every generated repo and are exactly what the preflight as
   and *required* in branch protection.** A job that runs but is not a *required* status check
   does not gate the merge; the contract requires them **required**. This is what
   `scripts/check-auto-preflight.sh` check (b) asserts against the default branch's protection.
+
+  **The three arrive in two tiers — which is who wires what, not a weakening of the set.**
+  `verified-pin` + `plan-lint` are the **kickoff tier**: the attended kickoff wires them when the
+  repo is stood up (`skills/spec-foundation/SKILL.md`, `skills/adopt/SKILL.md`).
+  `security-review` is the **autonomy tier**: it is wired **before any auto posture arms** —
+  genesis wires all three at bootstrap (`decisions/2026-07-genesis-envelope.md`), and an
+  already-standing attended project wires it as **preflight remediation** when `auto:feature` /
+  `auto:run` hit the check-(b) gap. All three are still required **before auto**: the preflight
+  asserts the full set and fails closed, and the security-review check is auto mode's
+  compensating control for the classifier residual the human merge eyeball no longer covers
+  (`decisions/2026-07-autonomy-modes.md`). Dropping a job to clear the gate is never the fix.
+
+  **Recorded default implementation of the security-review job (as of 2026-07):** Anthropic's
+  `claude-code-security-review` GitHub Action, run on every code PR and exposed under a status
+  check named `security-review`. It is recorded as a **default that satisfies the contract, never
+  a mandate** — any job asserting the same class of review (a per-PR security read of the diff,
+  surfaced as a required status check) satisfies it, and the check name is config
+  (`PREFLIGHT_REQUIRED_CHECKS`), not a vendor hardcode.
 - **A committed `.claude/settings.json`** whose `permissions.allow` list covers the core
   command inventory the run issues — the allowlist `scripts/check-auto-preflight.sh` check (a)
   dry-runs the committed `specs/run-command-inventory.txt` shapes against.

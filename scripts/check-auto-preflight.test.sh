@@ -122,6 +122,14 @@ expect "missing branch protection fails" 1 "no readable branch protection"
 make_proj p5
 run_gate "$PROJ" "$TMP/protection-partial.json"
 expect "present-but-not-required check fails, named" 1 "'security-review' is not a REQUIRED status check"
+# 5b. That same failure is ACTIONABLE, in check-GENERIC wording (one message, no
+#     per-check branch): it names the remediation path — wire the job as a CI
+#     check, make it required, re-run — and where the tier's job set and each
+#     job's recorded default implementation live.
+if printf '%s' "$OUT" | grep -qF "make it a required status check" \
+  && printf '%s' "$OUT" | grep -qF "references/template-contract.md"; then
+  ok "check (b) failure names the remediation path (wire, require, re-run + the contract)"
+else bad "check (b) failure names the remediation path (wire, require, re-run + the contract)"; fi
 
 # 6. A contract env-var name that resolves nowhere → fail, the NAME named.
 make_proj p6

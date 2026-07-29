@@ -29,10 +29,20 @@ json_quote() { # raw string → JSON string literal (house pattern: jq, python3 
 }
 
 STUB_PATH=""
-run_guard() { # <repo> <command text> → OUT, RC (harness shape: JSON on stdin)
+run_guard() { # <repo> <command text> → OUT, RC (harness shape: JSON on stdin, NO cwd field)
   local repo="$1" cmd="$2" json
   json="$(json_quote "$cmd")"
   OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$json" \
+    | CLAUDE_PROJECT_DIR="$repo" PATH="${STUB_PATH:+$STUB_PATH:}$PATH" bash "$SCRIPT" 2>/dev/null)" && RC=0 || RC=$?
+}
+
+run_guard_cwd() { # <repo(ROOT)> <hook cwd> <command text> → OUT, RC
+  # Same harness, but the hook input carries the real PreToolUse `cwd` field —
+  # the directory the Bash call runs in, which need not be CLAUDE_PROJECT_DIR.
+  local repo="$1" cwd="$2" cmd="$3" json cjson
+  json="$(json_quote "$cmd")"
+  cjson="$(json_quote "$cwd")"
+  OUT="$(printf '{"tool_name":"Bash","cwd":%s,"tool_input":{"command":%s}}' "$cjson" "$json" \
     | CLAUDE_PROJECT_DIR="$repo" PATH="${STUB_PATH:+$STUB_PATH:}$PATH" bash "$SCRIPT" 2>/dev/null)" && RC=0 || RC=$?
 }
 
@@ -489,6 +499,83 @@ run_guard "$R1" 'eval "gh pr merge 5"'
 expect_silent "accepted limit: eval-carried merge is unclassified (silent allow)"
 run_guard "$R1" 'echo 5 | xargs gh pr merge'
 expect_silent "accepted limit: piped-xargs merge is unclassified (silent allow)"
+
+# ---- linked worktree: git state comes from the hook's cwd (GIT_CTX) ------------
+# The structurally-missing class: every case above sets CLAUDE_PROJECT_DIR EQUAL to
+# the checkout under test, so the worktree mismatch — the Bash call runs in the
+# worktree on a feature branch while CLAUDE_PROJECT_DIR still points at the main
+# checkout on the default branch — could never be observed. Asserted at the two
+# OBSERVABLE seams: push CLASSIFICATION (which reads HEAD) and, for merge-shaped
+# commands, the DECISION PATH — the refs decide() resolves and the directory the
+# pin gate runs in. Merge-shape classification itself is HEAD-independent by
+# design (`git merge main` names the default branch outright), so it triggers from
+# either cwd; only the decision path below can show which checkout was judged.
+
+make_repo r9 main symref; R9="$REPO"                # main checkout, sitting on main
+git -C "$R9" checkout -q -b feat-1                  # the PR head branch the gh stub reports
+git -C "$R9" checkout -q main
+WT9="$TMP/wt9-feature"                              # linked worktree, feature branch
+git -C "$R9" worktree add -b wt/milestone "$WT9" >/dev/null 2>&1
+mkdir -p "$R9/scripts"
+cat > "$R9/scripts/check-verified-pin.sh" <<'EOF'
+#!/usr/bin/env bash
+printf '%s|%s|%s\n' "${BASE_REF:-}" "${1:-}" "$PWD" > "$(dirname "$0")/../gate-call.txt"
+exit 0
+EOF
+chmod +x "$R9/scripts/check-verified-pin.sh"
+NOGIT9="$TMP/not-a-repo-9"; mkdir -p "$NOGIT9"      # a directory outside any work tree
+GONE9="$TMP/nonexistent-dir-9"                      # never created
+
+expect_gate_call() { # <desc> <expected "BASE|HEAD|pwd">
+  local got; got="$(cat "$R9/gate-call.txt" 2>/dev/null)"
+  if [ "$got" = "$2" ]; then ok "$1"
+  else bad "$1 (gate call: got '$got', want '$2')"; fi
+}
+
+# (i) push CLASSIFICATION resolves the worktree's HEAD: a bare `git push` from the
+#     worktree is not a push to the default branch → silent allow; the SAME command
+#     with cwd absent falls back to ROOT (on main) and classifies as today → ask.
+run_guard_cwd "$R9" "$WT9" 'git push'
+expect_silent "worktree cwd: bare git push (implicit feature branch) is not merge-shaped"
+run_guard "$R9" 'git push'
+expect_decision "no cwd field: bare git push from ROOT on the default branch → ask" ask "verified-pin gate passed"
+expect_gate_call "no cwd field: gate judged the ROOT checkout (HEAD=main, run in ROOT)" "origin/main|main|$R9"
+run_guard_cwd "$R9" "$WT9" 'git push origin main'
+expect_decision "worktree cwd: an EXPLICIT push to the default branch still triggers" ask
+
+# (ii) merge-shaped from the worktree: classification is HEAD-independent, so the
+#      DECISION PATH is the seam — decide()'s resolved HEAD_REF_R is the worktree's
+#      branch and the pin gate runs IN the worktree, while the gate SCRIPT's path
+#      still comes from ROOT.
+run_guard_cwd "$R9" "$WT9" 'git merge main'
+expect_decision "worktree cwd: git merge <default> → ask (gate consulted)" ask "verified-pin gate passed"
+expect_gate_call "worktree cwd: gate got HEAD_REF=<worktree branch> and ran in the worktree" "origin/main|wt/milestone|$WT9"
+run_guard "$R9" 'git merge main'
+expect_decision "no cwd field: git merge <default> → ask (unchanged)" ask "verified-pin gate passed"
+expect_gate_call "no cwd field: gate got HEAD_REF=main and ran in ROOT (today's resolution)" "origin/main|main|$R9"
+
+# (iii)/(iv) An unusable cwd degrades to the ROOT resolution — never to silence.
+run_guard_cwd "$R9" "$NOGIT9" 'git merge main'
+expect_decision "cwd outside any git work tree → fallback to ROOT → ask" ask "verified-pin gate passed"
+expect_gate_call "cwd outside a work tree: gate judged ROOT (HEAD=main, run in ROOT)" "origin/main|main|$R9"
+run_guard_cwd "$R9" "$GONE9" 'git push'
+expect_decision "nonexistent cwd → fallback to ROOT → bare push classifies as today (ask)" ask "verified-pin gate passed"
+run_guard_cwd "$R9" "" 'git push'
+expect_decision "empty cwd string → fallback to ROOT → bare push classifies as today (ask)" ask "verified-pin gate passed"
+
+# Markers stay project-rooted while git state follows cwd: the attended marker is
+# read from ROOT/.claude even when the merge is judged from the worktree, and a
+# marker planted in the WORKTREE's .claude/ is not read at all.
+STUB_PATH="$TMP/bin-ok"
+write_attended "$R9" "$ATT_JSON"
+run_guard_cwd "$R9" "$WT9" 'gh pr merge 123 --auto'
+expect_decision "marker at ROOT + worktree cwd → the attended row still fires (marker read from ROOT)" allow "attended auto-merge active"
+rm -f "$R9/.claude/keel-attended-merge.json"
+write_attended "$WT9" "$ATT_JSON"
+run_guard_cwd "$R9" "$WT9" 'gh pr merge 123 --auto'
+expect_decision "marker only in the worktree's .claude → not read → ask (markers are ROOT-rooted)" ask "verified-pin gate passed"
+rm -rf "$WT9/.claude"
+STUB_PATH=""
 
 # ---- shipped shape ------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "merge-guard.sh is executable"

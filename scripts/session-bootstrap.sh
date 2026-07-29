@@ -168,7 +168,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:
-- Autonomy mode ACTIVE — level: ${MODE_LEVEL}, scope: ${MODE_SCOPE}. Merge authority is delegated to the server-side required checks via gh pr merge --auto, per decisions/2026-07-autonomy-modes.md — the checks decide, never agent judgment. Ledger every would-be ask to specs/runs/<run-id>/ (recorded deferral; silent deferral stays banned). Stop-points still halt: go-live, live-key swaps, and spend beyond pre-authorized caps stay attended.
+- Autonomy mode ACTIVE — level: ${MODE_LEVEL}, scope: ${MODE_SCOPE}. Merge authority is delegated to the server-side required checks via gh pr merge --auto, per decisions/2026-07-05-autonomy-modes-v2.md + decisions/2026-07-genesis-envelope.md — the checks decide, never agent judgment. Ledger every would-be ask to specs/runs/<run-id>/ (recorded deferral; silent deferral stays banned). Stop-points still halt: go-live, live-key swaps, and spend beyond pre-authorized caps stay attended.
 - Never commit to main; builds run on branches.
 - A milestone's code merges only under the two-part control: a fresh-session verified pin (the verification half) plus the pin gate's drift check (no code changed since the pin). Neither half alone proves the other.
 - Never claim an unobservable outcome: a tool result cannot tell you whether a permission prompt appeared — a command reads the same whether it was approved or ran silently — so report only what the tool returned, never that something "merged without a prompt."

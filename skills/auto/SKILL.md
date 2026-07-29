@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Auto
 
-Run keel unattended, inside the one carve-out the doctrine grants. `decisions/2026-07-autonomy-modes.md` is the authority this skill executes: per-merge human approval is delegated to **GitHub's server-side required checks — never to agent judgment** — *only* under an active mode entered by an explicit human invocation. Like `kickoff`, this skill is **connective tissue**: it sequences the existing verbs (`spec-feature`, `implement-feature`, `land-feature`, `review-feature`) and re-implements none of them.
+Run keel unattended, inside the one carve-out the doctrine grants. `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md` are the authority this skill executes: per-merge human approval is delegated to **GitHub's server-side required checks — never to agent judgment** — *only* under an active mode entered by an explicit human invocation. Like `kickoff`, this skill is **connective tissue**: it sequences the existing verbs (`spec-feature`, `implement-feature`, `land-feature`, `review-feature`) and re-implements none of them.
 
 Three postures, one skill:
 
@@ -51,7 +51,7 @@ Both postures drive the existing verbs; the mode changes *which gates exist* (th
 
 ## 7. Stop-points — semantics unchanged
 
-A stop-point under a mode is what it always was: **halt and surface, never route around, never widen permissions mid-run.** A genuine block (an unenveloped action, a missing credential, un-pre-authorized spend) ends forward motion — remove the mode file, report the halt, wait attended. The **never-auto list is `decisions/2026-07-autonomy-modes.md` §(d)'s** — it lives there alone, not restated here or anywhere else; what it names stays attended under every posture.
+A stop-point under a mode is what it always was: **halt and surface, never route around, never widen permissions mid-run.** A genuine block (an unenveloped action, a missing credential, un-pre-authorized spend) ends forward motion — remove the mode file, report the halt, wait attended. The **never-auto list is `decisions/2026-07-genesis-envelope.md` §(c)'s** (of the superseding pair with `decisions/2026-07-05-autonomy-modes-v2.md`) — it lives there alone, not restated here or anywhere else; what it names stays attended under every posture.
 
 ## Genesis posture — `auto:genesis "<idea>"`
 
@@ -75,7 +75,7 @@ On approval (and only on approval), Phase 2 runs unattended:
 2. **Run `scripts/check-auto-preflight.sh`.** **A red preflight is a stop-point that ends the run attended** (step 7 semantics). Only a green preflight proceeds.
 3. **Write the mode file with `level: "genesis"`** — exactly per the mode-file contract in `scripts/merge-guard.sh`'s header, under the same **24h TTL** the guards enforce, this skill its only writer and clearer (steps 3 and 7 above).
 4. **Drive the existing verbs by reference** (no rule re-derived): **`spec-foundation`** in its **Under an active autonomy mode** carve-out (seeded by the approved skeleton), **`app-design-directions`** in its ledgered-pick carve-out (seeded by the approved board), then the **`auto:run` loop** — `spec-feature` → `implement-feature` → the `--auto` land path — feature by feature.
-5. **End at a preview deploy and the debrief.** The **never-auto list is `decisions/2026-07-autonomy-modes.md` §(d)'s** — referenced, never restated — and **genesis ends at preview, never live**.
+5. **End at a preview deploy and the debrief.** The **never-auto list is `decisions/2026-07-genesis-envelope.md` §(c)'s** — referenced, never restated — and **genesis ends at preview, never live**.
 
 ### Ledger + debrief deltas
 

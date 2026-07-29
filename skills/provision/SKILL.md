@@ -59,7 +59,7 @@ Auto mode **complements, never replaces**, the two things that actually keep an 
 
 ### Auto-provision envelope (an autonomy-mode run)
 
-Under an active `keel:auto` mode (the doctrine carve-out in `decisions/2026-07-autonomy-modes.md`), the run is headless with no user at the keyboard — and a headless auto run **aborts after repeated classifier blocks (3 consecutive / 20 total)**, so a single undrained prompt or missing credential doesn't pause the run, it kills it. That is why provisioning for an auto run is stricter than the attended posture above, in four shapes:
+Under an active `keel:auto` mode (the doctrine carve-out in `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), the run is headless with no user at the keyboard — and a headless auto run **aborts after repeated classifier blocks (3 consecutive / 20 total)**, so a single undrained prompt or missing credential doesn't pause the run, it kills it. That is why provisioning for an auto run is stricter than the attended posture above, in four shapes:
 
 - **A user-level provisioning profile.** The contracted CLIs are pre-authenticated at the **account/org level** — scopes sufficient to create project resources non-interactively — and the user maintains a **standing library of sandbox/test env vars** for the common services (test-mode payment keys, a spend-capped AI key, a sandbox database URL). A new project's contract is then satisfiable from the profile without a mid-run interactive login, which no longer has an attended moment to land in.
 

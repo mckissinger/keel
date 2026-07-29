@@ -50,7 +50,7 @@ Run the saved workflow `punch-list` with `{ slug, items: [{ id, condition, files
 
 ## Under an active autonomy mode
 
-Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the step-3 confirm gate becomes a **ledgered default**: record the scoped list (conditions + files + what was routed out) to the run ledger per `keel:auto`'s ledger contract and launch; the user adjudicates at the debrief. The scope-discipline guard and the batch-pin gate are unchanged.
+Under `keel:auto run` (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), the step-3 confirm gate becomes a **ledgered default**: record the scoped list (conditions + files + what was routed out) to the run ledger per `keel:auto`'s ledger contract and launch; the user adjudicates at the debrief. The scope-discipline guard and the batch-pin gate are unchanged.
 
 ## Where this sits
 

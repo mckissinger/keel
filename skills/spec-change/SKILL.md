@@ -47,7 +47,7 @@ Ends **attended**, on your sign-off. Then:
 
 ## Under an active autonomy mode
 
-Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the confirm-before-author gate and the sketch/review asks become **ledgered defaults**: record the synthesis and the named fidelity reference to the run ledger per `keel:auto`'s ledger contract and proceed; the user adjudicates at the debrief. The done-condition standard and the plan pass are unchanged.
+Under `keel:auto run` (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), the confirm-before-author gate and the sketch/review asks become **ledgered defaults**: record the synthesis and the named fidelity reference to the run ledger per `keel:auto`'s ledger contract and proceed; the user adjudicates at the debrief. The done-condition standard and the plan pass are unchanged.
 
 ## Where this sits in the grain ladder
 

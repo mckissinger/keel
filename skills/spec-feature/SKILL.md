@@ -77,7 +77,7 @@ The session ends **attended**, on your sign-off of the composed feature story / 
 
 ## Under an active autonomy mode
 
-Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the confirm-before-author gate and the redline become a **ledgered synthesis**: take the recorded defaults, write the synthesis and the composed reference to the run ledger per `keel:auto`'s ledger contract, and proceed; the user adjudicates at the debrief. The feature spec's `flow research:` line and any sketch lineage double as the run-ledger record for those steps — no new gate. The done-condition standard, the plan pass, and the plan PR are unchanged. Outside a mode, the attended gates above hold exactly.
+Under `keel:auto run` (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), the confirm-before-author gate and the redline become a **ledgered synthesis**: take the recorded defaults, write the synthesis and the composed reference to the run ledger per `keel:auto`'s ledger contract, and proceed; the user adjudicates at the debrief. The feature spec's `flow research:` line and any sketch lineage double as the run-ledger record for those steps — no new gate. The done-condition standard, the plan pass, and the plan PR are unchanged. Outside a mode, the attended gates above hold exactly.
 
 ## Cadence — interleaved or batched, both valid
 

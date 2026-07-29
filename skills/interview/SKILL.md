@@ -40,7 +40,7 @@ After the round, **synthesize the resolved understanding — the goal, the decis
 
 ## Under an active autonomy mode
 
-Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md`), the question round and the synthesis-and-confirm gate become **ledgered defaults**: default every open decision from the recorded context, write the synthesis to the run ledger per `keel:auto`'s ledger contract, and proceed; the user adjudicates at the debrief. Outside a mode, the attended gates above hold exactly.
+Under `keel:auto run` (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), the question round and the synthesis-and-confirm gate become **ledgered defaults**: default every open decision from the recorded context, write the synthesis to the run ledger per `keel:auto`'s ledger contract, and proceed; the user adjudicates at the debrief. Outside a mode, the attended gates above hold exactly.
 
 ## Greenfield kickoff: you are the app-skeleton gate
 

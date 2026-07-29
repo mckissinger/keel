@@ -32,7 +32,11 @@
 //
 // Expects in the campaign dir (committed intent, read-only to this script):
 //   stop-conditions.json  { "bounce_rate_max": 0.03, "complaint_rate_max": 0.001,
-//                           "reply_rate_min": 0.01, "budget_cap": 500 }
+//                           "reply_rate_min": 0.01, "reply_rate_min_after": 200,
+//                           "budget_cap": 500 }
+//     NOTE: the reply-rate floor only arms when BOTH reply_rate_min and
+//     reply_rate_min_after (the send count after which the floor applies)
+//     are present — omit either and the floor check never fires.
 //   pins.json             { "product_repo": "<name>", "commit": "<sha>", "paths": [...] }
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";

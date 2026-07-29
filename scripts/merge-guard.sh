@@ -48,7 +48,7 @@
 # writer, and nothing extends a marker's life except a fresh human invocation.
 #
 # Under a VALID mode file, exactly one row of the decision table changes
-# (per decisions/2026-07-autonomy-modes.md — delegation to GitHub's required
+# (per decisions/2026-07-05-autonomy-modes-v2.md + decisions/2026-07-genesis-envelope.md — delegation to GitHub's required
 # checks, never to agent judgment):
 #
 #   the canonical `gh pr merge ... --auto` shape + gate PASS → "allow"
@@ -594,7 +594,7 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
       # is bound through a variable so the self-test's static scan — a
       # tripwire against a bare unconditional allow literal — stays live.
       d_auto="allow"
-      emit "$d_auto" "autonomy mode active (level: $MODE_LEVEL) — gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-autonomy-modes.md); GitHub merges when and only when the required checks pass"
+      emit "$d_auto" "autonomy mode active (level: $MODE_LEVEL) — gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-05-autonomy-modes-v2.md + decisions/2026-07-genesis-envelope.md); GitHub merges when and only when the required checks pass"
     elif [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
       # The attended sibling of the mode row (header contract): a per-session,
       # human-set marker drops the redundant per-merge tap on the same bare

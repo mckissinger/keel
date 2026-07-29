@@ -82,7 +82,9 @@ always-allowed unattended write — doctrine §4):
 
 - Bounce-rate ceiling: <e.g. 3%> (mandatory)
 - Complaint-rate ceiling: <e.g. 0.1%> (mandatory)
-- Reply-rate floor: <e.g. below 1% after n sends>
+- Reply-rate floor: <e.g. below 1% after n sends> — in stop-conditions.json
+  this is TWO fields, both required to arm the check: `reply_rate_min` (the
+  floor) and `reply_rate_min_after` (the send count after which it applies)
 - Budget cap: <amount>
 - <campaign-specific additions>
 

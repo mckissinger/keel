@@ -157,7 +157,7 @@ The workbench verb is **profile-driven**. On the hardened web stack it is a **`/
 
 ## Under an active autonomy mode
 
-Under `keel:auto run` (per `decisions/2026-07-autonomy-modes.md` §(c) — an explicitly accepted trade), the Phase 3 pick is the agent's: pick a direction and **ledger the rationale plus the comparison artifact** (the compare gallery and the direction specs) to the run ledger per `keel:auto`'s ledger contract, then proceed; the user adjudicates at the debrief, and a possible redesign pass is the accepted cost of zero interrupts. Every other phase runs unchanged.
+Under `keel:auto run` (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md` — an explicitly accepted trade), the Phase 3 pick is the agent's: pick a direction and **ledger the rationale plus the comparison artifact** (the compare gallery and the direction specs) to the run ledger per `keel:auto`'s ledger contract, then proceed; the user adjudicates at the debrief, and a possible redesign pass is the accepted cost of zero interrupts. Every other phase runs unchanged.
 
 ## Tone with the user
 

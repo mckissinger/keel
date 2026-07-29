@@ -49,7 +49,7 @@ Keep the orchestrator's retained state thin (a ledger: slug → branch → PR �
 
 ## Under an active autonomy mode
 
-Under an active `keel:auto` mode (per `decisions/2026-07-autonomy-modes.md`), two gates change: the cadence ask becomes a **ledgered default** (per `keel:auto`'s ledger contract under `specs/runs/<run-id>/`), and "stops at merge" becomes **enable `gh pr merge --auto` on each pinned, gate-passing PR — per the `land-feature` choreography — and proceed**. Everything else (fresh-context verification, pin discipline, the branch guard) is unchanged. Outside a mode, this section does not apply.
+Under an active `keel:auto` mode (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), two gates change: the cadence ask becomes a **ledgered default** (per `keel:auto`'s ledger contract under `specs/runs/<run-id>/`), and "stops at merge" becomes **enable `gh pr merge --auto` on each pinned, gate-passing PR — per the `land-feature` choreography — and proceed**. Everything else (fresh-context verification, pin discipline, the branch guard) is unchanged. Outside a mode, this section does not apply.
 
 ## Output
 

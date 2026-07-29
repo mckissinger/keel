@@ -112,7 +112,7 @@ guards are back to today's ask / deny / exit-2 matrix.
   keeps the model from calling it; the human invocation is the whole authorization trail — the same
   pattern by which `keel:auto` is the sole writer of the autonomy mode file.
 - **Autonomy mode wins.** When a valid `.claude/keel-autonomy.json` is active, the attended marker
-  is ignored — the autonomy path governs that decision (`decisions/2026-07-autonomy-modes.md`).
+  is ignored — the autonomy path governs that decision (`decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`).
 - **The load-bearing gates are untouched.** The verified-pin gate still denies unverified code, and
   `--auto` still lands only when the branch's required checks pass. A stale or forged marker cannot
   merge unsafe code — the same backstop `specs/deferrals/mode-file-binding-ttl.md` records for the

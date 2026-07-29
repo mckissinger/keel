@@ -96,3 +96,36 @@ milestone edits the autonomy entry gate's contract prose and failure messaging: 
 question is whether any wording change weakens the compensating control or opens a path to arming auto
 without the third check (it must not — the preflight's pass/fail matrix is proven unchanged by the
 existing test expectations), with confirmed findings remediated before the pin.
+
+verified: clean-with-notes at b3d343e, 2026-07-29, via fresh-context verifier subagent (keel:verifier,
+`claude-fable-5` at `xhigh` per this milestone's reasoning-heavy escalation floor, decorrelated from the Opus-5
+build) against this spec's done-conditions — all 11 `[auto]` conditions evidenced with `file:line`: the preflight's
+gating logic byte-identical (one hunk, **one changed line** — the gap message at `check-auto-preflight.sh:145`;
+`REQUIRED_CHECKS` still `verified-pin plan-lint security-review` at :49, override and check-(b) semantics
+untouched), the remediation wording check-generic (interpolates `$want`, no per-check conditional) and closing on
+"never drop a job from the required set"; the test diff purely additive (new case 5b; test 5's original assertion
+still matches); the tier split stated on all five prose surfaces (`template-contract.md:26-42`, `provision:72`
+with line 52 untouched, `spec-foundation:122`, `adopt:40`, `auto:29,31`) each carrying an explicit anti-weakening
+clause; the recorded default implementation genuinely hedged (as-of-2026-07 dated, "never a mandate", check name
+config not vendor hardcode); the new `decisions/2026-07-29-security-review-wiring.md` recording the contradiction,
+the falsified first draft and **both** falsifiers as separate grounds, and the direction chosen; empty diffs
+confirmed across the decisions layer (`2026-07-autonomy-modes.md`, `-v2`, `genesis-envelope.md`,
+`specs/deferrals/per-project-auto-merge.md`), the per-milestone gate (`verify-milestone`,
+`milestones-and-verification`), and every other gate script + `hooks/hooks.json`; and the corpus grep re-run by
+the verifier with every hit falling in a named bucket — no file claims the kickoff wires the security-review job,
+none leaves the required check without a stated wiring path. Adversarial focus closed: **no surface reads as "two
+required checks is enough to arm auto."** Full unfiltered suite run: 11 suites, **390 passed / 0 failed**
+(check-auto-preflight 21, was 20), plus `check-skill-anchors.sh` (62 anchors), `check-skill-frontmatter.sh` (29
+skills), `check-neutral.sh`, `check-plan.sh`, and `claude plugin validate --strict .` all PASS.
+**`/security-review` ran pre-pin as this line requires: no HIGH or MEDIUM findings** — adjudicated
+security-neutral on the gate and security-positive on net: the gating logic is provably unchanged, the new message
+teaches wiring rather than circumvention (the old message dead-ended, and a dead-ended operator is who reaches for
+the override), no prose authorizes arming with fewer than three checks, the named default Action carries no
+copy-pasteable unpinned `uses:` reference, and `adopt` wiring `plan-lint` closes a real missing-gate bug in
+brownfield retrofits. Two builder-declared items adjudicated non-blocking: `adopt`'s frontmatter description edit
+is an in-scope consequence (the mandated body edit made the old description false), and `spec-foundation:118`'s
+under-a-mode wiring summary is outside the spec's scoped edit (it never mentions security-review and cannot be
+read as "two suffice") — queued as a future micro-chore. One pre-existing property noted by both passes, unchanged
+here: check (b) asserts a required check *named* `security-review`, not that the job performs a real review —
+future hardening would assert workflow content, not just the name. (evidence: verifier + security-review reports
+in PR)

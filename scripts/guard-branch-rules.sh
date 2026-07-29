@@ -20,6 +20,35 @@
 # Exit 2 blocks the tool call and feeds stderr back to Claude (PreToolUse exit-code
 # semantics per https://code.claude.com/docs/en/hooks).
 #
+# --- Git context (GIT_CTX) vs project root (ROOT) ----------------------------
+#
+# A build session may run in a LINKED WORKTREE: the Bash call executes in the
+# worktree (on the milestone branch) while CLAUDE_PROJECT_DIR still points at the
+# main checkout (on the default branch). Judging the wrong checkout there either
+# hard-blocks a legitimate milestone commit or would hide a commit on the default
+# branch. So BRANCH STATE resolves from the hook input's `cwd` — the directory the
+# tool call actually runs in — whenever that is USABLE, meaning an existing
+# directory inside a git work tree (`git -C <dir> rev-parse --is-inside-work-tree`
+# = true). Fallback order when `cwd` is absent or unusable: CLAUDE_PROJECT_DIR,
+# then PWD — i.e. today's exact resolution, so every non-worktree behavior is
+# byte-for-byte unchanged. EVERY git read here (default-branch detection, the
+# remotes list, the HEAD reads behind the push and commit rules) runs against that
+# one resolved GIT_CTX, through the single `gitc` helper.
+#
+# MARKER FILES stay rooted at ROOT="${CLAUDE_PROJECT_DIR:-$PWD}" — never a path
+# derived from `cwd`. They are project-scoped state written only by a
+# human-invoked skill into the project's own .claude/, and worktrees never carry
+# them; keeping them ROOT-rooted also means a crafted `cwd` can never point the
+# marker reads at an attacker-chosen file. The split is exactly: git state from
+# GIT_CTX, marker files from ROOT.
+#
+# `cwd` is PARSED AS DATA — string-typed, the same discipline as the command text
+# — and is only ever passed as a quoted argument to `git -C` / `cd`, never eval'd.
+# A `git -C <elsewhere>` inside the GUARDED COMMAND remains an accepted
+# classification limit (this guard judges the checkout the command runs IN, not a
+# per-invocation -C override); branch protection + required checks stay the
+# authority.
+#
 # Accepted classification limits (same set as merge-guard.sh): a text
 # classifier cannot see through shell reassembly — `sh -c`, `eval`, piped
 # `xargs`, aliases — by design; branch protection + required checks are the
@@ -31,7 +60,10 @@
 #
 # The merge-shape classifier is DUPLICATED from merge-guard.sh on purpose —
 # m1's precedent keeps hook scripts self-contained (no sibling sourcing, so each
-# survives plugin-cache path churn and reads standalone). Keep the two in sync.
+# survives plugin-cache path churn and reads standalone). The hook-input reader
+# (BOTH fields: tool_input.command and `cwd`, on both the jq and python3 paths)
+# and the GIT_CTX resolution above are DUPLICATED for the same reason. Keep the
+# two in sync.
 # The marker readers (json_str, created_fresh, read_mode_file,
 # read_attended_marker) and the detect_strict_auto whitelist are likewise
 # DUPLICATED from merge-guard.sh (the marker's reading owner) — same
@@ -57,12 +89,17 @@ cd "$ROOT" 2>/dev/null || true
 
 # --- hook input --------------------------------------------------------------
 
-CMD="" CMD_PARSED=0 RAW=""
-read_hook_command() { # stdin JSON → CMD (tool_input.command), CMD_PARSED
+CMD="" CMD_PARSED=0 RAW="" HOOK_CWD=""
+read_hook_command() { # stdin JSON → CMD (tool_input.command), HOOK_CWD (cwd), CMD_PARSED
+  # `cwd` — the directory this tool call runs in — is read on BOTH reader paths,
+  # STRING-TYPED (jq select(type)/python3 isinstance, so a wrong-typed field reads
+  # as absent) and kept as DATA: it is only ever a quoted `git -C` / `cd`
+  # argument, never eval'd. Reader-less: no JSON reader → no `cwd` either.
   local input
   input="$(cat 2>/dev/null || true)"
   if command -v jq >/dev/null 2>&1; then
     CMD="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
+    HOOK_CWD="$(printf '%s' "$input" | jq -r '.cwd | select(type=="string")' 2>/dev/null || true)"
     CMD_PARSED=1
   elif command -v python3 >/dev/null 2>&1; then
     CMD="$(printf '%s' "$input" | python3 -c '
@@ -74,6 +111,15 @@ except Exception:
 c = (d.get("tool_input") or {}).get("command") or ""
 sys.stdout.write(c if isinstance(c, str) else "")
 ' 2>/dev/null || true)"
+    HOOK_CWD="$(printf '%s' "$input" | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+w = d.get("cwd")
+sys.stdout.write(w if isinstance(w, str) else "")
+' 2>/dev/null || true)"
     CMD_PARSED=1
   else
     RAW="$input"
@@ -81,17 +127,40 @@ sys.stdout.write(c if isinstance(c, str) else "")
   return 0
 }
 
+# --- git context (see the GIT_CTX contract in the header) ----------------------
+
+GIT_CTX="$ROOT"
+resolve_git_ctx() { # first USABLE of hook `cwd` → CLAUDE_PROJECT_DIR → PWD
+  # Usable = an existing directory inside a git work tree. Nothing usable → ROOT,
+  # so the git reads resolve (and fail) exactly as they do today.
+  local d
+  for d in "$HOOK_CWD" "${CLAUDE_PROJECT_DIR:-}" "$PWD"; do
+    [ -n "$d" ] && [ -d "$d" ] || continue
+    if [ "$(git -C "$d" rev-parse --is-inside-work-tree 2>/dev/null || true)" = "true" ]; then
+      GIT_CTX="$d"
+      return 0
+    fi
+  done
+  GIT_CTX="$ROOT"
+  return 0
+}
+
+gitc() { # the ONE git-read mechanism: every branch-state read runs in GIT_CTX
+  # Marker reads deliberately do NOT go through here — they stay at ROOT.
+  git -C "$GIT_CTX" "$@"
+}
+
 # --- default branch ----------------------------------------------------------
 
-detect_default_branch() { # origin/HEAD → main/master probe → "main"
+detect_default_branch() { # origin/HEAD → main/master probe → "main" (read in GIT_CTX)
   local ref b
-  if ref="$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null)"; then
+  if ref="$(gitc symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null)"; then
     printf '%s\n' "${ref#refs/remotes/origin/}"
     return 0
   fi
   for b in main master; do
-    if git show-ref --verify --quiet "refs/heads/$b" 2>/dev/null \
-      || git show-ref --verify --quiet "refs/remotes/origin/$b" 2>/dev/null; then
+    if gitc show-ref --verify --quiet "refs/heads/$b" 2>/dev/null \
+      || gitc show-ref --verify --quiet "refs/remotes/origin/$b" 2>/dev/null; then
       printf '%s\n' "$b"
       return 0
     fi
@@ -186,7 +255,7 @@ classify_git_push() {
       dst="${spec##*:}"
       dst="${dst#refs/heads/}"
       if [ "$dst" = "HEAD" ]; then
-        dst="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+        dst="$(gitc rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
       fi
       if [ -n "$dst" ] && [ "$dst" = "$DEFAULT_BRANCH" ]; then
         SHAPE="git-push"
@@ -196,7 +265,7 @@ classify_git_push() {
     I=$((I + 1))
   done
   if [ "$pos" -le 1 ]; then # bare `git push` [remote]: implicit current branch
-    cur="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+    cur="$(gitc rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
     if [ -n "$cur" ] && [ "$cur" = "$DEFAULT_BRANCH" ]; then SHAPE="git-push"; fi
   fi
   return 0
@@ -284,6 +353,8 @@ classify_cmd() { # <command text> → SHAPE, GH_PR_ARG, GIT_COMMIT
 # scripts/attended-marker-parity.test.sh). The mode file is read too, only to
 # enforce autonomy precedence: a valid autonomy mode makes the attended marker
 # ignored here (turning autonomy mode on suppresses the attended defer).
+# BOTH markers are read from $ROOT — the project dir — never from GIT_CTX or any
+# path derived from the hook's `cwd` (the header's GIT_CTX vs ROOT split).
 
 json_str() { # <json> <key> → prints the value ONLY if it is a string, or nothing
   if command -v jq >/dev/null 2>&1; then
@@ -430,8 +501,9 @@ if [ "$CMD_PARSED" -ne 1 ]; then
 fi
 if [ -z "$CMD" ]; then exit 0; fi           # not a Bash command payload
 
+resolve_git_ctx # branch state comes from the checkout the command runs in
 DEFAULT_BRANCH="$(detect_default_branch)"
-REMOTES="$(git remote 2>/dev/null | tr '\n' ' ' || true)"
+REMOTES="$(gitc remote 2>/dev/null | tr '\n' ' ' || true)"
 if [ -z "${REMOTES// /}" ]; then REMOTES="origin"; fi
 
 classify_cmd "$CMD"
@@ -453,7 +525,7 @@ if [ -n "$SHAPE" ]; then
 fi
 
 if [ "$GIT_COMMIT" -eq 1 ]; then
-  CUR="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  CUR="$(gitc rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
   if [ -n "$CUR" ] && [ "$CUR" = "$DEFAULT_BRANCH" ]; then
     echo "keel: git commit on the default branch ($DEFAULT_BRANCH) is blocked in build sessions — branch first (git checkout -b <milestone-slug>), then commit. Builds run on branches; the default branch only advances by the user's reviewed merges." >&2
     exit 2

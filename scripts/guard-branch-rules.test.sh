@@ -27,10 +27,21 @@ json_quote() { # raw string → JSON string literal (house pattern: jq, python3 
   fi
 }
 
-run_rules() { # <repo> <command text> → OUT (stdout), ERR (stderr), RC
+run_rules() { # <repo> <command text> → OUT (stdout), ERR (stderr), RC — NO cwd field
   local repo="$1" cmd="$2" json
   json="$(json_quote "$cmd")"
   OUT="$(printf '{"tool_name":"Bash","tool_input":{"command":%s}}' "$json" \
+    | CLAUDE_PROJECT_DIR="$repo" bash "$SCRIPT" 2>"$TMP/err.txt")" && RC=0 || RC=$?
+  ERR="$(cat "$TMP/err.txt" 2>/dev/null)"
+}
+
+run_rules_cwd() { # <repo(ROOT)> <hook cwd> <command text> → OUT, ERR, RC
+  # Same harness, but the hook input carries the real PreToolUse `cwd` field —
+  # the directory the Bash call runs in, which need not be CLAUDE_PROJECT_DIR.
+  local repo="$1" cwd="$2" cmd="$3" json cjson
+  json="$(json_quote "$cmd")"
+  cjson="$(json_quote "$cwd")"
+  OUT="$(printf '{"tool_name":"Bash","cwd":%s,"tool_input":{"command":%s}}' "$cjson" "$json" \
     | CLAUDE_PROJECT_DIR="$repo" bash "$SCRIPT" 2>"$TMP/err.txt")" && RC=0 || RC=$?
   ERR="$(cat "$TMP/err.txt" 2>/dev/null)"
 }
@@ -278,6 +289,69 @@ for RP in "$LEAN_PY" "$LEAN_JQ"; do
   expect_silent "$rn: fresh attended marker + bare --auto → exit 0 (defer row unchanged)"
   rm -f "$R3/.claude/keel-attended-merge.json"
 done
+
+# ---- linked worktree: branch state comes from the hook's cwd (GIT_CTX) ---------
+# The structurally-missing class: until now every case set CLAUDE_PROJECT_DIR
+# EQUAL to the checkout under test, so the worktree mismatch — the Bash call runs
+# in the worktree on the milestone branch while CLAUDE_PROJECT_DIR still points at
+# the main checkout on the default branch — could never be observed. A real
+# `git worktree add` fixture pins all four classes: cwd=worktree (the misfire,
+# now a regression), cwd=main checkout (the rule still bites), no cwd field
+# (today's matrix byte-for-byte), and an unusable cwd (fallback to ROOT).
+
+make_repo r5; R5="$REPO"                          # main checkout, sitting on main
+WT5="$TMP/wt5-feature"                            # linked worktree, feature branch
+git -C "$R5" worktree add -b wt/milestone "$WT5" >/dev/null 2>&1
+NOGIT="$TMP/not-a-repo"; mkdir -p "$NOGIT"        # a directory outside any work tree
+GONE="$TMP/nonexistent-dir"                       # never created
+
+# (i) ROOT = main checkout on main, cwd = worktree on the feature branch → the
+#     commit is judged against the WORKTREE's HEAD → exit 0. (The misfire that
+#     hard-blocked a milestone's final commit in an earlier build session.)
+run_rules_cwd "$R5" "$WT5" 'git commit -m "milestone work"'
+expect_silent "worktree cwd on a feature branch (ROOT on main): git commit → exit 0"
+run_rules_cwd "$R5" "$WT5" 'git add -A && git commit -m "milestone work"'
+expect_silent "worktree cwd: compound add+commit → exit 0 (classified from the worktree HEAD)"
+
+# (ii) cwd = the main checkout, which is on the default branch → still exit 2.
+run_rules_cwd "$R5" "$R5" 'git commit -m "quick fix"'
+expect_block "main-checkout cwd on the default branch: git commit → exit 2" "branch first"
+
+# (iii) No cwd field at all → today's matrix, byte-for-byte (ROOT resolution).
+run_rules "$R5" 'git commit -m "quick fix"'
+expect_block "no cwd field: commit on the default branch via CLAUDE_PROJECT_DIR → exit 2" "branch first"
+
+# (iv) An unusable cwd — a directory outside any work tree, or one that does not
+#      exist — degrades to the ROOT resolution: the matrix is unchanged, never silent.
+run_rules_cwd "$R5" "$NOGIT" 'git commit -m "quick fix"'
+expect_block "cwd outside any git work tree → fallback to ROOT → exit 2" "branch first"
+run_rules_cwd "$R5" "$GONE" 'git commit -m "quick fix"'
+expect_block "nonexistent cwd → fallback to ROOT → exit 2" "branch first"
+run_rules_cwd "$R5" "" 'git commit -m "quick fix"'
+expect_block "empty cwd string → fallback to ROOT → exit 2" "branch first"
+
+# The push rule reads the same resolved context: a bare `git push` from the
+# worktree is not a push to the default branch, while from the main checkout it is.
+run_rules_cwd "$R5" "$WT5" 'git push'
+expect_silent "worktree cwd: bare git push (implicit feature branch) → exit 0"
+run_rules_cwd "$R5" "$R5" 'git push'
+expect_block "main-checkout cwd: bare git push (implicit default branch) → exit 2" "never merge"
+run_rules_cwd "$R5" "$WT5" 'git push origin main'
+expect_block "worktree cwd: an EXPLICIT push to the default branch is still blocked" "never merge"
+
+# Markers stay project-rooted: the attended marker is read from ROOT/.claude even
+# when git state comes from the worktree — and a marker planted in the WORKTREE's
+# .claude/ is not read at all (worktrees never carry them).
+git -C "$R5" checkout -q -b feat/other # keep ROOT off the default branch for the defer rows
+write_attended "$R5" "$ATT_JSON"
+run_rules_cwd "$R5" "$WT5" 'gh pr merge 123 --auto'
+expect_silent "marker at ROOT + worktree cwd → exit 0 (marker read from ROOT, not cwd)"
+rm -f "$R5/.claude/keel-attended-merge.json"
+write_attended "$WT5" "$ATT_JSON"
+run_rules_cwd "$R5" "$WT5" 'gh pr merge 123 --auto'
+expect_block "marker only in the worktree's .claude → not read → exit 2 (markers are ROOT-rooted)" "never merge"
+rm -rf "$WT5/.claude"
+git -C "$R5" checkout -q main
 
 # ---- shipped shape --------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "guard-branch-rules.sh is executable"

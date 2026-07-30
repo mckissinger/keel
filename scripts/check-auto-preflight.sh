@@ -142,7 +142,7 @@ if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
 $contexts
 EOF
       [ "$found" -eq 1 ] \
-        || gap "protection: check '$want' is not a REQUIRED status check in branch protection on '$default_branch' (a check that exists but is not required does not gate the merge)"
+        || gap "protection: check '$want' is not a REQUIRED status check in branch protection on '$default_branch' (a check that exists but is not required does not gate the merge) — remediate attended: wire '$want' as a CI check job, make it a required status check on '$default_branch', then re-run this preflight. Which jobs the autonomy tier requires, and the recorded default implementation of each, live in keel's references/template-contract.md tier 1. Never drop a job from the required set to get past this gate."
     done
   else
     gap "protection: no readable branch protection on '$default_branch' (gh api .../protection failed — configure it attended before an auto run)"

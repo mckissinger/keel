@@ -1,0 +1,21 @@
+# land-feature-wave-contract — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The two rules of the wave-scripting contract, pinned clause by clause: each
+# literal below carries its rule's operative meaning (the refusal, the decoupled
+# alternative, pending-is-not-failure, the observed-CI window), so a reword that
+# guts the rule also drops the anchor. Each was confirmed present verbatim on ONE
+# physical line in its named file — check-skill-anchors.sh matches fixed strings
+# (grep -F) line-by-line. No negative anchors: pure addition, nothing retired.
+
+# --- rule 1, deletion scope: refuse a partial argument list, delete nothing ---
+skills/land-feature/SKILL.md	must refuse to run unless its argument list equals the full remaining open stack** — derivable from `gh pr list` by walking each open PR's base back to `main` — and on a partial list must **exit non-zero having deleted nothing
+
+# --- rule 1, the equally valid alternative: deletion decoupled to a post-wave step ---
+skills/land-feature/SKILL.md	decouple branch deletion into an explicit post-wave step** that runs only after every stacked PR is merged or retargeted
+
+# --- rule 2, check-wait semantics: pending is distinct from failure, not a failure marker ---
+skills/land-feature/SKILL.md	keep pending distinct from failure by exit code and message** and never emit a failure marker for it
+
+# --- rule 2, the window is sized to measured CI, not a default ---
+skills/land-feature/SKILL.md	Size the window to the project's observed CI duration**, measured from real runs on this repo, never a script default

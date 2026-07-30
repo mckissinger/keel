@@ -45,3 +45,28 @@ yes. **Routing:** mechanical — the rules are settled by the field evidence; th
 verifier subagent against this file — each `[auto]` condition checked with `file:line` evidence; the
 lints and suites run, not re-derived. **Dispatch the verifier at `high`** (mechanical). No
 `/security-review` — no gate, guard, or script changes; the prose-only diff condition is the proof.
+
+verified: clean-with-notes at 5902911, 2026-07-29, via fresh-context verifier subagent (keel:verifier,
+`claude-fable-5` at `high` per this mechanical milestone, decorrelated from the Opus-5 build) against this spec's
+done-conditions — every `[auto]` condition evidenced with `file:line`: the subsection at
+`skills/land-feature/SKILL.md:29-34`, placed between the numbered stacked-series sequence and the cascade section
+and well before Boundaries, carrying both rules with every enumerated specific (deletion scope — refuse unless the
+argument list equals the full remaining open stack, derivable from `gh pr list` by walking each open PR's base
+back to `main`, exiting non-zero having deleted nothing on a partial list, or deletion decoupled into an explicit
+post-wave step gated on every stacked PR being merged or retargeted; check-wait — an exhausted window reports
+"still pending — re-check", kept distinct from failure by exit code and message, never a failure marker, with the
+window sized to the project's observed CI duration rather than a script default). The two-readers bar was judged
+**strictly and passes**: both rules' rationale is self-contained in the subsection. The scar is carried in one
+sentence with no project name or foreign PR number leaking (grep-verified). The change is **pure insertion** — one
+hunk, 7 insertions, 0 deletions — so the numbered sequence, cascade, diamond, consolidated check, reconciliation,
+Boundaries, and autonomy-mode sections all have empty diffs. Four anchors added in
+`scripts/skill-anchors/land-feature-wave-contract.txt`, house format, each present verbatim (lint 62→66 anchors,
+10→11 files). Adversarially confirmed: the rules are codable, they reference rather than duplicate step 2 and stay
+consistent with step 5, and they bind observable behavior only — no implementation overreach. Full unfiltered
+suite run: 11 suites, **389 passed / 0 failed**, plus `check-skill-anchors.sh`, `check-skill-frontmatter.sh` (29
+skills), `check-neutral.sh`, `check-plan.sh`, and `claude plugin validate --strict .` all PASS. No
+`/security-review` — prose + anchors only, no gate/guard/script behavior touched, as this line's proof requires.
+Two non-blocking notes: the two `specs/uncertainties/` records ride the branch in a separate commit (plan paths per
+§5, which mandates they ride the milestone branch — the milestone commit's own diff is exactly the two permitted
+paths), and the skill hardens the spec's "e.g. by exit code and message" example into a requirement. Both logged
+uncertainties were judged genuine spec-silent calls. (evidence: verifier report in PR)

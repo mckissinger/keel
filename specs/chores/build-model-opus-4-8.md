@@ -31,3 +31,5 @@ specs/decisions/release notes keep their Opus 5 text.
 ## Combined checks
 
 `bash scripts/check-verified-pin.test.sh` (36 passed), `bash scripts/check-neutral.test.sh` (17 passed), `bash scripts/check-plan.test.sh` (21 passed), `bash scripts/check-neutral.sh` (PASS), `bash scripts/check-plan.sh` (PASS), `bash scripts/check-skill-frontmatter.sh` (PASS), `bash scripts/check-skill-anchors.sh` (PASS) — all green on the branch.
+
+verified: clean at 6e69f34, 2026-08-01, via fresh-session verifier (all four done-conditions plus verifier-pin, historical-record, and scope checks confirmed with file:line evidence)

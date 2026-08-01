@@ -9,4 +9,6 @@ Single-item chore: the pre-pin review-type picker for algorithmic/logic-heavy mi
 
 ## Combined checks
 
-`bash scripts/check-verified-pin.test.sh`, `bash scripts/check-neutral.test.sh`, `bash scripts/check-neutral.sh`, `bash scripts/check-plan.test.sh`, `bash scripts/check-plan.sh`, `bash scripts/check-skill-frontmatter.sh`, `bash scripts/check-skill-anchors.sh` — run on the branch before the pin.
+`bash scripts/check-verified-pin.test.sh` (36 passed), `bash scripts/check-neutral.test.sh` (17 passed), `bash scripts/check-plan.test.sh` (21 passed), `bash scripts/check-neutral.sh` (PASS), `bash scripts/check-plan.sh` (PASS), `bash scripts/check-skill-frontmatter.sh` (PASS), `bash scripts/check-skill-anchors.sh` (PASS) — all green on the branch.
+
+verified: clean at 022ce4f, 2026-08-01, via fresh-session verifier (all three done-condition points confirmed with file:line evidence)

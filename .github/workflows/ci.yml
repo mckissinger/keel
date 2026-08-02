@@ -6,7 +6,9 @@ on:
   pull_request:
 
 jobs:
-  guards:
+  # The pin gate as its own required context — the server-side half of the
+  # verified-pin control (references/milestones-and-verification.md §5).
+  verified-pin:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +28,27 @@ jobs:
         env:
           BASE_REF: origin/${{ github.base_ref }}
         run: bash scripts/check-verified-pin.sh HEAD
+
+  # The plan lint as its own required context.
+  plan-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The plan lint keel ships to projects — prove it, and lint keel's own specs.
+      - name: plan lint self-test
+        run: bash scripts/check-plan.test.sh
+      - name: plan lint (this repo)
+        run: bash scripts/check-plan.sh
+
+  # The remaining self-test battery — every step of the former monolithic job
+  # that is not one of the named required contexts above.
+  guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # The stack-neutral guard for keel's own corpus + its self-test.
       - name: neutrality guard self-test
@@ -48,12 +71,6 @@ jobs:
       - name: auto preflight self-test
         run: bash scripts/check-auto-preflight.test.sh
 
-      # The plan lint keel ships to projects — prove it, and lint keel's own specs.
-      - name: plan lint self-test
-        run: bash scripts/check-plan.test.sh
-      - name: plan lint (this repo)
-        run: bash scripts/check-plan.sh
-
       # The skill-frontmatter lint keel ships to projects — prove it, and lint keel's own skills.
       - name: skill frontmatter lint self-test
         run: bash scripts/check-skill-frontmatter.test.sh
@@ -71,3 +88,19 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
       - name: plugin validate
         run: claude plugin validate --strict .
+
+  # The autonomy tier's compensating control, live on keel itself: a real
+  # per-PR security review behind the required check name, not a name alone
+  # (decisions/2026-07-29-security-review-wiring.md; the recorded default).
+  # PR-only: it reviews PR diffs; there is nothing to review on a push to main.
+  security-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # Pinned to a full commit SHA so a tag move cannot swap the action's code.
+      - uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

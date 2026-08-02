@@ -70,3 +70,23 @@ adversarial questions: does any job leak the secret to an untrusted context (a f
 step), is the action pinned such that a tag-move cannot swap its code, and does the protection JSON
 leave any merge path (admin, direct push, unlisted context) un-gated; confirmed findings are
 remediated before the pin.
+
+verified: clean-with-notes at f7a5709, 2026-08-02, via fresh-context verifier subagent (keel:verifier,
+`claude-fable-5` at `xhigh` per the reasoning-heavy escalation floor, decorrelated from the build) —
+all six [auto] condition groups evidenced: the four-job split maps every one of the former monolithic
+job's 17 steps with nothing dropped (merge-base 8e0b395 diff), the security-review job SHA-pinned to
+the real upstream commit `0c6a49f…` with exactly `contents: read` + `pull-requests: write` and the
+secret-fed `claude-api-key` input; live protection JSON field-by-field (strict true, the four exact
+contexts, enforce_admins enabled, PR required at zero approvals, no restrictions); `ANTHROPIC_API_KEY`
+listed by name and `allow_auto_merge` true; local suites green (36+21 self-tests, plan/neutrality/
+frontmatter/anchors linters PASS) with the code diff touching only `.github/workflows/ci.yml`;
+push-vs-PR trigger behavior confirmed; and the scratch-PR condition closed with PR #194 (docs-only
+diff, closed unmerged) showing all four contexts completed/success at 4380dae via the check-runs API,
+the final security-review run proven **uncached** (`Cache not found` + `claudecode-scan: success`)
+after the action's per-PR cache-mask hazard was discovered and neutralized (recorded in
+`specs/walks/2026-08-02-security-review-cache-mask.md`). Pre-pin `/security-review` of the milestone
+diff: **no findings**. Notes carried: the check-runs output is pasted into the milestone PR body at
+open (sequencing), and the [attended] observation of the gate on the milestone's own PR stays open by
+design until landing. One uncertainty record surfaced for adjudication
+(`specs/uncertainties/required-checks-live/scratch-pr-base.md`). (evidence: verifier +
+security-review reports in PR)

@@ -100,3 +100,25 @@ diffs); suites run, not re-derived. **Dispatch the verifier at `xhigh`** (reason
 **`/security-review` of the milestone's diff is a pre-pin precondition** — the adversarial question:
 does any prose or preflight change open a path to arming auto, or landing a merge, with less than the
 three-check contract (it must not); confirmed findings remediated before the pin.
+
+verified: clean-with-notes at 61de4ec, 2026-08-02, via fresh-context verifier subagent (keel:verifier,
+`claude-fable-5` at `xhigh` per the reasoning-heavy escalation floor, decorrelated from the build) —
+every [auto] condition evidenced with file:line: both flow amendments carry the plan-only-PR +
+standing-authority sentences and the strict-cascade rescope (stacked choreography and post-wave check
+untouched); the template contract records the hedged concrete recipe (SHA-pin rule, cache caveat,
+both protection shapes with the kickoff shape never requiring an unreported context); spec-foundation
+and adopt point at the recipe with kickoff-optional/auto-entry-at-latest wiring; (b2) implemented
+stricter than spec minimum — uncommented `uses:` line + `pull_request` trigger, landed as pre-pin
+`/security-review` remediation of a confirmed MEDIUM (comment-naming and workflow_dispatch-parking
+vectors killed, each regression-locked as a test case) — with the pattern override and loud external
+attestation both present; provision and auto enumerate (b2); the decision entry records every element
+including both accepted consequences and the deferral left unresolved; corpus greps clean (the
+direct-commit patterns return empty; all 54 security-review mentions bucketed); full suite green (29
+preflight cases + 368 assertions across the other suites, all repo lints, plugin validate); the five
+gate files have empty diffs; and keel's own ci.yml satisfies the new (b2) by simulation. Pre-pin
+`/security-review`: one MEDIUM confirmed and remediated in-branch as above; net assessment
+security-positive. Two notes for adjudication: the template recipe generalizes the fourth context to
+"the project's own suite job(s)" rather than naming `guards` literally (a downstream-template fit,
+not keel-specific), and one uncertainty record
+(`specs/uncertainties/required-checks-doctrine/b2-name-scoping.md`). (evidence: verifier +
+security-review reports in PR)

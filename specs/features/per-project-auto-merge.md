@@ -63,6 +63,17 @@ Rejected alternatives are recorded in the decision entry: (b) route arming throu
 of an attended change); (c) relocate the flag to a plan path like `specs/` (guards reading policy from
 `specs/` is a worse layering surprise than one carve-out line the pin gate already has a pattern for).
 
+**The carve-out alone is not the safety story — two mechanical controls make "the agent never
+self-arms" true (added after the adversarial plan pass, which showed prose alone left two holes):**
+(1) **the guards honor the marker only as read from the default branch (`main`)**, via
+`git show <default-branch-ref>:.claude/keel-auto-merge.json` — never the working tree — so a locally
+`Write`-n or branch-only file is ignored; since `main` advances only by a human-merged PR, presence
+on `main` *is* the authorization trail. (2) **any merge-shaped command whose PR touches the marker
+file is never auto-merged** (forced to the human tap, before any allow row), so no *temporary*
+authority — an 8h attended marker or a 24h mode — can auto-land the *permanent* marker's own PR. M1
+owns both; without them the "committed" flag would be forgeable at the working-tree level and a
+temporary authorization could escalate itself to a standing one.
+
 ## Milestone decomposition (4 milestones)
 
 | # | Milestone | Owns | Hard-invariant? |
@@ -77,8 +88,12 @@ M1 (needs the marker committable + its contract). M3 depends on M1 + M2 (doctrin
 shipped rows + the arming skill). M4 depends on M1 + M2 (consumes the marker + the arming primitive).
 **Parallelizable:** M3 and M4 may build concurrently once M1 + M2 land (disjoint file ownership —
 M3 owns doctrine/prose surfaces, M4 owns `skills/implement-feature` + its decision entry); M1 → M2 is
-strictly serial. **Every milestone that touches a hard invariant runs `/security-review` pre-pin** —
-all four are in the merge-authority blast radius, so all four carry it.
+strictly serial. **One cross-reference to note:** M4's decision entry cites M3's
+`decisions/2026-08-02-per-project-auto-merge-authorization.md` (an "amends by reference" pointer); with
+M3 ∥ M4 the pointer is a forward reference until both land in the same wave — no lint checks decision
+cross-refs, so this is transient and acceptable, not a build-order constraint. **Every milestone that
+touches a hard invariant runs `/security-review` pre-pin** — all four are in the merge-authority blast
+radius, so all four carry it.
 
 ## Surface → milestone map (every surface owned exactly once)
 
@@ -88,7 +103,7 @@ all four are in the merge-authority blast radius, so all four carry it.
 - `decisions/2026-08-02-committed-auto-merge-marker.md` (shape decision) → **M1**
 - `skills/arm-auto-merge/SKILL.md` (new, `disable-model-invocation`) → **M2**
 - `scripts/check-auto-preflight.sh` (extract checks b+b2+**d** into a reusable protection-assertion the skill calls) + `.test.sh` → **M2**
-- `scripts/session-bootstrap.sh` (orientation line ~L200) → **M3**
+- `scripts/session-bootstrap.sh` (orientation line ~L200) + `.test.sh` (matching assertions) → **M3**
 - `references/template-contract.md` (autonomy-tier trigger list — third wiring moment) → **M3**
 - `specs/deferrals/per-project-auto-merge.md` (RESOLVED banner) → **M3**
 - `decisions/2026-08-02-per-project-auto-merge-authorization.md` (standing-authorization doctrine) → **M3**

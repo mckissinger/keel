@@ -50,6 +50,13 @@ overrun a real stop-point. Dispatch the verifier at `xhigh`.
   the existing five-line halt; if the harness exposes a push affordance the run *may* additionally use
   it, but nothing in the flow depends on one (keel has none today, and the required-checks floor means
   a missed notification never lands unreviewed code).
+- [auto] **`skills/implement-feature/SKILL.md`'s frontmatter is made truthful.** The `description`
+  ("stopping at the user's merge … Never merges") and `when_to_use` ("NOT for merging the reviewed
+  PRs") are amended to state the committed-marker exception — the run stops at the user's merge
+  **unless a committed auto-merge marker (or an active mode) authorizes the run-through**, in which
+  case it drives landing itself. The **hooks block is unchanged** (the `guard-branch-rules.sh`
+  PreToolUse hook stays); only the prose fields move, so the skill still reads as never-merges *by
+  default*, true to the standing invariant, while no longer contradicting its own new standing branch.
 - [auto] **`skills/land-feature/SKILL.md` gets a one-line pointer** (no behavior change) noting that
   under a committed marker `implement-feature` drives this choreography start-to-finish with `--auto`,
   exactly as it already notes for an active mode — the merge mechanics (bottom-up, retarget-before-
@@ -73,13 +80,16 @@ overrun a real stop-point. Dispatch the verifier at `xhigh`.
 - [auto] **Corpus coherence:** `grep -rn "stops at merge\|run-through\|prepare.*review-feature" \
   skills/implement-feature/SKILL.md` shows the committed branch and the prepared-review end-state
   present and consistent with `review-feature`'s own "this gate is the human's" prose (no claim that
-  the run passes it); and `grep -rn "keel-auto-merge\|committed marker" skills/` shows
-  `implement-feature` naming the same marker M1 shipped.
+  the run passes it); `grep -rn "keel-auto-merge\|committed marker" skills/` shows `implement-feature`
+  naming the same marker M1 shipped; and the **frontmatter no longer asserts an unconditional
+  "Never merges"** — `grep -n "Never merges\|stopping at the user" skills/implement-feature/SKILL.md`
+  shows any surviving phrasing carries the committed-marker/mode exception, not a bare claim the
+  standing branch contradicts.
 - [auto] **All lints and suites green:** `claude plugin validate --strict .`,
-  `check-skill-frontmatter.sh` (implement-feature's frontmatter + hooks unchanged),
-  `check-skill-anchors.sh`, and every script self-test suite pass (this milestone changes skill prose
-  + adds decision markdown; it edits **no** script, so all gate/guard/preflight suites are unchanged
-  and green).
+  `check-skill-frontmatter.sh` (the amended `description`/`when_to_use` still satisfy the frontmatter
+  schema; the `hooks` block is unchanged), `check-skill-anchors.sh`, and every script self-test suite
+  pass (this milestone changes skill prose + adds decision markdown; it edits **no** script, so all
+  gate/guard/preflight suites are unchanged and green).
 - [auto] **No unowned surface moved:** `git diff --stat` is confined to
   `skills/implement-feature/SKILL.md`, `skills/land-feature/SKILL.md` (one-line pointer),
   `decisions/2026-08-02-implement-feature-run-through.md`, and this milestone spec. The M1/M2 scripts +

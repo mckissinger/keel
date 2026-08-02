@@ -28,6 +28,13 @@ as ground truth; wrong wording misstates who may merge. Dispatch the verifier at
   outcome line is untouched. Both decision pointers are cited
   (`decisions/2026-07-04-attended-auto-merge.md` + the new
   `decisions/2026-08-02-per-project-auto-merge-authorization.md`).
+- [auto] **`scripts/session-bootstrap.test.sh` is updated in lockstep** — it currently pins the
+  orientation output to literal substrings (`/keel:auto-merge on`, `--auto`, `own initiative`,
+  `with no marker`). M3 owns this file: its assertions are rewritten to match the amended line —
+  keeping the substrings that remain true (`--auto`, `own initiative`) and replacing the
+  now-removed `with no marker this line holds` phrasing with an assertion of the amended text (both
+  markers named). The suite is green after the edit; the orientation change and its test move
+  together in this milestone's diff (this is why the test is M3-owned, not an untouched suite).
 - [auto] **`references/template-contract.md`'s autonomy-tier wiring list records arming as a third
   trigger.** Today the security-review check is wired at two moments (genesis at bootstrap; an
   already-standing attended project as preflight remediation at `auto:feature`/`auto:run`). The
@@ -55,22 +62,24 @@ as ground truth; wrong wording misstates who may merge. Dispatch the verifier at
 
 ### Behavioral completeness
 
-- [auto] **Corpus coherence:** `grep -rniE "no marker this line holds|per-session (only|marker)" \
-  scripts/session-bootstrap.sh references/ skills/` surfaces no surviving claim that the per-session
-  marker is the *only* committed-or-otherwise exception to never-merge; and
-  `grep -rn "keel-auto-merge.json\|arm-auto-merge" scripts/ skills/ references/ decisions/` shows the
-  committed marker and its arming skill named consistently across the reader family (guard header from
-  M1, orientation line, template contract, decision entries) — no reader describes a marker shape or
-  arming path that differs from what M1/M2 shipped.
+- [auto] **Corpus coherence:** `grep -rn "no marker this line holds" scripts/ references/ skills/`
+  returns **empty** (the exact stale phrase the orientation line carried today is gone everywhere —
+  a precise, non-judgment empty-result check chosen because it matches the one live instance verbatim);
+  and `grep -rn "keel-auto-merge.json\|arm-auto-merge" scripts/ skills/ references/ decisions/` shows
+  the committed marker and its arming skill named consistently across the reader family (guard header
+  from M1, orientation line, template contract, decision entries) — no reader describes a marker shape
+  or arming path that differs from what M1/M2 shipped.
 - [auto] **Guard vocabulary is consistent:** the doctrine prose describes the guards' outputs in their
   real vocabulary — `merge-guard.sh` **emits `allow`**, `guard-branch-rules.sh` **`exit 0` (defers)** —
   never conflating the two, matching M1's shipped rows.
 - [auto] **All lints and suites green:** `claude plugin validate --strict .`,
   `check-skill-frontmatter.sh`, `check-skill-anchors.sh`, `check-plan.sh`, `check-neutral.sh`, and
-  every script self-test suite pass (this milestone changes no script logic — only orientation text in
-  `session-bootstrap.sh` and prose/markdown elsewhere).
+  every script self-test suite pass — including the **updated `session-bootstrap.test.sh`** (this
+  milestone changes no script *logic* — only orientation text in `session-bootstrap.sh`, its matching
+  test assertions, and prose/markdown elsewhere).
 - [auto] **No unowned surface moved:** `git diff --stat` is confined to `scripts/session-bootstrap.sh`
-  (orientation text only), `references/template-contract.md`, `specs/deferrals/per-project-auto-merge.md`,
+  (orientation text only), `scripts/session-bootstrap.test.sh` (matching assertions),
+  `references/template-contract.md`, `specs/deferrals/per-project-auto-merge.md`,
   `decisions/2026-08-02-per-project-auto-merge-authorization.md`, and this milestone spec. The M1/M2
   gate scripts, guards, arming skill, and `implement-feature` have empty diffs.
 

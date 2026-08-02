@@ -39,10 +39,14 @@ vendor mandate.
 ## The name-shaped check is closed: preflight check (b2)
 
 `scripts/check-auto-preflight.sh` now asserts the `security-review` check's **content**, not just its
-name: some workflow under `.github/workflows/` must both declare the context and match a
-review-implementation pattern (default `claude-code-security-review`; `PREFLIGHT_SECREVIEW_PATTERN`
-for a different in-Actions implementation; `PREFLIGHT_SECREVIEW_EXTERNAL=1` as a loud, echoed
-attestation for a non-Actions provider — deliberate and visible, never silent). Check (b)'s semantics
+name: one workflow under `.github/workflows/` must declare the context, invoke the review
+implementation on an **uncommented `uses:` line** matching a review-implementation pattern (default
+`claude-code-security-review`; `PREFLIGHT_SECREVIEW_PATTERN` for a different in-Actions
+implementation; `PREFLIGHT_SECREVIEW_EXTERNAL=1` as a loud, echoed attestation for a non-Actions
+provider — deliberate and visible, never silent), **and trigger on `pull_request`** — the uses-line
+and trigger requirements landed as pre-pin security-review remediation, killing the comment-naming
+and `workflow_dispatch`-parking vectors the review demonstrated. (b2) remains a drift tripwire, not a
+proof the scan semantically runs — the review's honest framing, accepted. Check (b)'s semantics
 are untouched; (b2) is additive and fail-closed. This is the "future hardening would assert workflow
 content, not just the name" item from the #189 pin, built.
 

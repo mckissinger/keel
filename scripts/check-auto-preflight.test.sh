@@ -74,6 +74,8 @@ EOF
   # AND matches the default review-implementation pattern.
   mkdir -p "$PROJ/.github/workflows"
   cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
 jobs:
   security-review:
     steps:
@@ -245,6 +247,8 @@ else bad "check (b2) failure names both legitimate overrides"; fi
 #     override → PASS.
 make_proj p18
 cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
 jobs:
   security-review:
     steps:
@@ -262,6 +266,44 @@ expect "external attestation passes check (b2)" 0 "auto-preflight: PASS"
 if printf '%s' "$OUT" | grep -qF "OPERATOR ATTESTATION"; then
   ok "external attestation is echoed loudly in the output"
 else bad "external attestation is echoed loudly in the output"; fi
+
+# 17b. Check (b2) comment vector: a hollow security-review job plus a COMMENT
+#      naming the action in the same file → still a fail; the pattern must sit
+#      on an uncommented `uses:` line.
+make_proj p17b
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
+jobs:
+  security-review:
+    steps:
+      # TODO: eventually use anthropics/claude-code-security-review here
+      - run: echo "green by construction"
+EOF
+run_gate "$PROJ" "$TMP/protection-full.json"
+expect "comment-only pattern fails check (b2)" 1 "no workflow content performs a review"
+
+# 17c. Check (b2) disabled-workflow vector: the real action parked behind
+#      workflow_dispatch (no pull_request trigger in that file) → fail.
+make_proj p17c
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
+jobs:
+  security-review:
+    steps:
+      - run: echo "green by construction"
+EOF
+cat > "$PROJ/.github/workflows/manual.yml" <<'EOF'
+on:
+  workflow_dispatch:
+jobs:
+  security-review-manual:
+    steps:
+      - uses: anthropics/claude-code-security-review@0000000000000000000000000000000000000000
+EOF
+run_gate "$PROJ" "$TMP/protection-full.json"
+expect "dispatch-only real action fails check (b2)" 1 "no workflow content performs a review"
 
 # 20. Check (b2) scopes to the security-review name: a required set that does
 #     not contain it (renamed set) skips (b2) — no content gap reported.

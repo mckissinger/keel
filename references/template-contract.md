@@ -40,11 +40,13 @@ These are the same in every generated repo and are exactly what the preflight as
   a mandate** — any job asserting the same class of review (a per-PR security read of the diff,
   surfaced as a required status check) satisfies it, and the check name is config
   (`PREFLIGHT_REQUIRED_CHECKS`), not a vendor hardcode. `scripts/check-auto-preflight.sh` check
-  (b2) additionally asserts the job's **content**, not just its name — a workflow under
-  `.github/workflows/` that declares the check context and matches a review-implementation
-  pattern (default `claude-code-security-review`; `PREFLIGHT_SECREVIEW_PATTERN` for a different
-  in-Actions implementation; `PREFLIGHT_SECREVIEW_EXTERNAL=1` as a loud, named attestation for a
-  non-Actions provider).
+  (b2) additionally asserts the job's **content**, not just its name — one workflow under
+  `.github/workflows/` that declares the check context, invokes the review implementation on an
+  uncommented `uses:` line matching a review-implementation pattern (default
+  `claude-code-security-review`; `PREFLIGHT_SECREVIEW_PATTERN` for a different in-Actions
+  implementation; `PREFLIGHT_SECREVIEW_EXTERNAL=1` as a loud, named attestation for a
+  non-Actions provider), and triggers on `pull_request` — so a comment naming the action or a
+  `workflow_dispatch`-parked job cannot satisfy it.
 
   **The proven concrete recipe (as of 2026-08, dogfooded live on keel's own repo —
   `specs/milestones/_landed` will carry `required-checks-live` once its wave archives).** An

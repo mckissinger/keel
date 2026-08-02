@@ -170,19 +170,25 @@ SECREVIEW_WF_DIR="${PREFLIGHT_WF_DIR:-.github/workflows}"
 case " $REQUIRED_CHECKS " in
   *" $SECREVIEW_CHECK_NAME "*)
     if [ "${PREFLIGHT_SECREVIEW_EXTERNAL:-0}" = "1" ]; then
-      echo "auto-preflight: security-review content asserted by OPERATOR ATTESTATION (PREFLIGHT_SECREVIEW_EXTERNAL=1), not by workflow scan — a non-Actions provider is trusted here on the operator's word"
+      echo "auto-preflight: security-review content asserted by OPERATOR ATTESTATION (PREFLIGHT_SECREVIEW_EXTERNAL=1), not by workflow scan — a non-Actions provider is trusted here on the operator's word" >&2
     else
+      # Three per-file requirements, so a comment naming the action, a
+      # workflow_dispatch-only workflow, or cross-file string scatter cannot
+      # satisfy the gate: the file must (1) declare the check context, (2)
+      # invoke the review implementation on an UNCOMMENTED `uses:` line, and
+      # (3) trigger on pull_request.
       b2_ok=0
       if [ -d "$SECREVIEW_WF_DIR" ]; then
         for wf in "$SECREVIEW_WF_DIR"/*.yml "$SECREVIEW_WF_DIR"/*.yaml; do
           [ -f "$wf" ] || continue
           grep -q "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
-          grep -q "$SECREVIEW_PATTERN" "$wf" 2>/dev/null || continue
+          grep -Eq "^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]*$SECREVIEW_PATTERN" "$wf" 2>/dev/null || continue
+          grep -q "pull_request" "$wf" 2>/dev/null || continue
           b2_ok=1; break
         done
       fi
       [ "$b2_ok" -eq 1 ] \
-        || gap "security-review content: the required check exists in name; no workflow content performs a review — no file under $SECREVIEW_WF_DIR both declares '$SECREVIEW_CHECK_NAME' and matches the review-implementation pattern '$SECREVIEW_PATTERN'. Remediate attended: wire the review job (the recorded default implementation lives in keel's references/template-contract.md tier 1), or set PREFLIGHT_SECREVIEW_PATTERN for a different in-Actions implementation, or attest a non-Actions provider explicitly with PREFLIGHT_SECREVIEW_EXTERNAL=1. Never clear this gate by renaming or dropping the check."
+        || gap "security-review content: the required check exists in name; no workflow content performs a review — no file under $SECREVIEW_WF_DIR declares '$SECREVIEW_CHECK_NAME', invokes the review implementation on an uncommented 'uses:' line matching '$SECREVIEW_PATTERN', AND triggers on pull_request. Remediate attended: wire the review job (the recorded default implementation lives in keel's references/template-contract.md tier 1), or set PREFLIGHT_SECREVIEW_PATTERN for a different in-Actions implementation, or attest a non-Actions provider explicitly with PREFLIGHT_SECREVIEW_EXTERNAL=1. Never clear this gate by renaming or dropping the check."
     fi
     ;;
 esac

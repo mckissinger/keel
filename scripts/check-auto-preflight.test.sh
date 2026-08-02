@@ -70,6 +70,15 @@ EOF
 | `PREFLIGHT_T_FILE` | derived env file |
 EOF
   printf 'PREFLIGHT_T_FILE=fixture-file-value\n' > "$PROJ/.env.local"
+  # A workflow that satisfies check (b2): declares the security-review context
+  # AND matches the default review-implementation pattern.
+  mkdir -p "$PROJ/.github/workflows"
+  cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+jobs:
+  security-review:
+    steps:
+      - uses: anthropics/claude-code-security-review@0000000000000000000000000000000000000000
+EOF
 }
 
 SENTINEL="s3ntinel-value-9f"
@@ -214,6 +223,55 @@ else bad "check (d) failure names the attended fix (gh api -X PATCH)"; fi
 make_proj p16
 run_gate "$PROJ" "$TMP/protection-full.json" "$TMP/repo-absent.json"
 expect "repo api error fails check (d) closed" 1 "cannot confirm allow_auto_merge"
+
+# 17. Check (b2): the required check exists in NAME but no workflow content
+#     performs a review (workflows dir present, context declared, pattern absent)
+#     → fail, the content gap + all three remediation paths named.
+make_proj p17
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+jobs:
+  security-review:
+    steps:
+      - run: echo "green by construction"
+EOF
+run_gate "$PROJ" "$TMP/protection-full.json"
+expect "name-without-content fails check (b2), named" 1 "no workflow content performs a review"
+if printf '%s' "$OUT" | grep -qF "PREFLIGHT_SECREVIEW_PATTERN" \
+  && printf '%s' "$OUT" | grep -qF "PREFLIGHT_SECREVIEW_EXTERNAL=1"; then
+  ok "check (b2) failure names both legitimate overrides"
+else bad "check (b2) failure names both legitimate overrides"; fi
+
+# 18. Check (b2): a different in-Actions implementation, matched via the pattern
+#     override → PASS.
+make_proj p18
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+jobs:
+  security-review:
+    steps:
+      - uses: acme/acme-review-bot@0000000000000000000000000000000000000000
+EOF
+PREFLIGHT_SECREVIEW_PATTERN="acme-review-bot" run_gate "$PROJ" "$TMP/protection-full.json"
+expect "pattern override passes check (b2)" 0 "auto-preflight: PASS"
+
+# 19. Check (b2): a non-Actions provider attested explicitly → PASS, and the
+#     attestation is echoed LOUDLY (visible, never a silent bypass).
+make_proj p19
+rm -rf "$PROJ/.github"
+PREFLIGHT_SECREVIEW_EXTERNAL=1 run_gate "$PROJ" "$TMP/protection-full.json"
+expect "external attestation passes check (b2)" 0 "auto-preflight: PASS"
+if printf '%s' "$OUT" | grep -qF "OPERATOR ATTESTATION"; then
+  ok "external attestation is echoed loudly in the output"
+else bad "external attestation is echoed loudly in the output"; fi
+
+# 20. Check (b2) scopes to the security-review name: a required set that does
+#     not contain it (renamed set) skips (b2) — no content gap reported.
+make_proj p20
+rm -rf "$PROJ/.github"
+cat > "$TMP/protection-two.json" <<'EOF'
+{"required_status_checks":{"contexts":["verified-pin","plan-lint"]}}
+EOF
+PREFLIGHT_REQUIRED_CHECKS="verified-pin plan-lint" run_gate "$PROJ" "$TMP/protection-two.json"
+expect "(b2) skipped when security-review absent from the required set" 0 "auto-preflight: PASS"
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

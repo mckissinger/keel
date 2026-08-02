@@ -13,6 +13,13 @@
 #   (b) asserts via `gh api` that branch protection exists on the default
 #       branch and that its REQUIRED status checks include every job named in
 #       the config block below (job names are config, not a CI-vendor hardcode);
+#   (b2) asserts the security-review check is CONTENT, not just a name: some
+#       file under .github/workflows/ both declares the check context and
+#       matches the review-implementation pattern (default
+#       `claude-code-security-review`; PREFLIGHT_SECREVIEW_PATTERN overrides for
+#       a different in-Actions implementation). A non-Actions provider has no
+#       workflow to scan — PREFLIGHT_SECREVIEW_EXTERNAL=1 attests it explicitly,
+#       echoed loudly in the output, never silently;
 #   (c) asserts every env-var NAME in the architecture contract (backtick-quoted
 #       ALL_CAPS tokens, e.g. `STRIPE_SECRET_KEY`) resolves in the host env
 #       store — the process environment or a `NAME=` line in the derived env
@@ -148,6 +155,37 @@ EOF
     gap "protection: no readable branch protection on '$default_branch' (gh api .../protection failed — configure it attended before an auto run)"
   fi
 fi
+
+# --- (b2) the security-review check is CONTENT, not just a name ---------------
+# Check (b) proves a required check NAMED security-review exists; nothing there
+# proves the job behind the name performs a review (#189's pin recorded the
+# gap). Assert workflow content: a file under .github/workflows/ both declares
+# the check context and matches the review-implementation pattern. Additive to
+# (b), fail-closed. A non-Actions provider (an external status-check service
+# has no workflow file to scan) is attested explicitly and echoed loudly —
+# a deliberate, visible operator statement, never a silent bypass.
+SECREVIEW_CHECK_NAME="security-review"
+SECREVIEW_PATTERN="${PREFLIGHT_SECREVIEW_PATTERN:-claude-code-security-review}"
+SECREVIEW_WF_DIR="${PREFLIGHT_WF_DIR:-.github/workflows}"
+case " $REQUIRED_CHECKS " in
+  *" $SECREVIEW_CHECK_NAME "*)
+    if [ "${PREFLIGHT_SECREVIEW_EXTERNAL:-0}" = "1" ]; then
+      echo "auto-preflight: security-review content asserted by OPERATOR ATTESTATION (PREFLIGHT_SECREVIEW_EXTERNAL=1), not by workflow scan — a non-Actions provider is trusted here on the operator's word"
+    else
+      b2_ok=0
+      if [ -d "$SECREVIEW_WF_DIR" ]; then
+        for wf in "$SECREVIEW_WF_DIR"/*.yml "$SECREVIEW_WF_DIR"/*.yaml; do
+          [ -f "$wf" ] || continue
+          grep -q "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
+          grep -q "$SECREVIEW_PATTERN" "$wf" 2>/dev/null || continue
+          b2_ok=1; break
+        done
+      fi
+      [ "$b2_ok" -eq 1 ] \
+        || gap "security-review content: the required check exists in name; no workflow content performs a review — no file under $SECREVIEW_WF_DIR both declares '$SECREVIEW_CHECK_NAME' and matches the review-implementation pattern '$SECREVIEW_PATTERN'. Remediate attended: wire the review job (the recorded default implementation lives in keel's references/template-contract.md tier 1), or set PREFLIGHT_SECREVIEW_PATTERN for a different in-Actions implementation, or attest a non-Actions provider explicitly with PREFLIGHT_SECREVIEW_EXTERNAL=1. Never clear this gate by renaming or dropping the check."
+    fi
+    ;;
+esac
 
 # --- (c) contract env-var names resolve — names only, never values ------------
 env_file_has() { # <NAME> — a NAME= line exists; the value is never read out

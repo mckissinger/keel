@@ -35,6 +35,12 @@ as ground truth; wrong wording misstates who may merge. Dispatch the verifier at
   now-removed `with no marker this line holds` phrasing with an assertion of the amended text (both
   markers named). The suite is green after the edit; the orientation change and its test move
   together in this milestone's diff (this is why the test is M3-owned, not an untouched suite).
+- [auto] **`skills/auto-merge/SKILL.md`'s `when_to_use` is disambiguated.** Its tail — "with no
+  marker every guard behaves exactly as today" — was written when the per-session attended marker was
+  the only marker; the committed per-project marker now makes "marker" ambiguous (no *attended* marker
+  ≠ no marker). Amend it to "with **no marker of either kind** (no attended marker and no committed
+  per-project marker) every guard behaves exactly as today," so the claim stays true under the shipped
+  committed row. No other change to that skill.
 - [auto] **`references/template-contract.md`'s autonomy-tier wiring list records arming as a third
   trigger.** Today the security-review check is wired at two moments (genesis at bootstrap; an
   already-standing attended project as preflight remediation at `auto:feature`/`auto:run`). The
@@ -68,7 +74,9 @@ as ground truth; wrong wording misstates who may merge. Dispatch the verifier at
   and `grep -rn "keel-auto-merge.json\|arm-auto-merge" scripts/ skills/ references/ decisions/` shows
   the committed marker and its arming skill named consistently across the reader family (guard header
   from M1, orientation line, template contract, decision entries) — no reader describes a marker shape
-  or arming path that differs from what M1/M2 shipped.
+  or arming path that differs from what M1/M2 shipped. And `grep -rn "behaves exactly as today" \
+  skills/` shows any surviving instance carries the "of either kind" disambiguation, not a bare
+  "no marker" the committed row falsifies.
 - [auto] **Guard vocabulary is consistent:** the doctrine prose describes the guards' outputs in their
   real vocabulary — `merge-guard.sh` **emits `allow`**, `guard-branch-rules.sh` **`exit 0` (defers)** —
   never conflating the two, matching M1's shipped rows.
@@ -79,7 +87,8 @@ as ground truth; wrong wording misstates who may merge. Dispatch the verifier at
   test assertions, and prose/markdown elsewhere).
 - [auto] **No unowned surface moved:** `git diff --stat` is confined to `scripts/session-bootstrap.sh`
   (orientation text only), `scripts/session-bootstrap.test.sh` (matching assertions),
-  `references/template-contract.md`, `specs/deferrals/per-project-auto-merge.md`,
+  `skills/auto-merge/SKILL.md` (the `when_to_use` disambiguation), `references/template-contract.md`,
+  `specs/deferrals/per-project-auto-merge.md`,
   `decisions/2026-08-02-per-project-auto-merge-authorization.md`, and this milestone spec. The M1/M2
   gate scripts, guards, arming skill, and `implement-feature` have empty diffs.
 

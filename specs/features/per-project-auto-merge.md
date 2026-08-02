@@ -65,14 +65,18 @@ of an attended change); (c) relocate the flag to a plan path like `specs/` (guar
 
 **The carve-out alone is not the safety story — two mechanical controls make "the agent never
 self-arms" true (added after the adversarial plan pass, which showed prose alone left two holes):**
-(1) **the guards honor the marker only as read from the default branch (`main`)**, via
-`git show <default-branch-ref>:.claude/keel-auto-merge.json` — never the working tree — so a locally
-`Write`-n or branch-only file is ignored; since `main` advances only by a human-merged PR, presence
-on `main` *is* the authorization trail. (2) **any merge-shaped command whose PR touches the marker
-file is never auto-merged** (forced to the human tap, before any allow row), so no *temporary*
-authority — an 8h attended marker or a 24h mode — can auto-land the *permanent* marker's own PR. M1
-owns both; without them the "committed" flag would be forgeable at the working-tree level and a
-temporary authorization could escalate itself to a standing one.
+(1) **the guards honor the marker only as read from the default-branch ref proper**
+(`origin/$DEFAULT_BRANCH` — *not* the PR's base ref `BASE_REF_R`, which under a stack is a sibling
+milestone branch), via `git show "origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json"` — never the
+working tree — so a locally `Write`-n or branch-only file is ignored; since the default branch advances
+only by a human-merged PR, presence there *is* the authorization trail. (2) **any merge-shaped command
+whose PR touches the marker file is never auto-merged** (forced to the human tap, before any allow row,
+via a non-truncating `git diff --name-only base...head` that fails closed on an indeterminate list), so
+no *temporary* authority — an 8h attended marker or a 24h mode — can auto-land the *permanent* marker's
+own PR. M1 owns both; without them the "committed" flag would be forgeable at the working-tree level
+and a temporary authorization could escalate itself to a standing one. The residual (forging the local
+default-branch ref itself with `git update-ref`/`git branch -f`) is named in M1, is the existing
+markers' own threat model, and is backstopped by the required-checks floor.
 
 ## Milestone decomposition (4 milestones)
 
@@ -104,6 +108,7 @@ radius, so all four carry it.
 - `skills/arm-auto-merge/SKILL.md` (new, `disable-model-invocation`) → **M2**
 - `scripts/check-auto-preflight.sh` (extract checks b+b2+**d** into a reusable protection-assertion the skill calls) + `.test.sh` → **M2**
 - `scripts/session-bootstrap.sh` (orientation line ~L200) + `.test.sh` (matching assertions) → **M3**
+- `skills/auto-merge/SKILL.md` (`when_to_use` "no marker of either kind" disambiguation) → **M3**
 - `references/template-contract.md` (autonomy-tier trigger list — third wiring moment) → **M3**
 - `specs/deferrals/per-project-auto-merge.md` (RESOLVED banner) → **M3**
 - `decisions/2026-08-02-per-project-auto-merge-authorization.md` (standing-authorization doctrine) → **M3**

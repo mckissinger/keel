@@ -16,8 +16,13 @@ file locally (or commits it on a branch) has an untracked / not-on-`main` file t
 And a merge-shaped command whose target PR **touches `.claude/keel-auto-merge.json`** is **never
 auto-merged** — it forces the per-merge human tap regardless of any active marker or mode — so no
 *temporary* authority (an 8h attended marker, a 24h mode) can auto-land the *permanent* marker's own
-PR. Together these make the settled decision "the agent never self-arms" **mechanically true**, not a
-prose promise, which is what the plan-pass flagged as missing.
+PR. Together these move "the agent never self-arms" from a prose promise to a **mechanical control** —
+raising the bar from a plain-file `Write` (which these ignore) to forging the local default-branch ref
+itself (`git update-ref` / `git branch -f`, which are not merge/push/commit-shaped and so pass both
+guards' classifiers). That ref-forgery residual is **named, not hidden**: it is the same threat model
+the existing untracked markers already carry, and the **required-checks floor on the protected branch
+remains the real backstop** — nothing lands that the three checks did not pass, self-armed or not.
+This is what the plan-pass flagged prose alone as missing.
 
 **Feature:** `specs/features/per-project-auto-merge.md`. **No-UI** → two-dimension done-conditions
 (logic/invariants + behavioral completeness). **Depends on:** nothing (foundational). **Parallelizable:**
@@ -58,18 +63,27 @@ carve-out below; the carve-out and the entry land together.
   closed), `created` (ISO-8601 UTC, parsed **as data**, never eval'd), `invoker` (who armed it); all
   required, non-empty strings; **any defect → treated as absent, fail closed**. **The root of trust is
   presence on the default branch, not the working tree:** the marker is honored **only** as read from
-  `<default-branch-ref>` via `git show <default-branch-ref>:.claude/keel-auto-merge.json` (the same
-  default-branch ref `decide()` already resolves as `BASE_REF_R`), parsed as data — a working-tree
-  copy, a branch-only commit, or an untracked file that is **not on `main`** is **ignored**. This
-  **inverts** the untracked-markers' rule deliberately and the header states the difference and why:
-  the untracked attended/mode markers are spoofable-if-tracked, so they are honored only untracked;
-  this marker is the opposite — its authorization *is* the git history of `main` (which advances only
-  by a human-merged PR), so it is honored only when committed to `main`. **No TTL** — a committed
-  setting does not expire (contrast the attended marker's 8h and the mode file's 24h); this is safe
-  **because** the read-from-`main` root of trust means the marker got there through a human-merged PR,
-  not because an unexpiring local file is trusted. The header states that the marker's only
-  writer/remover is the M2 arming skill and that any PR touching the marker is never auto-merged (the
-  human-tap rule below).
+  the **default-branch ref proper** — `origin/$DEFAULT_BRANCH` (the `detect_default_branch` result,
+  the same ref `check-verified-pin.sh` treats as `main`), via
+  `git show "origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json"` parsed as data. **It is emphatically
+  NOT `BASE_REF_R`** — that variable is the *target PR's base branch* (resolved from
+  `gh pr view --json baseRefName`), which under the stacked-PR choreography is a **sibling milestone
+  branch**, not `main`; reading from it would honor a marker an agent planted on a lower stack branch
+  (the very forgery this root of trust exists to block). A working-tree copy, a branch-only commit, or
+  an untracked file that is **not on the default branch** is **ignored**. Mirror
+  `check-verified-pin.sh`'s step-`-1` **best-effort refresh** of the default-branch remote ref before
+  the read (a failed fetch warns and proceeds with the local image — never a hard failure), so a
+  human's disarm on real `main` is seen without an indefinite stale-clone honor window; the residual
+  (a clone that never fetches at all) is named, not silently assumed away. This **inverts** the
+  untracked-markers' rule deliberately and the header states the difference and why: the untracked
+  attended/mode markers are spoofable-if-tracked, so they are honored only untracked; this marker is
+  the opposite — its authorization *is* the git history of the default branch (which advances only by
+  a human-merged PR), so it is honored only when committed there. **No TTL** — a committed setting does
+  not expire (contrast the attended marker's 8h and the mode file's 24h); this is safe **because** the
+  read-from-default-branch root of trust means the marker got there through a human-merged PR, not
+  because an unexpiring local file is trusted. The header states that the marker's only writer/remover
+  is the M2 arming skill and that any PR touching the marker is never auto-merged (the human-tap rule
+  below).
 - [auto] **`scripts/check-verified-pin.sh` `is_plan_path()` treats `.claude/keel-auto-merge.json` as
   a plan path** — a `case` arm returning 0 for exactly that path (not a `.claude/*` wildcard: only
   this one file), placed and commented as the mirror of the existing
@@ -99,25 +113,34 @@ carve-out below; the carve-out and the entry land together.
   `scripts/merge-guard.sh` and its sibling copy in `scripts/guard-branch-rules.sh` — the same
   two-copy pattern the scripts already use for `read_attended_marker`), mirroring
   `read_attended_marker`: STRING-TYPED field reads (jq `select(type)` / python3 `isinstance`, so a
-  wrong-typed field reads as absent), the marker text — **read from the default-branch ref, not the
-  working-tree file** — parsed **as data** (`json_str`, never eval'd), `scope != "project"` or any
-  missing/empty field or a marker absent from `main` → `COMMITTED_ACTIVE=0` (fail closed). It sets a
-  `COMMITTED_ACTIVE` flag consumed by each script's decision path.
+  wrong-typed field reads as absent), the marker text — **read from `origin/$DEFAULT_BRANCH` via
+  `git show`, never the working-tree file and never `BASE_REF_R`** — parsed **as data** (`json_str`,
+  never eval'd), `scope != "project"` or any missing/empty field or a marker absent from the default
+  branch → `COMMITTED_ACTIVE=0` (fail closed). It sets a `COMMITTED_ACTIVE` flag consumed by each
+  script's decision path. (`guard-branch-rules.sh` already carries `detect_default_branch`; it needs
+  no `gh` machinery for this read.)
 - [auto] **Any merge-shaped command whose target PR touches the marker file is never auto-merged** —
   the human-tap rule that blocks a *temporary* authority from auto-landing the *permanent* marker.
-  In `merge-guard.sh` `decide()`, when the resolved PR's diff (`base...head` via the already-resolved
-  refs, or `gh pr view --json files`) includes `.claude/keel-auto-merge.json`, the decision is
-  **`ask`** — before and regardless of the mode/attended/committed allow rows — so arming or disarming
-  always takes a human merge tap. `guard-branch-rules.sh` mirrors this: a build-session `--auto` on a
-  marker-touching PR stays **`exit 2`** (no defer). Stated as a fail-closed precedence: marker-touching
-  → tap, evaluated *before* any auto-allow.
+  **This check lives only in `merge-guard.sh` `decide()`** (which already resolves the PR's base/head
+  refs): compute the PR's changed files with the **non-truncating** `git diff --name-only
+  "$BASE_REF_R"..."$HEAD_REF_R"` (NOT `gh pr view --json files`, which truncates on large PRs and
+  would let a padded marker-touching PR evade the control); if that list **includes**
+  `.claude/keel-auto-merge.json`, or if the file list **cannot be determined** (diff error), the
+  decision is **`ask`** — before and regardless of the mode/attended/committed allow rows, fail closed.
+  So arming or disarming always takes a human merge tap. **`guard-branch-rules.sh` needs no file-list
+  check of its own:** on a valid committed marker + bare `--auto` it `exit 0`-defers (below), and
+  `merge-guard.sh` — firing on the same Bash call — applies this human-tap rule and emits `ask` for a
+  marker-touching PR. This keeps the `gh`-dependent file-list logic in the one guard that already has
+  PR-context resolution.
 - [auto] **`scripts/guard-branch-rules.sh` gains the committed-project defer row** mirroring its
   existing attended exception (~L510-525): when a build session emits the canonical bare
   `gh pr merge <pr> --auto` **and** no active mode **and** no attended marker **and** a valid
-  committed marker (present on `main`) **and** the PR does not touch the marker file → `exit 0` (defer
-  the gate decision to `merge-guard.sh`, which fires on the same Bash call), same precedence
-  `mode > attended > committed`. Every other build-session merge/commit path is unchanged (still
-  `exit 2` — build sessions never merge on their own).
+  committed marker (present on `origin/$DEFAULT_BRANCH`) → `exit 0` (defer the gate decision to
+  `merge-guard.sh`, which fires on the same Bash call and owns both the gate-pass check and the
+  human-tap rule), same precedence `mode > attended > committed`. It does **not** itself inspect the
+  PR's files — deferral hands that to `merge-guard.sh`, so a marker-touching PR still resolves to
+  `ask` there. Every other build-session merge/commit path is unchanged (still `exit 2` — build
+  sessions never merge on their own).
 
 ### Behavioral completeness
 
@@ -131,14 +154,16 @@ carve-out below; the carve-out and the entry land together.
     committed + **bundled/chained** `--auto` → `ask` (whitelist forfeit); **precedence**:
     mode+committed → mode message, attended+committed → attended message, committed-only → committed
     message; invalid committed marker (wrong `scope`, missing field, malformed JSON) → treated as
-    absent (`ask` floor); **root-of-trust**: a marker present only in the **working tree / not on
-    `main`** → treated as absent (`ask` floor); **human-tap rule**: a PR whose diff touches
-    `.claude/keel-auto-merge.json` → `ask` even with a valid committed marker and a passing gate; the
-    `d_auto` negative static tripwire still green with the third row present.
-  - `scripts/guard-branch-rules.test.sh` — committed marker on `main` + bare `--auto` + no mode + no
-    attended + PR does not touch the marker → `exit 0` (defer); committed + any non-`--auto` merge →
-    `exit 2`; committed + `--auto` on a **marker-touching** PR → `exit 2` (human tap); working-tree-only
-    marker → `exit 2` (root of trust); precedence cases mirror merge-guard's.
+    absent (`ask` floor); **root-of-trust**: a marker present only in the **working tree / not on the
+    default branch** → treated as absent (`ask` floor); **human-tap rule**: a PR whose diff touches
+    `.claude/keel-auto-merge.json` → `ask` even with a valid committed marker and a passing gate, and
+    an **indeterminate file list** (diff error) → `ask` (fail closed); the `d_auto` negative static
+    tripwire still green with the third row present.
+  - `scripts/guard-branch-rules.test.sh` — committed marker on the default branch + bare `--auto` +
+    no mode + no attended → `exit 0` (defer, regardless of whether the PR touches the marker — the tap
+    is merge-guard's job on the same call); committed + any non-`--auto` merge → `exit 2`;
+    working-tree-only / not-on-default-branch marker → `exit 2` (root of trust — no valid committed
+    marker to defer on); precedence cases mirror merge-guard's.
   - The committed marker is a **valid, real** fixture **committed to the fixture repo's `main`**
     (`scope: "project"`, all fields), distinct from the attended fixture, so the read-from-`main`
     path is exercised, not stubbed.

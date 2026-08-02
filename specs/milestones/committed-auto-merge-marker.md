@@ -118,7 +118,12 @@ carve-out below; the carve-out and the entry land together.
   never eval'd), `scope != "project"` or any missing/empty field or a marker absent from the default
   branch → `COMMITTED_ACTIVE=0` (fail closed). It sets a `COMMITTED_ACTIVE` flag consumed by each
   script's decision path. (`guard-branch-rules.sh` already carries `detect_default_branch`; it needs
-  no `gh` machinery for this read.)
+  no `gh` machinery for this read.) **Repo context (the milestone-#187 split):** the *file path*
+  `.claude/keel-auto-merge.json` stays ROOT-rooted (markers are project assets, like the attended
+  marker), but the `git show "origin/$DEFAULT_BRANCH:<path>"` read runs against **`GIT_CTX`** — the
+  same checkout `decide()` judges and where `DEFAULT_BRANCH` is detected — so the honor decision
+  reflects the git state of the repo the merge command runs in. State this ROOT-path / GIT_CTX-git-
+  state split explicitly in both readers so a builder does not read from the wrong repo.
 - [auto] **Any merge-shaped command whose target PR touches the marker file is never auto-merged** —
   the human-tap rule that blocks a *temporary* authority from auto-landing the *permanent* marker.
   **This check lives only in `merge-guard.sh` `decide()`** (which already resolves the PR's base/head
@@ -156,8 +161,10 @@ carve-out below; the carve-out and the entry land together.
     message; invalid committed marker (wrong `scope`, missing field, malformed JSON) → treated as
     absent (`ask` floor); **root-of-trust**: a marker present only in the **working tree / not on the
     default branch** → treated as absent (`ask` floor); **human-tap rule**: a PR whose diff touches
-    `.claude/keel-auto-merge.json` → `ask` even with a valid committed marker and a passing gate, and
-    an **indeterminate file list** (diff error) → `ask` (fail closed); the `d_auto` negative static
+    `.claude/keel-auto-merge.json` → `ask` even with a valid committed marker and a passing gate — and
+    **the escalation case the rule exists for**: a marker-touching PR under an active **mode** or a
+    valid **attended** marker → still `ask` (the tap fires *before and regardless of* every allow row),
+    and an **indeterminate file list** (diff error) → `ask` (fail closed); the `d_auto` negative static
     tripwire still green with the third row present.
   - `scripts/guard-branch-rules.test.sh` — committed marker on the default branch + bare `--auto` +
     no mode + no attended → `exit 0` (defer, regardless of whether the PR touches the marker — the tap

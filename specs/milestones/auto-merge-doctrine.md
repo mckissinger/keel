@@ -35,12 +35,15 @@ as ground truth; wrong wording misstates who may merge. Dispatch the verifier at
   now-removed `with no marker this line holds` phrasing with an assertion of the amended text (both
   markers named). The suite is green after the edit; the orientation change and its test move
   together in this milestone's diff (this is why the test is M3-owned, not an untouched suite).
-- [auto] **`skills/auto-merge/SKILL.md`'s `when_to_use` is disambiguated.** Its tail — "with no
-  marker every guard behaves exactly as today" — was written when the per-session attended marker was
-  the only marker; the committed per-project marker now makes "marker" ambiguous (no *attended* marker
-  ≠ no marker). Amend it to "with **no marker of either kind** (no attended marker and no committed
-  per-project marker) every guard behaves exactly as today," so the claim stays true under the shipped
-  committed row. No other change to that skill.
+- [auto] **`skills/auto-merge/SKILL.md`'s "behaves exactly as today" claims are all disambiguated.**
+  Written when the per-session attended marker was the only marker, the skill asserts three times that
+  "with no marker" the guards behave exactly as today (`when_to_use` ~L4, the body ~L33, and the
+  disarm note ~L104 "with the file gone, both guards are back to today's … matrix"); the committed
+  per-project marker now makes "marker"/"the file gone" ambiguous (no *attended* marker ≠ no marker of
+  any kind). Amend **every** instance to scope it to "**no marker of either kind** (no attended marker
+  **and** no committed per-project marker)" — so each stays true under the shipped committed row. This
+  is the only change to that skill; the disarm note is amended to say removing the attended marker
+  returns the guards to today's matrix **only when no committed marker is on the default branch**.
 - [auto] **`references/template-contract.md`'s autonomy-tier wiring list records arming as a third
   trigger.** Today the security-review check is wired at two moments (genesis at bootstrap; an
   already-standing attended project as preflight remediation at `auto:feature`/`auto:run`). The

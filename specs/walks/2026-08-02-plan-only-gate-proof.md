@@ -4,3 +4,5 @@ Throwaway docs-only diff for the `required-checks-live` milestone's scratch-PR c
 exists solely so the four required contexts (`verified-pin`, `plan-lint`, `guards`,
 `security-review`) can be observed completing on a markdown-only diff. Closed unmerged after the
 check-runs evidence is captured.
+
+Second commit: forces a fresh SHA so the review scan runs uncached.

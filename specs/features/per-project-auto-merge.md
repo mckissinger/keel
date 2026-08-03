@@ -116,20 +116,33 @@ radius, so all four carry it.
 - `decisions/2026-08-02-implement-feature-run-through.md` (run-through posture) → **M4**
 - `skills/land-feature/SKILL.md` (one-line pointer to the run-through, no behavior change) → **M4**
 
-## Lifecycle
+## Lifecycle (reconciled to merged reality, 2026-08-03)
 
 - **Feature sign-off** — this spec, authored + owner-approved 2026-08-02 (scope confirmed in-session;
   spec-feature chosen over stretching the spec-change after the adversarial pass showed the change is
-  feature-sized). Evidence: this file on the plan branch `plan/per-project-auto-merge`.
-- **Plan PR** — plan-only (`specs/**` + `decisions/**` + `deferrals/**`), carrying this spec + the 4
-  milestone specs (no `verified:` pins yet). Evidence: the plan PR (opened at session end).
+  feature-sized). Evidence: this file, authored on the plan branch and landed via the plan PR below.
+- **Plan PR** — plan-only, carrying this spec + the 4 milestone specs (no `verified:` pins yet).
+  Evidence: **PR #197, merged**.
 - **Per-milestone build + pin** — M1..M4 each built in a fresh `implement-milestone` session,
-  `verify-milestone`-clean, pin appended in its own code PR (M1/M2 carry `/security-review` pre-pin
-  remediation records). Evidence: each milestone's `verified:` pin + code PR.
-- **Wave landing** — `land-feature` (M1 → M2, then M3 ∥ M4), post-wave consolidated check on `main`.
-  Evidence: the merged PRs + the consolidated-check record.
-- **Spec reconciliation** — `land-feature`'s plan-only reconciliation commit; the completed milestone
-  specs archived to `specs/milestones/_landed/`. Evidence: the reconciliation PR.
+  `verify-milestone`-clean by a fresh-context verifier, pin appended in its own code PR (M1/M2 carry
+  `/security-review` pre-pin remediation records — M1 fixed four self-arm/tap-evasion holes, M2 fixed
+  two ≥8/10 findings). Evidence:
+  - M1 `committed-auto-merge-marker` — pin `clean at e44d1f5`; **PR #198, merged (620ce2c)**.
+  - M2 `arm-auto-merge-skill` — pin `clean at 1edf3c9`; **PR #199, merged (90eb689)**.
+  - M3 `auto-merge-doctrine` — pin `clean at aa0414c`; **PR #200, merged (a229e09)**.
+  - M4 `implement-feature-run-through` — pin `clean at f8ae2cc`, **re-pinned `clean at f072b48`**
+    after the strict-protection cascade (rebased onto `main` when #200 landed, re-verified disjoint,
+    re-pinned via commit 223ab87); **PR #201, merged (c542d37)**.
+- **Wave landing** — landed under the required-checks floor, order-independent (M3/M4 disjoint), each
+  the owner's tap. M4 hit the strict "branch up to date" cascade after M3 merged: update-onto-`main` →
+  re-suite → re-pin, exactly the `land-feature` remedy. Post-wave **consolidated check GREEN on `main`
+  together, 2026-08-03**: 12/12 committed suites, `plugin validate --strict`, all four lints
+  (frontmatter/anchors/plan/neutral), `verified-pin` clean. Evidence: the four merged PRs + this
+  consolidated-check run.
+- **Spec reconciliation** — this plan-only commit: this Lifecycle backfill + the 4 completed milestone
+  specs archived to `specs/milestones/_landed/`. Evidence: **this reconciliation PR**. (No
+  `00-product.md` / `01-architecture.md` edit — the feature changed no data shape or environment fact;
+  it added scripts/skills/decisions only.)
 - **`review-feature`** — **not applicable** (no-UI feature, Q8.1 verb false): completeness is closed
   by `verify-milestone` per milestone; there is no composition to diff. Its absence is recorded here,
-  never silently skipped.
+  never silently skipped. **The feature is DONE at the consolidated check above.**

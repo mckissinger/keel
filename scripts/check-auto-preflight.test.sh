@@ -17,15 +17,24 @@ pass=0 failc=0
 ok()  { echo "ok   - $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL - $1"; failc=$((failc + 1)); }
 
-# gh stub: `gh api .../protection` → $GH_PROT_FILE (check b); any other `gh api`
-# (the repos/{owner}/{repo} lookup, check d) → $GH_REPO_FILE. A missing/unset
-# file for either → a 404-shaped failure (fail-closed path under test).
+# gh stub, modelling the three calls the delegated check-branch-protection.sh makes:
+#   `gh repo view --json defaultBranchRef --jq …` → the SERVER default branch name
+#      (${GH_DEFAULT_BRANCH:-main}) — the source-of-truth resolution (b) now uses.
+#   `gh api …/branches/<db>/protection` → $GH_PROT_FILE, ONLY when <db> is that
+#      server default (a query for any other branch 404s).
+#   any other `gh api` (the repos/{owner}/{repo} lookup, check d) → $GH_REPO_FILE.
+# A missing/unset file for either → a 404-shaped failure (fail-closed path under test).
 mkdir -p "$TMP/bin"
 cat > "$TMP/bin/gh" <<'EOF'
 #!/usr/bin/env bash
+db="${GH_DEFAULT_BRANCH:-main}"
 case "$*" in
-  *protection*)
+  *"repo view"*)
+    printf '%s\n' "$db" ;;
+  *"branches/$db/protection"*)
     if [ -n "${GH_PROT_FILE:-}" ] && [ -f "$GH_PROT_FILE" ]; then cat "$GH_PROT_FILE"; exit 0; fi
+    echo "gh: Branch not protected (HTTP 404)" >&2; exit 1 ;;
+  *protection*)
     echo "gh: Branch not protected (HTTP 404)" >&2; exit 1 ;;
   *)
     if [ -n "${GH_REPO_FILE:-}" ] && [ -f "$GH_REPO_FILE" ]; then cat "$GH_REPO_FILE"; exit 0; fi
@@ -314,6 +323,24 @@ cat > "$TMP/protection-two.json" <<'EOF'
 EOF
 PREFLIGHT_REQUIRED_CHECKS="verified-pin plan-lint" run_gate "$PROJ" "$TMP/protection-two.json"
 expect "(b2) skipped when security-review absent from the required set" 0 "auto-preflight: PASS"
+
+# 21. The config-block REQUIRED_CHECKS edit survives the delegation. A project copy
+#     that HARDENED its required set by editing the config-block default (the
+#     documented "a project copy edits these" path — NOT the env override) must
+#     still have that stronger set enforced by the delegated check. Copy both
+#     scripts, add `deploy-gate` to the preflight copy's config-block default, and
+#     run with NO PREFLIGHT_REQUIRED_CHECKS env against protection that lacks
+#     deploy-gate: it must GAP. (Pre-fix, the delegation dropped the parent's
+#     unexported var and the child fell back to its 3-check default → false PASS.)
+CFG="$TMP/cfg"; mkdir -p "$CFG/scripts"
+cp "$SCRIPT" "$CFG/scripts/check-auto-preflight.sh"
+cp "$(dirname "$SCRIPT")/check-branch-protection.sh" "$CFG/scripts/check-branch-protection.sh"
+chmod +x "$CFG/scripts/check-auto-preflight.sh" "$CFG/scripts/check-branch-protection.sh"
+sed -i.bak 's/security-review}"/security-review deploy-gate}"/' "$CFG/scripts/check-auto-preflight.sh"
+make_proj p21
+OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$TMP/protection-full.json" GH_REPO_FILE="$TMP/repo-aam-true.json" \
+  PREFLIGHT_T_SET="$SENTINEL" bash "$CFG/scripts/check-auto-preflight.sh" "$PROJ" 2>&1)" && RC=0 || RC=$?
+expect "config-block REQUIRED_CHECKS edit propagates across the delegation" 1 "'deploy-gate' is not a REQUIRED status check"
 
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"

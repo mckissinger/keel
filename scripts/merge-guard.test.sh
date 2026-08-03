@@ -577,6 +577,152 @@ expect_decision "marker only in the worktree's .claude → not read → ask (mar
 rm -rf "$WT9/.claude"
 STUB_PATH=""
 
+# ---- committed per-project auto-merge marker --------------------------------
+# Contract (merge-guard.sh header): a marker committed to the DEFAULT BRANCH
+# (.claude/keel-auto-merge.json, scope="project" + created + invoker), read ONLY
+# from origin/<default> (never the working tree, never BASE_REF_R) + NO mode + NO
+# attended marker + a bare `gh pr merge <pr> --auto` + gate PASS → allow. Plain →
+# ask. Gate FAIL → deny. A PR that TOUCHES the marker → ask (human-tap rule,
+# before every allow row). Working-tree-only / not-on-default-branch → absent.
+# Precedence: mode > attended > committed.
+
+# A gh stub mapping the PR arg to a head branch so one repo exercises a clean PR
+# (123 → feat-clean), a marker-TOUCHING PR (777 → feat-marker), and an
+# unrelated-history PR (888 → feat-unrelated, no merge base → indeterminate diff).
+mkdir -p "$TMP/bin-committed"
+cat > "$TMP/bin-committed/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" > "$TMP/gh-args.txt"
+if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  head=feat-clean
+  for a in "\$@"; do case "\$a" in 777) head=feat-marker ;; 888) head=feat-unrelated ;; esac; done
+  printf '{"baseRefName":"main","headRefName":"%s"}\n' "\$head"
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$TMP/bin-committed/gh"
+
+# created 1h ago — committed markers carry NO TTL, but `created` is a required,
+# non-empty field, so use a real timestamp.
+COMMIT_JSON="$(printf '{"scope":"project","created":"%s","invoker":"human:keel-arm-auto-merge"}' "$(ts_ago 1)")"
+arm_committed() { # <repo> <json> — commit the marker onto refs/heads/main so origin/main carries it
+  local repo="$1" json="$2" cur
+  cur="$(git -C "$repo" rev-parse --abbrev-ref HEAD)"
+  git -C "$repo" checkout -q main
+  mkdir -p "$repo/.claude"
+  printf '%s' "$json" > "$repo/.claude/keel-auto-merge.json"
+  git -C "$repo" add -f .claude/keel-auto-merge.json
+  git -C "$repo" -c user.email=t@keel.test -c user.name=t commit -qm "arm committed auto-merge"
+  git -C "$repo" update-ref refs/remotes/origin/main "$(git -C "$repo" rev-parse HEAD)"
+  git -C "$repo" checkout -q "$cur" # the marker file leaves the working tree — honor must come from origin/main
+}
+
+# R10: main default; a clean feature branch, a marker-touching branch, an orphan
+# branch; marker armed on main; passing gate. Gate script is created LAST so the
+# orphan's `git clean` never removes it.
+make_repo r10 main symref; R10="$REPO"
+git -C "$R10" checkout -q -b feat-clean
+echo code > "$R10/src.txt"; git -C "$R10" add -f src.txt
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R10" checkout -q -b feat-marker main
+mkdir -p "$R10/.claude"; printf '%s' "$COMMIT_JSON" > "$R10/.claude/keel-auto-merge.json"
+git -C "$R10" add -f .claude/keel-auto-merge.json
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR (marker-touching)"
+git -C "$R10" checkout -q --orphan feat-unrelated
+git -C "$R10" rm -rf --cached . >/dev/null 2>&1 || true
+git -C "$R10" clean -fdq 2>/dev/null || true
+echo x > "$R10/orphan.txt"; git -C "$R10" add -f orphan.txt
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm orphan
+git -C "$R10" checkout -q feat-clean
+arm_committed "$R10" "$COMMIT_JSON"
+mkdir -p "$R10/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R10/scripts/check-verified-pin.sh"; chmod +x "$R10/scripts/check-verified-pin.sh"
+STUB_PATH="$TMP/bin-committed"
+
+# The one committed allow row: valid marker on main + clean PR + bare --auto + gate PASS.
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker on main + clean PR + --auto + gate pass → allow" allow "committed per-project auto-merge active"
+run_guard "$R10" 'gh pr merge --auto 123'
+expect_decision "committed: flag order does not matter → allow (delegates to required checks)" allow "required checks"
+run_guard "$R10" 'gh pr merge 123 --auto --rebase'
+expect_decision "committed: --auto with a merge-method flag still allows (positive control)" allow "committed per-project auto-merge active"
+
+# Plain gh pr merge (no --auto) stays ask under the committed marker.
+run_guard "$R10" 'gh pr merge 123 --squash'
+expect_decision "committed marker, no --auto → ask" ask "verified-pin gate passed"
+# Bundled / chained --auto → ask (only the bare shape unlocks).
+run_guard "$R10" 'gh pr merge 123 --auto && echo done'
+expect_decision "committed: chained --auto never allows → ask" ask
+
+# HUMAN-TAP RULE: a marker-touching PR → ask even with a valid marker + passing gate.
+run_guard "$R10" 'gh pr merge 777 --auto'
+expect_decision "committed + marker-touching PR → ask (human-tap, before every allow row)" ask "human merge tap"
+# Indeterminate file list (no merge base) → ask, fail closed.
+run_guard "$R10" 'gh pr merge 888 --auto'
+expect_decision "committed + indeterminate PR diff (no merge base) → ask (fail closed)" ask
+
+# Other merge shapes / non-triggers byte-for-byte today's table under the committed marker.
+run_guard "$R10" 'git merge main'
+expect_decision "committed marker: git merge <default> stays ask" ask
+run_guard "$R10" 'git push origin main'
+expect_decision "committed marker: git push <default> stays ask" ask
+run_guard "$R10" 'git status'
+expect_silent "committed marker: non-merge command stays silent"
+
+# PRECEDENCE mode > attended > committed. Add an attended marker → attended governs.
+write_attended "$R10" "$ATT_JSON"
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed + attended both active → attended governs (allow, attended reason)" allow "attended auto-merge active"
+# Add a mode → mode governs over both.
+write_mode "$R10" "$MODE_JSON"
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed + attended + mode all active → mode governs (allow, mode reason)" allow "autonomy mode active"
+# The human-tap rule fires even under an active mode: a marker-touching PR → ask.
+run_guard "$R10" 'gh pr merge 777 --auto'
+expect_decision "marker-touching PR under an active mode → ask (human-tap before every allow row)" ask "human merge tap"
+rm -f "$R10/.claude/keel-autonomy.json" "$R10/.claude/keel-attended-merge.json"
+
+# Invalid committed markers on the default branch → treated absent → ask floor.
+arm_committed "$R10" '{"scope":"session","created":"2026-08-02T00:00:00Z","invoker":"i"}'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker scope != project → treated absent → ask" ask "verified-pin gate passed"
+arm_committed "$R10" '{"scope":"project","created":"2026-08-02T00:00:00Z"}'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker missing invoker → treated absent → ask" ask "verified-pin gate passed"
+arm_committed "$R10" '{"scope":"project","created":'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "malformed committed marker JSON → treated absent → ask" ask "verified-pin gate passed"
+arm_committed "$R10" '{"scope":5,"created":"2026-08-02T00:00:00Z","invoker":"i"}'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker wrong-typed scope (number) → treated absent → ask (jq/python3 parity)" ask "verified-pin gate passed"
+
+# R11: gate FAIL under a valid committed marker → deny (gate FAIL beats committed).
+make_repo r11 main symref; R11="$REPO"
+git -C "$R11" checkout -q -b feat-clean
+echo code > "$R11/src.txt"; git -C "$R11" add -f src.txt
+git -C "$R11" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+arm_committed "$R11" "$COMMIT_JSON"
+mkdir -p "$R11/scripts"
+cat > "$R11/scripts/check-verified-pin.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "verified-pin: FAIL — synthetic-reason-cm3 (pin drift)" >&2
+exit 1
+EOF
+chmod +x "$R11/scripts/check-verified-pin.sh"
+run_guard "$R11" 'gh pr merge 123 --auto'
+expect_decision "committed marker + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-cm3"
+
+# R12: the marker in the WORKING TREE but NOT on the default branch → absent → ask.
+make_repo r12 main symref; R12="$REPO"
+git -C "$R12" checkout -q -b feat-clean
+echo code > "$R12/src.txt"; git -C "$R12" add -f src.txt
+git -C "$R12" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+mkdir -p "$R12/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R12/scripts/check-verified-pin.sh"; chmod +x "$R12/scripts/check-verified-pin.sh"
+mkdir -p "$R12/.claude"; printf '%s' "$COMMIT_JSON" > "$R12/.claude/keel-auto-merge.json" # working tree only, never on main
+run_guard "$R12" 'gh pr merge 123 --auto'
+expect_decision "committed marker in the working tree but NOT on the default branch → absent → ask (root of trust)" ask "verified-pin gate passed"
+STUB_PATH=""
+
 # ---- shipped shape ------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "merge-guard.sh is executable"
 else bad "merge-guard.sh is executable"; fi

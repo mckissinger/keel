@@ -153,6 +153,59 @@
 # is encoded by jq (python3 fallback, m1's pattern), never by interpolation.
 # The marker text is parsed as data too (json_str, the same string-typed reader
 # as the mode file), never eval'd.
+#
+# --- Committed per-project auto-merge marker contract (this guard is the reading
+#     owner; specs/features/per-project-auto-merge.md is the spec) --------------
+#
+# Path:    .claude/keel-auto-merge.json
+# Fields:  scope   — MUST equal "project" (any other value → the file is invalid)
+#          created — when the marker was armed, ISO-8601 UTC (parsed AS DATA)
+#          invoker — who armed it (the keel:arm-auto-merge skill records this)
+# All three are required, non-empty strings; any defect → treated as NO marker,
+# fail closed.
+#
+# ROOT OF TRUST — presence on the DEFAULT BRANCH, not the working tree. The marker
+# is honored ONLY as read from the default-branch ref proper,
+# `origin/$DEFAULT_BRANCH`, via `git show "origin/$DEFAULT_BRANCH:<path>"` — NEVER
+# the working-tree file and NEVER `BASE_REF_R` (the target PR's base branch, which
+# under the stacked-PR choreography is a SIBLING milestone branch; reading from it
+# would honor a marker an agent planted on a lower stack branch). The default
+# branch advances only by a human-merged PR, so presence there IS the
+# authorization trail: a locally `Write`-n or branch-only .claude/keel-auto-merge.json
+# is ignored. This deliberately INVERTS the untracked attended/mode markers' rule
+# (they are spoofable-if-tracked, so honored only untracked); this marker's
+# authorization is exactly the git history of the default branch, so it is honored
+# only when committed there. A best-effort refresh of the remote ref (mirroring
+# check-verified-pin.sh's step -1) precedes the read so a human's disarm on real
+# `main` is seen; a clone that never fetches at all is the named residual.
+#
+# NO TTL — a committed setting does not expire (contrast the attended marker's 8h
+# and the mode file's 24h). This is safe BECAUSE the read-from-default-branch root
+# of trust means the marker got there through a human-merged PR, not because an
+# unexpiring local file is trusted. Its only writer/remover is the human-invoked
+# keel:arm-auto-merge skill (disable-model-invocation).
+#
+# It is the per-project, committed sibling of the mode row and the attended row.
+# PRECEDENCE: mode > attended > committed. Under NO active mode AND no valid
+# attended marker AND a valid committed marker AND the canonical bare
+# `gh pr merge <pr> --auto` shape AND gate PASS, exactly one row changes, mirroring
+# the mode/attended rows: → "allow" (the redundant per-merge tap is dropped;
+# GitHub still merges only when the required checks pass). Everything else is
+# byte-for-byte today's table.
+#
+# HUMAN-TAP RULE (blocks temporary→permanent escalation): any merge-shaped command
+# whose target PR TOUCHES .claude/keel-auto-merge.json is NEVER auto-merged — it is
+# forced to "ask", BEFORE and regardless of every allow row (mode/attended/
+# committed), so no temporary authority (an 8h attended marker, a 24h mode) can
+# auto-land the permanent marker's own arming/disarming PR. The PR's file list is
+# computed with the non-truncating `git diff --name-only base...head` (never the
+# truncatable `gh pr view --json files`); an indeterminate list fails closed to
+# "ask". The residual — forging the local default-branch ref itself (`git
+# update-ref`/`git branch -f`, not merge/push/commit-shaped) — is the existing
+# markers' own threat model, backstopped by the required-checks floor.
+#
+# Safety: the marker text is parsed as DATA (json_str, string-typed), never eval'd,
+# exactly as the mode/attended markers are.
 
 set -euo pipefail
 set -f # no globbing: command text is tokenized as data
@@ -351,6 +404,34 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
   # TTL (8h): an expired / unparseable / future `created` → treated absent.
   created_fresh "$created" 28800 || return 0
   ATTENDED_ACTIVE=1
+  return 0
+}
+
+# --- committed per-project auto-merge marker (see the contract in the header) --
+
+COMMITTED_ACTIVE=0
+
+read_committed_marker() { # committed .claude/keel-auto-merge.json on the default branch → COMMITTED_ACTIVE
+  COMMITTED_ACTIVE=0
+  local content scope created invoker
+  # Root of trust: the marker is honored ONLY as read from the default-branch ref
+  # (origin/$DEFAULT_BRANCH), NEVER the working tree and NEVER BASE_REF_R (a sibling
+  # branch under a stack). Best-effort refresh first (mirrors check-verified-pin.sh
+  # step -1): a failed fetch warns and proceeds with the local image — never fatal.
+  gitc fetch origin "+refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH" >/dev/null 2>&1 \
+    || echo "keel merge-guard: WARN — could not refresh 'origin/$DEFAULT_BRANCH' for the committed auto-merge marker; proceeding with the local ref" >&2
+  content="$(gitc show "origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
+  [ -n "$content" ] || return 0
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  # scope MUST be the literal "project"; created and invoker present, non-empty.
+  # A partial file, a wrong scope, or malformed JSON fails closed. NO TTL — a
+  # committed setting does not expire; its safety is presence on the default
+  # branch (human-merged), not freshness.
+  [ "$scope" = "project" ] || return 0
+  [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  COMMITTED_ACTIVE=1
   return 0
 }
 
@@ -634,6 +715,18 @@ resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally reso
   return 0
 }
 
+pr_touches_marker() { # 0 = the PR touches the marker OR the file list is indeterminate (fail closed); 1 = definitely does not
+  # The PR's own change set is base...head (three-dot: symmetric-difference from
+  # the merge base, the same diff shape check-verified-pin.sh uses). Non-truncating
+  # by construction — NOT `gh pr view --json files`, which truncates on large PRs
+  # and would let a padded marker-touching PR evade this control. Any diff error
+  # (unresolvable refs, no merge base) → fail closed (return 0 → the caller emits ask).
+  local files
+  files="$(gitc diff --name-only "$BASE_REF_R"..."$HEAD_REF_R" 2>/dev/null)" || return 0
+  printf '%s\n' "$files" | grep -qxF '.claude/keel-auto-merge.json' && return 0
+  return 1
+}
+
 decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the header contract
   # The gate SCRIPT's path comes from ROOT (a project asset, like the markers);
   # it is INVOKED FROM GIT_CTX so it judges the checkout the command runs in.
@@ -661,7 +754,12 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
   fi
   err="$(mktemp)"
   if (cd "$GIT_CTX" && BASE_REF="$BASE_REF_R" "$gate" "$HEAD_REF_R") >/dev/null 2>"$err"; then
-    if [ "$MODE_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+    if [ "$SHAPE" = "gh-pr-merge" ] && pr_touches_marker; then
+      # Human-tap rule (header contract): a PR arming or disarming the committed
+      # marker is never auto-merged — forced to ask BEFORE and regardless of every
+      # allow row, so no temporary authority can auto-land the permanent marker.
+      emit ask "this PR touches the committed auto-merge marker (.claude/keel-auto-merge.json) — arming or disarming per-project auto-merge always takes a human merge tap; no marker or mode auto-merges its own change (specs/features/per-project-auto-merge.md)"
+    elif [ "$MODE_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
       # The one row a valid mode changes (header contract). The decision word
       # is bound through a variable so the self-test's static scan — a
       # tripwire against a bare unconditional allow literal — stays live.
@@ -675,6 +773,16 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
       # no-bare-`allow`-literal tripwire stays live.
       d_auto="allow"
       emit "$d_auto" "attended auto-merge active — an instructed gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-04-attended-auto-merge.md); the per-merge tap is dropped for this session, GitHub merges when and only when the required checks pass"
+    elif [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ] && [ "$COMMITTED_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+      # The committed per-project sibling of the mode/attended rows (header
+      # contract): a marker committed to the default branch — a standing human
+      # authorization — drops the per-merge tap on the same bare `--auto` + gate-pass
+      # shape, for every session in the repo. Precedence mode > attended > committed
+      # is enforced by the MODE_ACTIVE=0 && ATTENDED_ACTIVE=0 guard; the human-tap
+      # rule above has already excluded a marker-touching PR. Same variable-bound
+      # decision word, so the no-bare-`allow`-literal tripwire stays live.
+      d_auto="allow"
+      emit "$d_auto" "committed per-project auto-merge active — a marker committed to the default branch is a standing human authorization; an instructed gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (specs/features/per-project-auto-merge.md); GitHub merges when and only when the required checks pass"
     else
       emit ask "verified-pin gate passed — per-merge human approval"
     fi
@@ -713,6 +821,12 @@ if [ -z "$SHAPE" ]; then exit 0; fi # not merge-shaped → allow silently
 read_mode_file       # no/invalid mode file → MODE_ACTIVE=0 → today's table exactly
 read_attended_marker # no/invalid marker → ATTENDED_ACTIVE=0; ignored when a mode is active
 detect_strict_auto   # only a single plain `gh pr merge ... --auto` sets AUTO_MERGE
+# The committed marker is consulted only when it could actually decide the row —
+# no active mode, no valid attended marker (precedence: mode > attended > committed).
+# This also skips its best-effort fetch under a mode/attended run.
+if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ]; then
+  read_committed_marker # no/invalid marker on the default branch → COMMITTED_ACTIVE=0
+fi
 
 decide
 exit 0

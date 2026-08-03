@@ -50,6 +50,15 @@ is_plan_path() {
     # Runtime-affecting spec files are code, not plan: a PR touching either needs a
     # pinned milestone/chore spec, and a post-pin edit to either counts as drift.
     specs/stack-profile.md|specs/run-command-inventory.txt) return 1 ;;
+    # The committed per-project auto-merge marker is treated as PLAN (the inverse
+    # carve-out): it carries no code, so a verified: pin — a code-verification
+    # instrument — has nothing to verify, and arming is human-attended by
+    # construction. Exempting it lets the arming skill open a plan-only PR that
+    # lands under the protection contract; its authority is gated elsewhere and
+    # more strongly (the merge-guard human-tap rule on any marker-touching PR +
+    # the required-checks floor), not by a pin. Exactly one file, never a
+    # `.claude/*` wildcard (decisions/2026-08-02-committed-auto-merge-marker.md).
+    .claude/keel-auto-merge.json) return 0 ;;
     specs/*|design/*|decisions/*|deferrals/*) return 0 ;;
     *) return 1 ;;
   esac

@@ -223,6 +223,79 @@ git -C "$R2" -c user.email=t@keel.test -c user.name=t commit -qm spoof-attended
 run_rules "$R2" 'gh pr merge 123 --auto'
 expect_block "git-tracked attended marker is a spoof → treated absent → exit 2" "never merge"
 
+# ---- committed per-project auto-merge marker: the --auto defer ---------------
+# Contract (merge-guard.sh header; this guard mirrors the defer): a marker
+# committed to the DEFAULT BRANCH (.claude/keel-auto-merge.json, scope="project"),
+# read ONLY from origin/<default> (never the working tree), + NO mode + NO attended
+# marker + a bare `gh pr merge <pr> --auto` → exit 0, deferring to merge-guard.sh
+# (which owns the gate check AND the human-tap rule). Precedence mode > attended >
+# committed. This guard does NOT inspect the PR's files.
+COMMIT_JSON="$(printf '{"scope":"project","created":"%s","invoker":"human:keel-arm-auto-merge"}' "$(ts_ago 1)")"
+arm_committed_rc() { # <repo> <json> — commit the marker onto refs/heads/main so origin/main carries it
+  local repo="$1" json="$2" cur
+  cur="$(git -C "$repo" rev-parse --abbrev-ref HEAD)"
+  git -C "$repo" checkout -q main
+  mkdir -p "$repo/.claude"
+  printf '%s' "$json" > "$repo/.claude/keel-auto-merge.json"
+  git -C "$repo" add -f .claude/keel-auto-merge.json
+  git -C "$repo" -c user.email=t@keel.test -c user.name=t commit -qm "arm committed auto-merge"
+  git -C "$repo" update-ref refs/remotes/origin/main "$(git -C "$repo" rev-parse HEAD)"
+  git -C "$repo" checkout -q "$cur"
+}
+
+# NB: the repo-path var is RCM (not RC) — run_rules() overwrites a var named RC
+# with its exit code, so a repo path named RC would be clobbered to "0"/"2".
+make_repo rc; RCM="$REPO"
+git -C "$RCM" checkout -q -b feat/work
+
+# No committed marker yet → --auto still blocked (regression).
+run_rules "$RCM" 'gh pr merge 123 --auto'
+expect_block "no committed marker: gh pr merge --auto → exit 2 (unchanged)" "never merge"
+
+# Arm the marker on main → a bare --auto now DEFERS (exit 0, silent).
+arm_committed_rc "$RCM" "$COMMIT_JSON"
+run_rules "$RCM" 'gh pr merge 123 --auto'
+expect_silent "committed marker on main + bare gh pr merge --auto → exit 0 (defer to merge-guard)"
+run_rules "$RCM" 'gh pr merge 123 --auto --squash'
+expect_silent "committed marker + --auto with a merge-method flag → exit 0 (defer)"
+run_rules "$RCM" 'gh pr merge --auto 123'
+expect_silent "committed marker + --auto before the PR arg → exit 0 (defer)"
+
+# Plain / bundled / other merge shapes still exit 2 under the committed marker.
+run_rules "$RCM" 'gh pr merge 123'
+expect_block "committed marker + plain gh pr merge (no --auto) → exit 2" "never merge"
+run_rules "$RCM" 'gh pr merge 123 --auto && echo done'
+expect_block "committed marker + chained --auto → exit 2 (only the bare shape defers)" "never merge"
+run_rules "$RCM" 'git push origin main'
+expect_block "committed marker + git push <default> → exit 2" "never merge"
+run_rules "$RCM" 'git merge main'
+expect_block "committed marker + git merge <default> → exit 2" "never merge"
+
+# git commit on the default branch is still blocked (the marker does not change the branch-first rule).
+git -C "$RCM" checkout -q main
+run_rules "$RCM" 'git commit -m wip'
+expect_block "committed marker + git commit on the default branch → exit 2 (branch first)" "branch first"
+git -C "$RCM" checkout -q feat/work
+
+# PRECEDENCE: an active autonomy mode suppresses the committed defer (parity with
+# the attended defer under a mode) → exit 2.
+write_mode "$RCM" "$MODE_JSON"
+run_rules "$RCM" 'gh pr merge 123 --auto'
+expect_block "committed marker + active autonomy mode → exit 2 (mode precedence suppresses the defer)" "never merge"
+rm -f "$RCM/.claude/keel-autonomy.json"
+
+# Invalid committed marker on main (wrong scope) → treated absent → exit 2.
+arm_committed_rc "$RCM" '{"scope":"session","created":"2026-08-02T00:00:00Z","invoker":"i"}'
+run_rules "$RCM" 'gh pr merge 123 --auto'
+expect_block "committed marker scope != project on main → treated absent → exit 2" "never merge"
+
+# ROOT OF TRUST: the marker in the WORKING TREE but NOT on the default branch → absent → exit 2.
+make_repo rc2; RCM2="$REPO"
+git -C "$RCM2" checkout -q -b feat/work
+mkdir -p "$RCM2/.claude"; printf '%s' "$COMMIT_JSON" > "$RCM2/.claude/keel-auto-merge.json" # working tree only, never on main
+run_rules "$RCM2" 'gh pr merge 123 --auto'
+expect_block "committed marker in the working tree but NOT on the default branch → exit 2 (root of trust)" "never merge"
+
 # ---- reader-less degrade: no jq AND no python3 → raw-scan fallback, fail CLOSED --
 # Contract (m1): a reader-less environment can no longer silently allow a merge-
 # or commit-shaped command. The guard falls back to a raw data-only scan of the

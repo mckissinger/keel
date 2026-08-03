@@ -77,7 +77,10 @@ SECREVIEW_WF_DIR="${PREFLIGHT_WF_DIR:-.github/workflows}"
 CHECK_CONTRACT_FILE="${PREFLIGHT_CHECK_CONTRACT:-.claude/keel-auto-merge-checks.json}"
 KEEL_DEFAULT_CHECKS="verified-pin plan-lint security-review"
 KEEL_DEFAULT_SECREVIEW_CHECK="security-review"
-KEEL_DEFAULT_SECREVIEW_PATTERN="claude-code-security-review"
+# NOTE: there is no KEEL_DEFAULT_SECREVIEW_PATTERN sentinel — the committed contract
+# does NOT carry `pattern`, so there is no committed-vs-default comparison to make.
+# The (b2) match pattern comes only from PREFLIGHT_SECREVIEW_PATTERN (trusted env) or
+# the inline default on the SECREVIEW_PATTERN line above.
 # ------------------------------------------------------------------------------
 
 fails=0
@@ -131,24 +134,30 @@ override_checks=0
 override_secreview_check=0
 [ -n "${PREFLIGHT_SECREVIEW_CHECK+set}" ] && override_secreview_check=1
 [ "$SECREVIEW_CHECK_NAME" != "$KEEL_DEFAULT_SECREVIEW_CHECK" ] && override_secreview_check=1
-override_secreview_pattern=0
-[ -n "${PREFLIGHT_SECREVIEW_PATTERN+set}" ] && override_secreview_pattern=1
-[ "$SECREVIEW_PATTERN" != "$KEEL_DEFAULT_SECREVIEW_PATTERN" ] && override_secreview_pattern=1
+# No override_secreview_pattern flag: the committed contract never supplies a pattern,
+# so there is nothing to override. SECREVIEW_PATTERN is already resolved (env or the
+# inline default) above and is never touched by the committed config.
 
 # read_check_contract → CONTRACT_STATE = absent|malformed|valid; on valid, sets
-# CONTRACT_CHECKS / CONTRACT_SECREVIEW_CHECK / CONTRACT_SECREVIEW_PATTERN from the
-# committed file. NOTE: the committed contract deliberately does NOT carry an
-# `external` attestation — a non-Actions security-review provider is attested ONLY
-# by the per-invocation PREFLIGHT_SECREVIEW_EXTERNAL=1 env var (a loud, named
-# operator one-off). Porting that bypass into the standing committed file would let
-# a repo commit `external: true` and skip (b2) content-scanning forever — the exact
-# never-weakens violation this gate forbids (pre-pin /security-review finding,
-# decisions/2026-08-03-arm-auto-merge-check-contract.md). So the config renames the
-# review check and sets its pattern, but can NEVER switch off the content scan.
+# CONTRACT_CHECKS / CONTRACT_SECREVIEW_CHECK from the committed file. The committed
+# contract declares the required-check NAMES and WHICH of them is the security review
+# — never how the (b2) content scan identifies a real review action, and never whether
+# the scan runs. Two fields are DELIBERATELY NOT read from it, both the same
+# never-weakens class (verifier + pre-pin /security-review findings,
+# decisions/2026-08-03-arm-auto-merge-check-contract.md):
+#   - `external` — a non-Actions provider is attested ONLY by the per-invocation
+#     PREFLIGHT_SECREVIEW_EXTERNAL=1 env var; a committed `external:true` would skip
+#     (b2) content-scanning forever.
+#   - `pattern`  — the uses:-line action reference the (b2) scan matches stays keel's
+#     default, overridable ONLY by the trusted PREFLIGHT_SECREVIEW_PATTERN env. A
+#     committed pattern is a SUBSTRING its author picks, and any too-broad value
+#     (`@`, `.*`, an org prefix) makes the scan match every uses: line — passing (b2)
+#     with no real review. Substring-matching an attacker-declarable pattern is
+#     inherently weakenable, so the untrusted committed file never supplies it.
+# The config renames the review check, but can NEVER switch off or weaken the scan.
 CONTRACT_STATE="absent"
 CONTRACT_CHECKS=""
 CONTRACT_SECREVIEW_CHECK=""
-CONTRACT_SECREVIEW_PATTERN=""
 read_check_contract() {
   [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ] || return 0   # deps already gapped; stay absent
   command -v git >/dev/null 2>&1 || return 0
@@ -163,21 +172,17 @@ read_check_contract() {
   # Content was read: from here a broken file is malformed (GAP), not absent.
   printf '%s' "$content" | jq -e . >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
   # required_checks must be a non-empty array whose every element is a NON-EMPTY
-  # string; and security_review.check / .pattern, WHEN PRESENT, must each be a
-  # non-empty string. An empty `pattern` is a never-weakens hole: it collapses the
-  # (b2) content-scan regex (`uses: ... $SECREVIEW_PATTERN`) to "any uncommented
-  # uses: line", so a repo could commit pattern:"" and pass (b2) with NO real
-  # review workflow; an empty `check` is the analogous hole for the (b2) name match.
-  # A present-but-empty sub-field is therefore MALFORMED (GAP), never accepted —
-  # jq's `//` only substitutes the keel default on `null` (a genuinely ABSENT
-  # field), not on "", so absence still falls back but "" would silently survive.
-  # (Same class as the committed-`external` bypass the pre-pin /security-review
-  # caught; closed here at the same read boundary.)
+  # string; and security_review.check, WHEN PRESENT, must be a non-empty string. An
+  # empty `check` is a never-weakens hole for the (b2) NAME match, so a present-but-
+  # empty sub-field is MALFORMED (GAP), never accepted — jq's `//` substitutes the
+  # keel default only on `null` (a genuinely ABSENT field), not on "", so absence
+  # falls back but "" would silently survive. (`.security_review.pattern` is NOT
+  # validated here because it is NOT read from the committed file at all — see the
+  # header note; the pattern stays keel-default / env-only.)
   printf '%s' "$content" | jq -e '
     (.required_checks|type=="array") and (.required_checks|length>0)
     and (.required_checks|all(type=="string" and length>0))
-    and ((.security_review.check    // "x")|type=="string" and length>0)
-    and ((.security_review.pattern  // "x")|type=="string" and length>0)
+    and ((.security_review.check // "x")|type=="string" and length>0)
   ' >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
   # NEWLINE-separated so a check CONTEXT MAY CONTAIN SPACES — a consuming repo's
   # real CI names routinely do (e.g. "typecheck · lint · test"); a space-joined
@@ -185,9 +190,9 @@ read_check_contract() {
   CONTRACT_CHECKS="$(printf '%s' "$content" | jq -r '.required_checks[]')"
   [ -n "$CONTRACT_CHECKS" ] || { CONTRACT_STATE="malformed"; return 0; }
   CONTRACT_SECREVIEW_CHECK="$(printf '%s' "$content" | jq -r '.security_review.check // "'"$KEEL_DEFAULT_SECREVIEW_CHECK"'"' 2>/dev/null || printf '%s' "$KEEL_DEFAULT_SECREVIEW_CHECK")"
-  CONTRACT_SECREVIEW_PATTERN="$(printf '%s' "$content" | jq -r '.security_review.pattern // "'"$KEEL_DEFAULT_SECREVIEW_PATTERN"'"' 2>/dev/null || printf '%s' "$KEEL_DEFAULT_SECREVIEW_PATTERN")"
-  # .security_review.external is DELIBERATELY NOT read — external attestation is
-  # env-only (see the note above); a committed `external` field is ignored.
+  # .security_review.pattern and .security_review.external are DELIBERATELY NOT read —
+  # both are env-only (PREFLIGHT_SECREVIEW_PATTERN / PREFLIGHT_SECREVIEW_EXTERNAL); a
+  # committed `pattern` or `external` field is ignored (header note above).
   CONTRACT_STATE="valid"
 }
 
@@ -202,12 +207,12 @@ if [ "$override_checks" -eq 0 ]; then
       ;;
     valid)
       REQUIRED_CHECKS="$CONTRACT_CHECKS"
-      # env still wins per-knob for the security-review name/pattern (precedence
-      # env > config). external attestation is NOT taken from the committed file —
-      # it stays the env-only PREFLIGHT_SECREVIEW_EXTERNAL, so a committed config can
-      # never switch off the (b2) content scan.
-      [ "$override_secreview_check" -eq 1 ]   || SECREVIEW_CHECK_NAME="$CONTRACT_SECREVIEW_CHECK"
-      [ "$override_secreview_pattern" -eq 1 ] || SECREVIEW_PATTERN="$CONTRACT_SECREVIEW_PATTERN"
+      # env still wins for the security-review check NAME (precedence env > config).
+      # The (b2) match PATTERN and the external attestation are NOT taken from the
+      # committed file — they stay env-only (PREFLIGHT_SECREVIEW_PATTERN /
+      # PREFLIGHT_SECREVIEW_EXTERNAL), so a committed config can neither switch off
+      # nor weaken the (b2) content scan.
+      [ "$override_secreview_check" -eq 1 ] || SECREVIEW_CHECK_NAME="$CONTRACT_SECREVIEW_CHECK"
       ;;
     absent) : ;;   # keel defaults already in place
   esac
@@ -280,14 +285,14 @@ if printf '%s\n' "$REQUIRED_CHECKS_NL" | grep -qxF "$SECREVIEW_CHECK_NAME"; then
           [ -f "$wf" ] || continue
           # SECREVIEW_CHECK_NAME and SECREVIEW_PATTERN are LITERAL strings — a check
           # context name and an action reference — NEVER regexes. Match them with
-          # grep -F so a committed contract cannot inject a trivially-matching regex
-          # (`pattern:".*"`, `check:"."`, a bare space) that defeats (b2) while
-          # passing the length>0 validation. (Third never-weakens hole of the same
-          # class as committed-`external` and empty-pattern; the value is used as
-          # DATA, so it is matched literally.) The uncommented-`uses:`-line anchor
-          # stays an ERE (fixed, not attacker-controlled); the per-file line is then
-          # comment-stripped (`sed 's/#.*$//'`) so the pattern must appear in real
-          # content, not a trailing comment, before the literal match.
+          # grep -F. The check NAME is committed-config-controllable, so literal
+          # matching is load-bearing here: a committed `check:"."` must not match any
+          # file via BRE. (The PATTERN is env-only / keel-default — no committed
+          # value reaches it — but grep -F is still correct: the pattern is an action
+          # reference, never a regex.) The uncommented-`uses:`-line anchor stays an
+          # ERE (fixed, not attacker-controlled); the per-file line is comment-
+          # stripped (`sed 's/#.*$//'`) so the pattern must appear in real content,
+          # not a trailing comment, before the literal match.
           grep -qF "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
           grep -E "^[[:space:]]*-?[[:space:]]*uses:" "$wf" 2>/dev/null | sed 's/#.*$//' | grep -qF "$SECREVIEW_PATTERN" || continue
           grep -q "pull_request" "$wf" 2>/dev/null || continue

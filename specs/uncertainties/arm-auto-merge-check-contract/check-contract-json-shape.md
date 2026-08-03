@@ -5,17 +5,18 @@
 ```json
 {
   "required_checks": ["...", "..."],
-  "security_review": { "check": "security-review", "pattern": "claude-code-security-review" }
+  "security_review": { "check": "security-review" }
 }
 ```
 
-— a nested `security_review` object. (An earlier draft also carried `external`; the pre-pin
-`/security-review` found that a committed `external: true` would silently disable the (b2) content
-scan, so external attestation was removed from the committed schema and stays env-only —
-`decisions/2026-08-03-arm-auto-merge-check-contract.md`.) And I added a matching env override
-`PREFLIGHT_SECREVIEW_CHECK`
-(there was none before) so the security-review *check name* has the same env > config > default
-precedence as `PREFLIGHT_SECREVIEW_PATTERN` / `PREFLIGHT_SECREVIEW_EXTERNAL`.
+— a nested `security_review` object carrying the check **name** only. (Earlier drafts also carried
+`external` and `pattern`; verification found both weakenable — a committed `external: true` disables the
+(b2) scan, and a committed `pattern` is a substring whose too-broad values match every `uses:` line — so
+both were removed from the committed schema and stay env-only / keel-default,
+`decisions/2026-08-03-arm-auto-merge-check-contract.md`, "the three-round evolution".) And I added a
+matching env override `PREFLIGHT_SECREVIEW_CHECK` (there was none before) so the security-review *check
+name* has the same env > config > default precedence as `PREFLIGHT_SECREVIEW_PATTERN` /
+`PREFLIGHT_SECREVIEW_EXTERNAL`.
 
 **The viable alternatives.** (1) A **flat** shape — `security_review_check` / `security_review_pattern`
 / `security_review_external` as top-level keys — matching the flat `PREFLIGHT_*` env names more

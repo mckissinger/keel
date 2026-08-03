@@ -1,12 +1,25 @@
 # Milestone — arm-auto-merge-check-contract: a project declares its own required-check names, committed and fail-closed
 
 **Goal:** `keel:arm-auto-merge`'s protection assertion honors a **committed per-project check-contract**
-— a project names its own required-check contexts (and its security-review check name / pattern /
-external attestation) in `.claude/keel-auto-merge-checks.json`, read fail-closed from the repo's server
-default branch — instead of only keel's plugin-repo defaults or an ephemeral env override. The plugin's
-assertion **logic** stays canonical; the project supplies only **names**. A project can rename the
-security-review check, never remove it; a missing, malformed, or floor-weakening config fails closed.
-Any PR editing the check-contract takes a human merge tap.
+— a project names its own required-check contexts (and *which* of them is its security-review check) in
+`.claude/keel-auto-merge-checks.json`, read fail-closed from the repo's server default branch — instead
+of only keel's plugin-repo defaults or an ephemeral env override. The plugin's assertion **logic** stays
+canonical; the project supplies only **names**. A project can rename the security-review check, never
+remove it; a missing, malformed, or floor-weakening config fails closed. Any PR editing the
+check-contract takes a human merge tap.
+
+**Design note (settled 2026-08-03, owner-approved after three verification rounds).** The committed
+contract carries **names only** — `required_checks` and the security-review `check` name. It carries
+**neither `pattern` nor `external`**: the (b2) content-scan pattern (which `uses:` reference identifies a
+real review action) stays keel's default, overridable ONLY by the trusted `PREFLIGHT_SECREVIEW_PATTERN`
+env, and external attestation stays the env-only `PREFLIGHT_SECREVIEW_EXTERNAL`. Both were removed from
+the committed schema because a committed value the file's author picks can silently weaken the (b2) scan
+— a committed `external:true` skips it outright (pre-pin `/security-review` finding), and a committed
+`pattern` is a **substring** whose too-broad values (`""`, `.*`, `@`, an org prefix, the repo's own
+non-review action) make the scan match every `uses:` line and pass with no real review. Substring-
+matching an attacker-declarable pattern is inherently weakenable, so the untrusted committed file never
+supplies it; the real motivating incident (crelaunch) needed only project-specific **check names**, which
+a project using keel's own review action never needs a custom pattern for.
 
 **Change:** `specs/changes/arm-auto-merge-check-contract.md`. **No-UI** (keel plugin repo) →
 two-dimension done-conditions (logic/invariants + behavioral completeness), no fidelity.
@@ -25,19 +38,20 @@ verifier at `xhigh`.
 {
   "required_checks": ["verified-pin gate", "typecheck · lint · test", "security-review"],
   "security_review": {
-    "check": "security-review",
-    "pattern": "claude-code-security-review"
+    "check": "security-review"
   }
 }
 ```
 
 `required_checks` is the exact set of status-check contexts that must be REQUIRED on the default
-branch. `security_review.check` is which of those contexts is the security review; `pattern` is the
-uncommented-`uses:` pattern the (b2) content scan matches. The committed contract carries **no
-`external` field** — a non-Actions provider is attested only by the per-invocation
-`PREFLIGHT_SECREVIEW_EXTERNAL=1` env var (a committed `external: true` would let a repo skip the (b2)
-content scan forever, a never-weakens violation; the pre-pin `/security-review` caught the earlier
-draft that read it, so the committed field is deliberately ignored).
+branch. `security_review.check` is which of those contexts is the security review (the (b2) content
+scan keys off that name). The committed contract carries **no `pattern` and no `external` field** — the
+uncommented-`uses:` action reference the (b2) scan matches stays keel's default (overridable only by the
+trusted `PREFLIGHT_SECREVIEW_PATTERN` env), and a non-Actions provider is attested only by the
+per-invocation `PREFLIGHT_SECREVIEW_EXTERNAL=1` env var. Both are deliberately env-only / keel-default:
+a committed `external: true` would skip the (b2) scan forever, and a committed `pattern` is a
+substring whose too-broad values match every `uses:` line and pass with no real review — see the Design
+note above. Any `pattern` / `external` key present in the file is **ignored**.
 
 ## Done-conditions
 
@@ -45,8 +59,9 @@ draft that read it, so the committed field is deliberately ignored).
 
 - [auto] **`check-branch-protection.sh` reads the committed check-contract, default-branch-sourced,
   with an absent-vs-malformed fork.** When `.claude/keel-auto-merge-checks.json` is present on the
-  repo's SERVER default branch, its `required_checks` (and declared security-review `check` / `pattern`
-  / `external`) is what the assertion certifies, replacing keel's built-in default set. The read uses
+  repo's SERVER default branch, its `required_checks` (and its declared security-review `check` name) is
+  what the assertion certifies, replacing keel's built-in default set (any `pattern` / `external` key in
+  the file is ignored — those stay env-only / keel-default per the Design note). The read uses
   the **same fail-closed transport** as `merge-guard.sh:read_committed_marker` — default branch resolved
   from `gh repo view` server-truth; a **MANDATORY** fetch of that branch from origin; the content read
   from the just-fetched `refs/remotes/origin/<db>:.claude/keel-auto-merge-checks.json` and parsed as
@@ -75,14 +90,15 @@ draft that read it, so the committed field is deliberately ignored).
   silent fall-back-to-default (absence falls back; a broken *present* config is an error to surface,
   not paper over). "Malformed" is strict at the fail-closed read boundary: unparseable JSON,
   `required_checks` not a non-empty array of **non-empty** strings, **or a present-but-empty
-  `security_review.check` / `security_review.pattern`** — an empty `pattern` would collapse the (b2)
-  `uses:` scan to "any uncommented `uses:` line" and an empty `check` is the analogous (b2) name-match
-  hole, so both are rejected (jq's `//` substitutes the keel default only on a genuinely *absent*
-  field, never on `""`). Beyond emptiness, the declared `check` / `pattern` are matched **literally**
-  (`grep -F`), never as regexes, so a non-empty but trivially-matching value (`pattern:".*"`,
-  `check:"."`, a bare space) cannot collapse the (b2) scan to a near-universal match either — the
-  contract carries DATA, matched as literal strings. (3) The config cannot switch off the (b2) content
-  scan or the (d) `allow_auto_merge` assertion — both run regardless of what the file says.
+  `security_review.check`** — an empty `check` is a (b2) name-match hole, so it is rejected (jq's `//`
+  substitutes the keel default only on a genuinely *absent* field, never on `""`). The committed
+  `check` name is matched **literally** (`grep -F`), never as a regex, so a non-empty but
+  trivially-matching value (`check:"."`, a bare space) cannot satisfy the (b2) name leg against an
+  unrelated file either. (The (b2) `pattern` is **not** validated or matched from the committed file at
+  all — it is env-only / keel-default, so no committed value can weaken it; see the Design note.)
+  (3) The config cannot switch off the (b2) content scan or the (d) `allow_auto_merge` assertion — both
+  run regardless of what the file says, and neither the `pattern` nor the `external` field is read from
+  it.
 - [auto] **The preflight delegation honors the committed config without breaking the config-block-edit
   path.** `scripts/check-auto-preflight.sh` today unconditionally forwards its resolved
   `PREFLIGHT_REQUIRED_CHECKS="$REQUIRED_CHECKS"` to `check-branch-protection.sh` (`:144`), which masks
@@ -118,7 +134,10 @@ draft that read it, so the committed field is deliberately ignored).
   a committed config present → its named set is certified (green only when the repo's protection
   requires exactly those contexts; GAP when it does not); a **forged working-tree / branch-only**
   config is **ignored** (the default-branch read wins) — the anti-forge regression; a **malformed** or
-  **empty** `required_checks` → GAP; a config **omitting the declared security-review** → GAP; an env
+  **empty** `required_checks` → GAP; an **empty `security_review.check`** → GAP; a config **omitting the
+  declared security-review** → GAP; a committed **`pattern` is ignored** (env-only) so it cannot
+  self-certify a non-review action → GAP — the substring-weakening regression; the committed **`check`
+  name is matched literally** so a regex-special name does not satisfy the (b2) name leg → GAP; an env
   override still **beats** the committed config; **absent** config → keel default (the existing green
   case, unchanged). **Fixture note:** this suite currently has **no** git-remote/fetch/`git show`
   machinery (its fixtures are plain dirs + a stubbed `gh`); the transport fixture must be **built here**
@@ -135,7 +154,7 @@ draft that read it, so the committed field is deliberately ignored).
   (a code PR touching only it is exempt), mirroring the marker carve-out test.
 - [auto] **`skills/arm-auto-merge/SKILL.md`** documents the committed check-contract: the one-time
   per-project **setup** (author `.claude/keel-auto-merge-checks.json` naming this repo's required
-  checks + security-review check/pattern, commit it via a plan-only PR — which takes a human tap), that
+  checks + its security-review check name, commit it via a plan-only PR — which takes a human tap), that
   it declares **names only** and never weakens the assertion (security-review stays mandatory; b2 and d
   always run), and the **env > committed config > keel default** precedence. Passes
   `check-skill-frontmatter.sh` + `check-skill-anchors.sh`.

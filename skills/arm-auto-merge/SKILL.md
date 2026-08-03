@@ -54,28 +54,32 @@ never uses those names (it's `verified-pin gate`, `typecheck · lint · test`, a
 a repo the assertion would GAP on a pure **name mismatch**, not a real protection hole.
 
 The fix is a **committed per-project check-contract** — `.claude/keel-auto-merge-checks.json` — where
-the repo declares *its own* required-check contexts and its security-review check name/pattern. The
-assertion reads it fail-closed from the server default branch (the same transport as the marker), so
+the repo declares *its own* required-check contexts and *which* of them is its security-review check.
+The assertion reads it fail-closed from the server default branch (the same transport as the marker), so
 a working-tree or branch-only copy is ignored. Shape:
 
 ```json
 {
   "required_checks": ["verified-pin gate", "typecheck · lint · test", "security-review"],
-  "security_review": { "check": "security-review", "pattern": "claude-code-security-review" }
+  "security_review": { "check": "security-review" }
 }
 ```
 
 It **declares names only** — it can *rename* the security-review check but never *remove* it (a set
-omitting it GAPs), and it cannot switch off the (b2) content scan or the `allow_auto_merge` check. In
-particular it carries **no `external` field**: a non-Actions security-review provider is attested only
-by the per-invocation `PREFLIGHT_SECREVIEW_EXTERNAL=1` env var, never committed (a committed
-`external: true` would silently disable content-scanning forever). A present-but-malformed or empty
-contract fails closed (GAP), never a silent fall-back. Precedence is
-**operator override (`PREFLIGHT_*` env, or an edited config-block default) > committed contract > keel
-default** (`decisions/2026-08-03-arm-auto-merge-check-contract.md`). Commit it as a **plan-only PR**
-(it gets the same `is_plan_path` carve-out as the marker) — and note a PR editing it takes a human tap
-(it is auto-merge trust base). If the repo's checks already match keel's names, skip this; the default
-just works.
+omitting it GAPs), and it cannot switch off the (b2) content scan or the `allow_auto_merge` check. It
+carries **no `pattern` and no `external` field**, and any such key in the file is **ignored**: both stay
+env-only / keel-default because a committed value the author picks can silently weaken the (b2) scan (a
+committed `external: true` skips it; a committed `pattern` is a substring whose too-broad values — `""`,
+`.*`, `@`, an org prefix — match every `uses:` line). The (b2) match pattern stays keel's default,
+overridable only by the trusted per-invocation `PREFLIGHT_SECREVIEW_PATTERN`; a non-Actions provider is
+attested only by `PREFLIGHT_SECREVIEW_EXTERNAL=1`. A repo using keel's own review action needs no
+pattern at all; a repo using a different in-Actions review action sets `PREFLIGHT_SECREVIEW_PATTERN` at
+arm time. A present-but-malformed or empty contract fails closed (GAP), never a silent fall-back.
+Precedence is **operator override (`PREFLIGHT_*` env, or an edited config-block default) > committed
+contract > keel default** (`decisions/2026-08-03-arm-auto-merge-check-contract.md`). Commit it as a
+**plan-only PR** (it gets the same `is_plan_path` carve-out as the marker) — and note a PR editing it
+takes a human tap (it is auto-merge trust base). If the repo's checks already match keel's names, skip
+this; the default just works.
 
 ## `on` (default) — assert protection is live, then commit the marker
 

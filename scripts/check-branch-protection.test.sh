@@ -250,7 +250,7 @@ PROT_CRE="$TMP/protection-crelaunch.json"
 cat > "$PROT_CRE" <<'EOF'
 {"required_status_checks":{"contexts":["verified-pin gate","typecheck · lint · test","security-review"]}}
 EOF
-CFG_CRE='{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","pattern":"claude-code-security-review"}}'
+CFG_CRE='{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review"}}'
 
 # 16. Committed config present → its DECLARED names drive the assertion. Protection
 #     requires crelaunch's names; the committed config names them; PASS. On pre-change
@@ -314,14 +314,17 @@ OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$PROT_CRE" GH_REPO_FILE="$TMP/repo-aa
   PREFLIGHT_SECREVIEW_EXTERNAL=1 bash "$SCRIPT" "$PROJ" 2>&1)" && RC=0 || RC=$?
 expect "env PREFLIGHT_SECREVIEW_EXTERNAL=1 still attests (b2) → PASS (legit path intact)" 0 "branch-protection: PASS"
 
-# 22d. never-weakens: a committed config CANNOT switch off the (b2) content scan via an
-#     EMPTY security_review.pattern. The config names the review check but sets pattern
-#     to "" — which would collapse the (b2) `uses:` regex to "any uncommented uses: line".
-#     The workflow here has a job named security-review on pull_request but its only
-#     `uses:` is a NON-review action, so a correct pattern would GAP. Empty pattern must
-#     be MALFORMED (GAP), never accepted. (Regression: pre-fix, "" survived jq's `//`,
-#     the empty-pattern regex matched the checkout `uses:` line, and (b2) PASSED.)
-git_proj gp22d '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","pattern":""}}'
+# 22d. never-weakens: the committed contract CANNOT supply the (b2) match PATTERN at all —
+#     it is env-only / keel-default, never read from the file (a committed substring the
+#     author picks is inherently weakenable: `@`, `.*`, an org prefix, or here the repo's
+#     OWN non-review action all match trivially). The contract names `pattern:"actions/
+#     checkout"` and the workflow's security-review job runs ONLY actions/checkout — so if
+#     the committed pattern were honored, a checkout would "pass" as the security review.
+#     Because the field is ignored, the keel-default pattern (claude-code-security-review)
+#     is used, which is absent from this workflow → GAP. (Regression: pre-fix the committed
+#     pattern was read and literally matched the checkout uses: line, so (b2) PASSED with
+#     no real review content.)
+git_proj gp22d '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","pattern":"actions/checkout"}}'
 cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
 on:
   pull_request:
@@ -332,43 +335,25 @@ jobs:
 EOF
 git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "non-review workflow" 2>/dev/null || true
 run_gate "$PROJ" "$PROT_CRE"
-expect "committed empty pattern fails closed (GAP), does not defeat (b2)" 1 "is present on 'main' but is not valid"
+expect "committed pattern is IGNORED (env-only) — cannot self-certify a non-review action → GAP" 1 "no workflow content performs a review"
 
-# 22e. And an EMPTY security_review.check is the analogous hole for the (b2) name match →
-#     also MALFORMED (GAP). Locks the classifier: a present-but-empty sub-field is never
-#     accepted (jq `//` substitutes the default only on a genuinely ABSENT field, not "").
-git_proj gp22e '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"","pattern":"claude-code-security-review"}}'
+# 22e. A present-but-EMPTY security_review.check is a never-weakens hole for the (b2) NAME
+#     match → MALFORMED (GAP). The check name IS committed-controllable (unlike the pattern),
+#     so its emptiness is still validated: jq `//` substitutes the default only on a
+#     genuinely ABSENT field, not on "", so "" must be rejected, not silently defaulted.
+git_proj gp22e '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":""}}'
 run_gate "$PROJ" "$PROT_CRE"
 expect "committed empty security_review.check fails closed (GAP)" 1 "is present on 'main' but is not valid"
 
-# 22f. never-weakens (regex injection): a committed security_review.pattern is a LITERAL action
-#     reference, not a regex. A committed pattern:".*" passes the length>0 validation, but a naive
-#     `grep -E "...$pattern"` would match ANY uncommented uses: line — passing (b2) against a
-#     non-review workflow. The (b2) match is now literal (grep -F), so ".*" is searched as the
-#     two-character string ".*", which is absent from a real uses: line → GAP. (Regression: pre-fix
-#     the ".*" ERE matched the checkout uses line and (b2) PASSED with no review content.)
-git_proj gp22f '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","pattern":".*"}}'
-cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
-on:
-  pull_request:
-jobs:
-  security-review:
-    steps:
-      - uses: actions/checkout@0000000000000000000000000000000000000000
-EOF
-git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "non-review workflow" 2>/dev/null || true
-run_gate "$PROJ" "$PROT_CRE"
-expect "committed pattern:'.*' does NOT defeat (b2) — literal match → GAP" 1 "no workflow content performs a review"
-
-# 22g. And the security_review.check name is also matched LITERALLY (grep -F), so a committed
-#     regex-special check name cannot trivially satisfy the "declares the check context" leg. Here
-#     protection requires the dotted context "sec.rev", the committed contract names it, and the
-#     workflow's job is "secXrev" (which a BRE "sec.rev" would match, '.'=any char) with a real
-#     review uses: line. Post-fix leg-1 needs the LITERAL "sec.rev" in the file → absent → GAP.
-#     (Regression: pre-fix the BRE `grep -q "sec.rev"` matched "secXrev" and (b2) PASSED.)
+# 22g. The security_review.check NAME (which IS committed-controllable) is matched LITERALLY
+#     (grep -F), so a committed regex-special check name cannot trivially satisfy the "declares
+#     the check context" leg. Protection requires the dotted context "sec.rev", the committed
+#     contract names it, and the workflow's job is "secXrev" (which a BRE "sec.rev" would match,
+#     '.'=any char) with a real review uses: line. leg-1 needs the LITERAL "sec.rev" in the file
+#     → absent → GAP. (Regression: pre-fix the BRE `grep -q "sec.rev"` matched "secXrev" → PASS.)
 PROT_DOT="$TMP/protection-dot.json"
 printf '%s' '{"required_status_checks":{"contexts":["sec.rev"]}}' > "$PROT_DOT"
-git_proj gp22g '{"required_checks":["sec.rev"],"security_review":{"check":"sec.rev","pattern":"claude-code-security-review"}}'
+git_proj gp22g '{"required_checks":["sec.rev"],"security_review":{"check":"sec.rev"}}'
 cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
 on:
   pull_request:

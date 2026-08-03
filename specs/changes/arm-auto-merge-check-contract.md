@@ -1,7 +1,7 @@
 # Change — arm-auto-merge per-project check-contract
 
-**One sentence.** Let a consuming project declare its **own** required-check names (and its
-security-review check name / pattern) in a **committed, in-repo data file** that
+**One sentence.** Let a consuming project declare its **own** required-check names (and which of them is
+its security-review check) in a **committed, in-repo data file** that
 `keel:arm-auto-merge`'s protection assertion reads — so a project whose real CI diverges from keel's
 plugin-repo defaults can arm without renaming its checks or re-typing an ephemeral env override on
 every arm.
@@ -21,9 +21,11 @@ must not depend on being hand-retyped correctly each arm.
 
 - **Data, not script.** A small committed JSON — `.claude/keel-auto-merge-checks.json`, sibling to the
   marker `.claude/keel-auto-merge.json` — names the project's `required_checks` and its security-review
-  `check` / `pattern` / `external` attestation. The plugin's `scripts/check-branch-protection.sh` stays
-  the canonical **logic**; the project supplies only **names**. It can rename the security-review check,
-  never **remove** it.
+  `check` **name**. The plugin's `scripts/check-branch-protection.sh` stays the canonical **logic**; the
+  project supplies only **names**. It can rename the security-review check, never **remove** it. (The
+  `pattern` and `external` fields are **not** committed — both are env-only / keel-default, since a
+  committed value could silently weaken the (b2) content scan; settled after three verification rounds,
+  `decisions/2026-08-03-arm-auto-merge-check-contract.md`.)
 - **Fail-closed transport, mirrored from the marker read.** The config is read from the repo's SERVER
   default branch via the same `gh repo view` → mandatory fetch → `git show refs/remotes/origin/<db>:…`
   pattern as `merge-guard.sh:read_committed_marker`. A working-tree or branch-only file is ignored.

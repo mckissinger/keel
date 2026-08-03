@@ -214,6 +214,165 @@ OUT="$(PATH="$TMP/bin:$PATH" GH_DEFAULT_BRANCH=main GH_PROT_FILE="$TMP/protectio
   GH_REPO_FILE="$TMP/repo-aam-true.json" bash "$SCRIPT" "$PG" 2>&1)" && RC=0 || RC=$?
 expect "server truth overrides a repointed origin/HEAD" 0 "default branch 'main'"
 
+# =============================================================================
+# Committed per-project check-contract (.claude/keel-auto-merge-checks.json).
+# These need a REAL git repo with a self-origin so the gate's fail-closed
+# transport (gh-repo-view default branch → mandatory `git fetch origin` →
+# `git show refs/remotes/origin/<db>:<path>`) resolves — the plain-dir fixtures
+# above have no git and so exercise only the "absent → keel default" path. This
+# transport machinery is NOT present in the fixtures above; it is built here,
+# mirroring merge-guard.test.sh:arm_committed().
+# =============================================================================
+git_proj() { # <name> <check-contract-json|""> → PROJ: git repo, self-origin, workflow (+ optional config) committed on main
+  PROJ="$TMP/$1"
+  mkdir -p "$PROJ/.github/workflows"
+  cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
+jobs:
+  security-review:
+    steps:
+      - uses: anthropics/claude-code-security-review@0000000000000000000000000000000000000000
+EOF
+  git -C "$PROJ" init -q >/dev/null 2>&1
+  git -C "$PROJ" symbolic-ref HEAD refs/heads/main   # force the default branch to 'main' regardless of git config
+  if [ -n "${2:-}" ]; then
+    mkdir -p "$PROJ/.claude"; printf '%s' "$2" > "$PROJ/.claude/keel-auto-merge-checks.json"
+    git -C "$PROJ" add -f .claude/keel-auto-merge-checks.json
+  fi
+  git -C "$PROJ" add -f .github/workflows/ci.yml
+  git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qm init
+  git -C "$PROJ" remote add origin "$PROJ"   # self-origin: `git fetch origin` resolves offline
+}
+
+# crelaunch-shaped names: the real incident — a repo whose CI is NOT keel's.
+PROT_CRE="$TMP/protection-crelaunch.json"
+cat > "$PROT_CRE" <<'EOF'
+{"required_status_checks":{"contexts":["verified-pin gate","typecheck · lint · test","security-review"]}}
+EOF
+CFG_CRE='{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review"}}'
+
+# 16. Committed config present → its DECLARED names drive the assertion. Protection
+#     requires crelaunch's names; the committed config names them; PASS. On pre-change
+#     code the hardcoded keel default set (verified-pin/plan-lint/security-review) is
+#     checked against protection that lacks two of them → GAP, so a PASS proves the fix.
+git_proj gp16 "$CFG_CRE"
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed config: its declared names are certified → PASS" 0 "branch-protection: PASS"
+
+# 17. Anti-forge: a config committed on main (crelaunch names, matching protection) with
+#     a DIFFERENT, weaker config planted in the WORKING TREE. The gate must read the
+#     default-branch ref, not the working tree — so it still certifies the committed
+#     names → PASS. If it read the working tree it would check 'only-weak' (absent from
+#     protection) → GAP; PASS proves the default-branch read wins.
+git_proj gp17 "$CFG_CRE"
+printf '%s' '{"required_checks":["only-weak"],"security_review":{"check":"only-weak"}}' > "$PROJ/.claude/keel-auto-merge-checks.json"
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed config: a forged WORKING-TREE config is ignored (default-branch read wins) → PASS" 0 "branch-protection: PASS"
+
+# 18. Present-but-malformed (unparseable JSON) → GAP, fail closed (never a silent
+#     fall-back-to-default). The config is on main; it is broken.
+git_proj gp18 '{"required_checks":'
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed config: malformed JSON fails closed (GAP), does not fall back" 1 "is present on 'main' but is not valid"
+
+# 19. Present but required_checks is empty / not a non-empty array → GAP.
+git_proj gp19 '{"required_checks":[]}'
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed config: empty required_checks fails closed (GAP)" 1 "non-empty \"required_checks\" array"
+
+# 20. Committed config that OMITS the security-review check → GAP (never-weakens):
+#     the config may rename the review check, never remove it.
+git_proj gp20 '{"required_checks":["verified-pin gate","typecheck · lint · test"]}'
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed config: omitting security-review fails closed (never-weakens GAP)" 1 "never remove it"
+
+# 21. Env override BEATS the committed config. The config names something protection
+#     lacks ('nonexistent'); the env override names keel's set, which protection-full
+#     requires. PASS proves the env override won (had the config won, 'nonexistent' →
+#     GAP). Uses a repo whose protection is the keel-default set.
+git_proj gp21 '{"required_checks":["nonexistent"],"security_review":{"check":"nonexistent"}}'
+OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$TMP/protection-full.json" GH_REPO_FILE="$TMP/repo-aam-true.json" \
+  PREFLIGHT_REQUIRED_CHECKS="verified-pin plan-lint security-review" bash "$SCRIPT" "$PROJ" 2>&1)" && RC=0 || RC=$?
+expect "env override beats the committed config → PASS on the override's set" 0 "branch-protection: PASS"
+
+# 22b. never-weakens: a committed config CANNOT switch off the (b2) content scan via
+#     `security_review.external`. The config declares external:true and names its
+#     review check, but there is NO review workflow content in the repo (rm .github).
+#     external is env-only, so the committed field is ignored → (b2) runs → GAP.
+#     (Regression for the pre-pin /security-review finding: pre-fix, this PASSED,
+#     silently disabling all content scanning.)
+git_proj gp22b '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","external":true}}'
+rm -rf "$PROJ/.github"                 # no review workflow content at all
+git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "drop workflow" 2>/dev/null || true
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed external:true does NOT bypass (b2) — no content → GAP" 1 "no workflow content performs a review"
+
+# 22c. And with the env var set, external attestation still works (the legitimate,
+#     loud, per-invocation path is unchanged) — same repo, PREFLIGHT_SECREVIEW_EXTERNAL=1.
+OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$PROT_CRE" GH_REPO_FILE="$TMP/repo-aam-true.json" \
+  PREFLIGHT_SECREVIEW_EXTERNAL=1 bash "$SCRIPT" "$PROJ" 2>&1)" && RC=0 || RC=$?
+expect "env PREFLIGHT_SECREVIEW_EXTERNAL=1 still attests (b2) → PASS (legit path intact)" 0 "branch-protection: PASS"
+
+# 22d. never-weakens: the committed contract CANNOT supply the (b2) match PATTERN at all —
+#     it is env-only / keel-default, never read from the file (a committed substring the
+#     author picks is inherently weakenable: `@`, `.*`, an org prefix, or here the repo's
+#     OWN non-review action all match trivially). The contract names `pattern:"actions/
+#     checkout"` and the workflow's security-review job runs ONLY actions/checkout — so if
+#     the committed pattern were honored, a checkout would "pass" as the security review.
+#     Because the field is ignored, the keel-default pattern (claude-code-security-review)
+#     is used, which is absent from this workflow → GAP. (Regression: pre-fix the committed
+#     pattern was read and literally matched the checkout uses: line, so (b2) PASSED with
+#     no real review content.)
+git_proj gp22d '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","pattern":"actions/checkout"}}'
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
+jobs:
+  security-review:
+    steps:
+      - uses: actions/checkout@0000000000000000000000000000000000000000
+EOF
+git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "non-review workflow" 2>/dev/null || true
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed pattern is IGNORED (env-only) — cannot self-certify a non-review action → GAP" 1 "no workflow content performs a review"
+
+# 22e. A present-but-EMPTY security_review.check is a never-weakens hole for the (b2) NAME
+#     match → MALFORMED (GAP). The check name IS committed-controllable (unlike the pattern),
+#     so its emptiness is still validated: jq `//` substitutes the default only on a
+#     genuinely ABSENT field, not on "", so "" must be rejected, not silently defaulted.
+git_proj gp22e '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":""}}'
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed empty security_review.check fails closed (GAP)" 1 "is present on 'main' but is not valid"
+
+# 22g. The security_review.check NAME (which IS committed-controllable) is matched LITERALLY
+#     (grep -F), so a committed regex-special check name cannot trivially satisfy the "declares
+#     the check context" leg. Protection requires the dotted context "sec.rev", the committed
+#     contract names it, and the workflow's job is "secXrev" (which a BRE "sec.rev" would match,
+#     '.'=any char) with a real review uses: line. leg-1 needs the LITERAL "sec.rev" in the file
+#     → absent → GAP. (Regression: pre-fix the BRE `grep -q "sec.rev"` matched "secXrev" → PASS.)
+PROT_DOT="$TMP/protection-dot.json"
+printf '%s' '{"required_status_checks":{"contexts":["sec.rev"]}}' > "$PROT_DOT"
+git_proj gp22g '{"required_checks":["sec.rev"],"security_review":{"check":"sec.rev"}}'
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
+jobs:
+  secXrev:
+    steps:
+      - uses: anthropics/claude-code-security-review@0000000000000000000000000000000000000000
+EOF
+git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "dotted-context workflow" 2>/dev/null || true
+run_gate "$PROJ" "$PROT_DOT"
+expect "committed check name is matched literally — regex-special name does not satisfy (b2) leg-1 → GAP" 1 "no workflow content performs a review"
+
+# 22. Absent config on a real git repo (git show non-zero) → falls back to keel default,
+#     checked against the keel-default protection → PASS. Confirms absent (not malformed)
+#     routes to the default, distinct from the GAP cases above.
+git_proj gp22 ""
+run_gate "$PROJ" "$TMP/protection-full.json"
+expect "no committed config on a git repo → keel default → PASS (absent ≠ malformed)" 0 "branch-protection: PASS"
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

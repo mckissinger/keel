@@ -601,7 +601,7 @@ if [ "\${1:-}" = "repo" ] && [ "\${2:-}" = "view" ]; then
 fi
 if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
   head=feat-clean
-  for a in "\$@"; do case "\$a" in 777) head=feat-marker ;; 888) head=feat-unrelated ;; 999) head=feat-arm ;; esac; done
+  for a in "\$@"; do case "\$a" in 777) head=feat-marker ;; 888) head=feat-unrelated ;; 999) head=feat-arm ;; 666) head=feat-checks ;; esac; done
   printf '{"baseRefName":"main","headRefName":"%s"}\n' "\$head"
   exit 0
 fi
@@ -635,6 +635,12 @@ git -C "$R10" checkout -q -b feat-marker main
 mkdir -p "$R10/.claude"; printf '%s' "$COMMIT_JSON" > "$R10/.claude/keel-auto-merge.json"
 git -C "$R10" add -f .claude/keel-auto-merge.json
 git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR (marker-touching)"
+# A branch that edits the committed CHECK-CONTRACT (the required-check names arming
+# certifies) — trust base, so a PR touching it also takes a human tap.
+git -C "$R10" checkout -q -b feat-checks main
+mkdir -p "$R10/.claude"; printf '%s' '{"required_checks":["ci"],"security_review":{"check":"ci"}}' > "$R10/.claude/keel-auto-merge-checks.json"
+git -C "$R10" add -f .claude/keel-auto-merge-checks.json
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm "edit check-contract via PR"
 git -C "$R10" checkout -q --orphan feat-unrelated
 git -C "$R10" rm -rf --cached . >/dev/null 2>&1 || true
 git -C "$R10" clean -fdq 2>/dev/null || true
@@ -663,6 +669,9 @@ expect_decision "committed: chained --auto never allows → ask" ask
 # HUMAN-TAP RULE: a marker-touching PR → ask even with a valid marker + passing gate.
 run_guard "$R10" 'gh pr merge 777 --auto'
 expect_decision "committed + marker-touching PR → ask (human-tap, before every allow row)" ask "human merge tap"
+# The check-contract file is trust base too: a PR editing it → ask (human-tap).
+run_guard "$R10" 'gh pr merge 666 --auto'
+expect_decision "committed + check-contract-touching PR → ask (human-tap)" ask "human merge tap"
 # Indeterminate file list (no merge base) → ask, fail closed.
 run_guard "$R10" 'gh pr merge 888 --auto'
 expect_decision "committed + indeterminate PR diff (no merge base) → ask (fail closed)" ask

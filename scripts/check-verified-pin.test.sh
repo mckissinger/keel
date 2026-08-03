@@ -358,6 +358,24 @@ echo "code" > src/with-marker.ts
 git add .claude/keel-auto-merge.json src/with-marker.ts && git commit -qm "marker + code, no pinned spec"
 check "marker + a code file is still a code PR → fails (carve-out did not widen to the code file)" 1 "$BASE2"
 
+# 32. The committed CHECK-CONTRACT sibling is a plan-path carve-out too: a PR whose
+#     sole change is .claude/keel-auto-merge-checks.json is plan-only → exempt, so a
+#     project can commit its declared check names under the protection contract.
+fresh c32-checks-only "$BASE2"
+mkdir -p .claude
+printf '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"]}\n' > .claude/keel-auto-merge-checks.json
+git add .claude/keel-auto-merge-checks.json && git commit -qm "declare check-contract (plan-only)"
+check "sole .claude/keel-auto-merge-checks.json change is plan-only → exempt (window closed)" 0 "$BASE2"
+
+# 33. And the check-contract carve-out widens by EXACTLY that one file: mixing it
+#     with real code is still a code PR and still fails with no pinned spec.
+fresh c33-checks-plus-code "$BASE2"
+mkdir -p .claude
+printf '{"required_checks":["ci"],"security_review":{"check":"ci"}}\n' > .claude/keel-auto-merge-checks.json
+echo "code" > src/with-checks.ts
+git add .claude/keel-auto-merge-checks.json src/with-checks.ts && git commit -qm "check-contract + code, no pinned spec"
+check "check-contract + a code file is still a code PR → fails (carve-out did not widen)" 1 "$BASE2"
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

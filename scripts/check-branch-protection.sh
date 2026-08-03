@@ -24,6 +24,29 @@
 # auto-merge need not have. Arming auto-merge asserts merge readiness, not
 # unattended-run readiness.
 #
+# WHICH checks are asserted (their NAMES) is per-project config — a consuming
+# repo's real CI rarely uses keel's own job names (`verified-pin plan-lint
+# security-review`). The name set is resolved with a fixed precedence
+# (decisions/2026-08-03-arm-auto-merge-check-contract.md):
+#   1. an OPERATOR OVERRIDE — PREFLIGHT_REQUIRED_CHECKS / PREFLIGHT_SECREVIEW_*
+#      set in the environment, OR a project copy that edited the config-block
+#      default away from keel's built-in string;
+#   2. else a COMMITTED per-project check-contract — .claude/keel-auto-merge-checks.json
+#      on the repo's SERVER default branch, read fail-closed (the same transport
+#      merge-guard.sh:read_committed_marker uses: gh-repo-view default branch, a
+#      MANDATORY fetch, `git show refs/remotes/origin/<db>:<path>` parsed as DATA,
+#      never the working tree — a locally-written or branch-only config is ignored);
+#   3. else keel's BUILT-IN defaults.
+# The committed config declares NAMES ONLY — it can rename the security-review
+# check, never remove it, and cannot switch off (b2) content-scanning or (d). A
+# config that is present-but-malformed (unparseable, or required_checks not a
+# non-empty array) or that omits the declared security-review check is a GAP, fail
+# closed — never a silent pass and never a silent fall-back-to-default (absence
+# falls back; a broken PRESENT config is an error to surface). This distinction
+# from read_committed_marker — which collapses every failure into "absent" — is
+# deliberate: here a genuinely-absent file (git show non-zero) falls back, a
+# successful read of broken content GAPs.
+#
 # Exit 0 = branch protection is merge-ready. Non-zero = one or more gaps, each
 # named on stderr (same GAP vocabulary as the preflight). Fails closed: missing
 # gh/jq, unreadable protection, or an API error is a gap, never a silent pass.
@@ -42,10 +65,22 @@ ROOT="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 cd "$ROOT"
 
 # --- config block (same knobs + defaults as check-auto-preflight.sh) ----------
+# The editable config-block values (a project copy may edit these; env overrides
+# for one-offs; a committed .claude/keel-auto-merge-checks.json is the preferred
+# per-project home). Each carries the literal default so a project copy edits it
+# in place; the KEEL_DEFAULT_* sentinels below repeat those values immutably, used
+# only to tell an unmodified config block from an edited one — do not edit them.
 REQUIRED_CHECKS="${PREFLIGHT_REQUIRED_CHECKS:-verified-pin plan-lint security-review}"
-SECREVIEW_CHECK_NAME="security-review"
+SECREVIEW_CHECK_NAME="${PREFLIGHT_SECREVIEW_CHECK:-security-review}"
 SECREVIEW_PATTERN="${PREFLIGHT_SECREVIEW_PATTERN:-claude-code-security-review}"
 SECREVIEW_WF_DIR="${PREFLIGHT_WF_DIR:-.github/workflows}"
+CHECK_CONTRACT_FILE="${PREFLIGHT_CHECK_CONTRACT:-.claude/keel-auto-merge-checks.json}"
+KEEL_DEFAULT_CHECKS="verified-pin plan-lint security-review"
+KEEL_DEFAULT_SECREVIEW_CHECK="security-review"
+# NOTE: there is no KEEL_DEFAULT_SECREVIEW_PATTERN sentinel — the committed contract
+# does NOT carry `pattern`, so there is no committed-vs-default comparison to make.
+# The (b2) match pattern comes only from PREFLIGHT_SECREVIEW_PATTERN (trusted env) or
+# the inline default on the SECREVIEW_PATTERN line above.
 # ------------------------------------------------------------------------------
 
 fails=0
@@ -56,17 +91,17 @@ HAVE_GH=0; command -v gh >/dev/null 2>&1 && HAVE_GH=1
 [ "$HAVE_JQ" -eq 1 ] || gap "dependency: jq is unavailable — cannot parse the protection JSON (fail closed)"
 [ "$HAVE_GH" -eq 1 ] || gap "dependency: gh is unavailable — cannot verify branch protection (fail closed)"
 
-# --- (b) branch protection: the required checks are actually REQUIRED ---------
-# Resolve the default branch from SERVER TRUTH — `gh repo view` — the same source
-# merge-guard.sh:read_committed_marker uses, and for the same reason: the marker
-# is committed to, and honored from, the repo's server default branch, so the
-# branch whose protection we certify MUST be that same branch. Local `origin/HEAD`
-# is agent-repointable (`git remote set-head`), so certifying the branch it points
-# at could pass against a protected decoy while the real default is unprotected
-# (M1's pre-pin review, decisions/2026-08-02-committed-auto-merge-marker.md). The
-# local resolution survives only as a last-resort fallback for when `gh repo view`
-# cannot answer — and in that state the protection/allow_auto_merge `gh api` calls
-# below almost certainly fail too, gapping arming closed regardless.
+# --- resolve the default branch from SERVER TRUTH — `gh repo view` ------------
+# The same source merge-guard.sh:read_committed_marker uses, and for the same
+# reason: the marker and the committed check-contract are committed to, and
+# honored from, the repo's server default branch, so the branch whose protection
+# we certify MUST be that same branch. Local `origin/HEAD` is agent-repointable
+# (`git remote set-head`), so certifying the branch it points at could pass
+# against a protected decoy while the real default is unprotected (M1's pre-pin
+# review, decisions/2026-08-02-committed-auto-merge-marker.md). The local
+# resolution survives only as a last-resort fallback for when `gh repo view`
+# cannot answer — and in that state the protection/allow_auto_merge `gh api`
+# calls below almost certainly fail too, gapping arming closed regardless.
 default_branch=""
 if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
   default_branch="$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null || true)"
@@ -85,28 +120,157 @@ if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
       fi
     fi
   fi
+fi
+
+# --- resolve the required-check set: operator override > committed config > default
+# An OPERATOR OVERRIDE (env var set, OR the config-block default edited away from
+# keel's built-in string) wins and the committed config is not consulted for that
+# knob. Otherwise, read the committed per-project check-contract from the default
+# branch; a valid one supplies the names, a present-but-broken one GAPs, an absent
+# one falls back to the keel default already in the variables above.
+override_checks=0
+[ -n "${PREFLIGHT_REQUIRED_CHECKS+set}" ] && override_checks=1
+[ "$REQUIRED_CHECKS" != "$KEEL_DEFAULT_CHECKS" ] && override_checks=1
+override_secreview_check=0
+[ -n "${PREFLIGHT_SECREVIEW_CHECK+set}" ] && override_secreview_check=1
+[ "$SECREVIEW_CHECK_NAME" != "$KEEL_DEFAULT_SECREVIEW_CHECK" ] && override_secreview_check=1
+# No override_secreview_pattern flag: the committed contract never supplies a pattern,
+# so there is nothing to override. SECREVIEW_PATTERN is already resolved (env or the
+# inline default) above and is never touched by the committed config.
+
+# read_check_contract → CONTRACT_STATE = absent|malformed|valid; on valid, sets
+# CONTRACT_CHECKS / CONTRACT_SECREVIEW_CHECK from the committed file. The committed
+# contract declares the required-check NAMES and WHICH of them is the security review
+# — never how the (b2) content scan identifies a real review action, and never whether
+# the scan runs. Two fields are DELIBERATELY NOT read from it, both the same
+# never-weakens class (verifier + pre-pin /security-review findings,
+# decisions/2026-08-03-arm-auto-merge-check-contract.md):
+#   - `external` — a non-Actions provider is attested ONLY by the per-invocation
+#     PREFLIGHT_SECREVIEW_EXTERNAL=1 env var; a committed `external:true` would skip
+#     (b2) content-scanning forever.
+#   - `pattern`  — the uses:-line action reference the (b2) scan matches stays keel's
+#     default, overridable ONLY by the trusted PREFLIGHT_SECREVIEW_PATTERN env. A
+#     committed pattern is a SUBSTRING its author picks, and any too-broad value
+#     (`@`, `.*`, an org prefix) makes the scan match every uses: line — passing (b2)
+#     with no real review. Substring-matching an attacker-declarable pattern is
+#     inherently weakenable, so the untrusted committed file never supplies it.
+# The config renames the review check, but can NEVER switch off or weaken the scan.
+CONTRACT_STATE="absent"
+CONTRACT_CHECKS=""
+CONTRACT_SECREVIEW_CHECK=""
+read_check_contract() {
+  [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ] || return 0   # deps already gapped; stay absent
+  command -v git >/dev/null 2>&1 || return 0
+  local db="$default_branch" content
+  [ -n "$db" ] || return 0
+  # MANDATORY fetch of the default branch; a failed fetch → treat as absent
+  # (fall back to keel defaults — the live gh-api protection check below then
+  # re-verifies whatever set ends up in force, so this never fails open).
+  git fetch origin "+refs/heads/$db:refs/remotes/origin/$db" >/dev/null 2>&1 || return 0
+  # git show NON-ZERO = file genuinely absent on the default branch → fall back.
+  content="$(git show "refs/remotes/origin/$db:$CHECK_CONTRACT_FILE" 2>/dev/null)" || return 0
+  # Content was read: from here a broken file is malformed (GAP), not absent.
+  printf '%s' "$content" | jq -e . >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
+  # required_checks must be a non-empty array whose every element is a NON-EMPTY
+  # string; and security_review.check, WHEN PRESENT, must be a non-empty string. An
+  # empty `check` is a never-weakens hole for the (b2) NAME match, so a present-but-
+  # empty sub-field is MALFORMED (GAP), never accepted — jq's `//` substitutes the
+  # keel default only on `null` (a genuinely ABSENT field), not on "", so absence
+  # falls back but "" would silently survive. (`.security_review.pattern` is NOT
+  # validated here because it is NOT read from the committed file at all — see the
+  # header note; the pattern stays keel-default / env-only.)
+  printf '%s' "$content" | jq -e '
+    (.required_checks|type=="array") and (.required_checks|length>0)
+    and (.required_checks|all(type=="string" and length>0))
+    and ((.security_review.check // "x")|type=="string" and length>0)
+  ' >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
+  # NEWLINE-separated so a check CONTEXT MAY CONTAIN SPACES — a consuming repo's
+  # real CI names routinely do (e.g. "typecheck · lint · test"); a space-joined
+  # string would be word-split back into bogus one-word contexts by the (b) loop.
+  CONTRACT_CHECKS="$(printf '%s' "$content" | jq -r '.required_checks[]')"
+  [ -n "$CONTRACT_CHECKS" ] || { CONTRACT_STATE="malformed"; return 0; }
+  CONTRACT_SECREVIEW_CHECK="$(printf '%s' "$content" | jq -r '.security_review.check // "'"$KEEL_DEFAULT_SECREVIEW_CHECK"'"' 2>/dev/null || printf '%s' "$KEEL_DEFAULT_SECREVIEW_CHECK")"
+  # .security_review.pattern and .security_review.external are DELIBERATELY NOT read —
+  # both are env-only (PREFLIGHT_SECREVIEW_PATTERN / PREFLIGHT_SECREVIEW_EXTERNAL); a
+  # committed `pattern` or `external` field is ignored (header note above).
+  CONTRACT_STATE="valid"
+}
+
+# Only consult the committed contract when there is no full operator override of
+# the check set. (An operator who set PREFLIGHT_REQUIRED_CHECKS is stating the set
+# explicitly; honoring the file underneath them would surprise.)
+if [ "$override_checks" -eq 0 ]; then
+  read_check_contract
+  case "$CONTRACT_STATE" in
+    malformed)
+      gap "check-contract: $CHECK_CONTRACT_FILE is present on '$default_branch' but is not valid — it must be JSON with a non-empty \"required_checks\" array of check-context names. Fix it attended (a broken check-contract fails closed; it never silently falls back to keel's defaults)."
+      ;;
+    valid)
+      REQUIRED_CHECKS="$CONTRACT_CHECKS"
+      # env still wins for the security-review check NAME (precedence env > config).
+      # The (b2) match PATTERN and the external attestation are NOT taken from the
+      # committed file — they stay env-only (PREFLIGHT_SECREVIEW_PATTERN /
+      # PREFLIGHT_SECREVIEW_EXTERNAL), so a committed config can neither switch off
+      # nor weaken the (b2) content scan.
+      [ "$override_secreview_check" -eq 1 ] || SECREVIEW_CHECK_NAME="$CONTRACT_SECREVIEW_CHECK"
+      ;;
+    absent) : ;;   # keel defaults already in place
+  esac
+fi
+
+# Canonical iteration list: NEWLINE-separated so a context may contain spaces.
+# The env / config-block / default path is a space-separated string (keel's own
+# job names have no spaces); the committed-config path already produced newlines.
+if [ "$override_checks" -eq 0 ] && [ "$CONTRACT_STATE" = "valid" ]; then
+  REQUIRED_CHECKS_NL="$CONTRACT_CHECKS"
+else
+  # shellcheck disable=SC2086 # intentional word-split of the space-separated set
+  REQUIRED_CHECKS_NL="$(printf '%s\n' $REQUIRED_CHECKS)"
+fi
+REQUIRED_CHECKS_DISPLAY="$(printf '%s' "$REQUIRED_CHECKS_NL" | tr '\n' ' ')"
+
+# --- never-weakens: a committed contract MUST include a security-review check --
+# The committed check-contract declares NAMES, it cannot remove the compensating
+# control: if its resolved security-review check is not a member of its resolved
+# required set, (b2) below would silently skip and no review would be asserted —
+# so GAP. This never-weakens rule applies to the committed-config / keel-default
+# path ONLY. An OPERATOR override (PREFLIGHT_REQUIRED_CHECKS, or an edited config
+# block) that deliberately omits security-review is trusted, exactly as before —
+# keel's model trusts an operator stating the set explicitly; the ergonomic data
+# file, which a consuming project edits without touching the script, is the one
+# held to never-weakens.
+if [ "$override_checks" -eq 0 ]; then
+  if printf '%s\n' "$REQUIRED_CHECKS_NL" | grep -qxF "$SECREVIEW_CHECK_NAME"; then :; else
+    gap "check-contract: the security-review check '$SECREVIEW_CHECK_NAME' is not in the required set ($REQUIRED_CHECKS_DISPLAY) — the check-contract may RENAME the security-review check but never remove it; add it to required_checks (and wire its content), or correct security_review.check. Never clear this by dropping the review."
+  fi
+fi
+
+# --- (b) branch protection: the required checks are actually REQUIRED ---------
+if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
   if prot="$(gh api "repos/{owner}/{repo}/branches/$default_branch/protection" 2>/dev/null)"; then
     contexts="$(printf '%s' "$prot" | jq -r \
       '[(.required_status_checks.contexts // []), ((.required_status_checks.checks // []) | map(.context))] | add | .[]?' \
       2>/dev/null || true)"
-    for want in $REQUIRED_CHECKS; do
+    while IFS= read -r want; do
+      [ -n "$want" ] || continue
       found=0
       while IFS= read -r have; do
         [ "$have" = "$want" ] && found=1
-      done <<EOF
+      done <<EOF_CTX
 $contexts
-EOF
+EOF_CTX
       [ "$found" -eq 1 ] \
         || gap "protection: check '$want' is not a REQUIRED status check in branch protection on '$default_branch' (a check that exists but is not required does not gate the merge) — remediate attended: wire '$want' as a CI check job, make it a required status check on '$default_branch', then re-run this preflight. Which jobs the autonomy tier requires, and the recorded default implementation of each, live in keel's references/template-contract.md tier 1. Never drop a job from the required set to get past this gate."
-    done
+    done <<EOF_WANT
+$REQUIRED_CHECKS_NL
+EOF_WANT
   else
     gap "protection: no readable branch protection on '$default_branch' (gh api .../protection failed — configure it attended before an auto run)"
   fi
 fi
 
 # --- (b2) the security-review check is CONTENT, not just a name ---------------
-case " $REQUIRED_CHECKS " in
-  *" $SECREVIEW_CHECK_NAME "*)
+if printf '%s\n' "$REQUIRED_CHECKS_NL" | grep -qxF "$SECREVIEW_CHECK_NAME"; then
     if [ "${PREFLIGHT_SECREVIEW_EXTERNAL:-0}" = "1" ]; then
       echo "branch-protection: security-review content asserted by OPERATOR ATTESTATION (PREFLIGHT_SECREVIEW_EXTERNAL=1), not by workflow scan — a non-Actions provider is trusted here on the operator's word" >&2
     else
@@ -119,8 +283,18 @@ case " $REQUIRED_CHECKS " in
       if [ -d "$SECREVIEW_WF_DIR" ]; then
         for wf in "$SECREVIEW_WF_DIR"/*.yml "$SECREVIEW_WF_DIR"/*.yaml; do
           [ -f "$wf" ] || continue
-          grep -q "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
-          grep -Eq "^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]*$SECREVIEW_PATTERN" "$wf" 2>/dev/null || continue
+          # SECREVIEW_CHECK_NAME and SECREVIEW_PATTERN are LITERAL strings — a check
+          # context name and an action reference — NEVER regexes. Match them with
+          # grep -F. The check NAME is committed-config-controllable, so literal
+          # matching is load-bearing here: a committed `check:"."` must not match any
+          # file via BRE. (The PATTERN is env-only / keel-default — no committed
+          # value reaches it — but grep -F is still correct: the pattern is an action
+          # reference, never a regex.) The uncommented-`uses:`-line anchor stays an
+          # ERE (fixed, not attacker-controlled); the per-file line is comment-
+          # stripped (`sed 's/#.*$//'`) so the pattern must appear in real content,
+          # not a trailing comment, before the literal match.
+          grep -qF "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
+          grep -E "^[[:space:]]*-?[[:space:]]*uses:" "$wf" 2>/dev/null | sed 's/#.*$//' | grep -qF "$SECREVIEW_PATTERN" || continue
           grep -q "pull_request" "$wf" 2>/dev/null || continue
           b2_ok=1; break
         done
@@ -128,8 +302,7 @@ case " $REQUIRED_CHECKS " in
       [ "$b2_ok" -eq 1 ] \
         || gap "security-review content: the required check exists in name; no workflow content performs a review — no file under $SECREVIEW_WF_DIR declares '$SECREVIEW_CHECK_NAME', invokes the review implementation on an uncommented 'uses:' line matching '$SECREVIEW_PATTERN', AND triggers on pull_request. Remediate attended: wire the review job (the recorded default implementation lives in keel's references/template-contract.md tier 1), or set PREFLIGHT_SECREVIEW_PATTERN for a different in-Actions implementation, or attest a non-Actions provider explicitly with PREFLIGHT_SECREVIEW_EXTERNAL=1. Never clear this gate by renaming or dropping the check."
     fi
-    ;;
-esac
+fi
 
 # --- (d) the repo can auto-merge: allow_auto_merge is enabled -----------------
 if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then

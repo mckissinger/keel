@@ -54,7 +54,15 @@ CONTRACT_FILE="${PREFLIGHT_CONTRACT:-specs/01-architecture.md}"
 ENV_FILE="${PREFLIGHT_ENV_FILE:-.env.local}"
 # Required status-check job names, space-separated — whatever the CI vendor
 # calls the verified-pin job, the plan-lint job, and the security-review job.
+# A consuming repo more commonly declares its own names in a COMMITTED
+# .claude/keel-auto-merge-checks.json (read by check-branch-protection.sh); this
+# config-block value and PREFLIGHT_REQUIRED_CHECKS remain the operator-override
+# tier above it (decisions/2026-08-03-arm-auto-merge-check-contract.md).
+# The editable config-block default is the literal below (a project copy may edit
+# it); KEEL_DEFAULT_CHECKS is a SEPARATE immutable sentinel with the same value,
+# used only to tell an unmodified config block from an edited one — do not edit it.
 REQUIRED_CHECKS="${PREFLIGHT_REQUIRED_CHECKS:-verified-pin plan-lint security-review}"
+KEEL_DEFAULT_CHECKS="verified-pin plan-lint security-review"
 # ------------------------------------------------------------------------------
 
 fails=0
@@ -130,18 +138,25 @@ fi
 # script both call and can never drift. check-branch-protection.sh emits its gaps
 # to stderr in the same GAP vocabulary and defaults; a non-zero exit is one
 # preflight gap here (its own gap lines already named the specifics on stderr).
-# The delegated script reads its required-check set from PREFLIGHT_REQUIRED_CHECKS,
-# so pass THIS preflight's resolved REQUIRED_CHECKS across the process boundary
-# explicitly — the config-block value at the top of this file is a plain shell
-# variable that a child does not inherit, and a project copy that HARDENED its
-# required set by editing that block (the documented "a project copy edits these"
-# path) would otherwise be silently dropped and the child would fall back to its
-# own three-check default (a fail-open regression vs the pre-extraction preflight).
-# An env-var override already in the environment still wins: REQUIRED_CHECKS above
-# was resolved from PREFLIGHT_REQUIRED_CHECKS first, so re-exporting it is faithful.
+# Forward THIS preflight's required-check set to the child ONLY when it is a REAL
+# override — i.e. PREFLIGHT_REQUIRED_CHECKS is set in the environment, OR a project
+# copy has EDITED the config-block default away from keel's built-in string. When
+# it equals the unmodified built-in default, forward NOTHING, so the child resolves
+# a committed .claude/keel-auto-merge-checks.json itself (precedence operator
+# override > committed config > keel default; decisions/2026-08-03-arm-auto-merge-
+# check-contract.md). Forwarding the unmodified default as if it were an override
+# would MASK a committed config; NOT forwarding an edited config-block value would
+# be the fail-open regression the pre-extraction preflight guarded against.
 BP="$SCRIPT_DIR/check-branch-protection.sh"
+bp_forward=0
+[ -n "${PREFLIGHT_REQUIRED_CHECKS+set}" ] && bp_forward=1
+[ "$REQUIRED_CHECKS" != "$KEEL_DEFAULT_CHECKS" ] && bp_forward=1
 if [ -x "$BP" ]; then
-  PREFLIGHT_REQUIRED_CHECKS="$REQUIRED_CHECKS" "${BASH:-bash}" "$BP" "$ROOT" >/dev/null || fails=$((fails + 1))
+  if [ "$bp_forward" -eq 1 ]; then
+    PREFLIGHT_REQUIRED_CHECKS="$REQUIRED_CHECKS" "${BASH:-bash}" "$BP" "$ROOT" >/dev/null || fails=$((fails + 1))
+  else
+    "${BASH:-bash}" "$BP" "$ROOT" >/dev/null || fails=$((fails + 1))
+  fi
 else
   gap "branch-protection: $BP is missing or not executable — cannot assert the required-checks / auto-merge posture (fail closed)"
 fi

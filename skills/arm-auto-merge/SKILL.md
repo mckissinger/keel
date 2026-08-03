@@ -46,6 +46,41 @@ mode > attended > committed) — both guards honor it for **one** command shape:
 plain merge, a push, a `git merge` to the default branch, or a bundled/chained `--auto` — only the
 bare delegation shape, which is meaningful only where branch protection makes `--auto` real.
 
+## First, once per project: declare this repo's check names (if they aren't keel's)
+
+The assertion certifies that specific **required checks** are live. By default it looks for keel's
+own job names — `verified-pin`, `plan-lint`, `security-review`. A consuming repo's real CI almost
+never uses those names (it's `verified-pin gate`, `typecheck · lint · test`, and so on), so on such
+a repo the assertion would GAP on a pure **name mismatch**, not a real protection hole.
+
+The fix is a **committed per-project check-contract** — `.claude/keel-auto-merge-checks.json` — where
+the repo declares *its own* required-check contexts and *which* of them is its security-review check.
+The assertion reads it fail-closed from the server default branch (the same transport as the marker), so
+a working-tree or branch-only copy is ignored. Shape:
+
+```json
+{
+  "required_checks": ["verified-pin gate", "typecheck · lint · test", "security-review"],
+  "security_review": { "check": "security-review" }
+}
+```
+
+It **declares names only** — it can *rename* the security-review check but never *remove* it (a set
+omitting it GAPs), and it cannot switch off the (b2) content scan or the `allow_auto_merge` check. It
+carries **no `pattern` and no `external` field**, and any such key in the file is **ignored**: both stay
+env-only / keel-default because a committed value the author picks can silently weaken the (b2) scan (a
+committed `external: true` skips it; a committed `pattern` is a substring whose too-broad values — `""`,
+`.*`, `@`, an org prefix — match every `uses:` line). The (b2) match pattern stays keel's default,
+overridable only by the trusted per-invocation `PREFLIGHT_SECREVIEW_PATTERN`; a non-Actions provider is
+attested only by `PREFLIGHT_SECREVIEW_EXTERNAL=1`. A repo using keel's own review action needs no
+pattern at all; a repo using a different in-Actions review action sets `PREFLIGHT_SECREVIEW_PATTERN` at
+arm time. A present-but-malformed or empty contract fails closed (GAP), never a silent fall-back.
+Precedence is **operator override (`PREFLIGHT_*` env, or an edited config-block default) > committed
+contract > keel default** (`decisions/2026-08-03-arm-auto-merge-check-contract.md`). Commit it as a
+**plan-only PR** (it gets the same `is_plan_path` carve-out as the marker) — and note a PR editing it
+takes a human tap (it is auto-merge trust base). If the repo's checks already match keel's names, skip
+this; the default just works.
+
 ## `on` (default) — assert protection is live, then commit the marker
 
 The order is load-bearing: **assert first, write only on green.** Never write the marker on a red
@@ -59,11 +94,12 @@ no server-side backstop, the exact failure this gate exists to prevent.
    ```
 
    This is the **same code** `scripts/check-auto-preflight.sh` runs for its (b)/(b2)/(d) checks
-   (the merge-relevant subset: the three required checks are actually *required*, the
-   `security-review` check is workflow **content** not just a name, and `allow_auto_merge` is
-   enabled on the repo). It is the single source of the assertion, so the arming check and the
-   auto-entry check can never drift apart. It fails closed: missing `gh`/`jq`, unreadable
-   protection, or an API error is a GAP, not a silent pass.
+   (the merge-relevant subset: the required checks are actually *required*, the `security-review`
+   check is workflow **content** not just a name, and `allow_auto_merge` is enabled on the repo). It
+   is the single source of the assertion, so the arming check and the auto-entry check can never
+   drift apart. It resolves *which* check names to certify from the committed check-contract above
+   (or `PREFLIGHT_*` / keel default). It fails closed: missing `gh`/`jq`, unreadable protection, or
+   an API error is a GAP, not a silent pass.
 
 2. **Halt on any GAP.** If the assertion exits non-zero, **stop** — surface each GAP line and its
    named remediation verbatim, and do **not** write the marker. Every gap is fixed **attended**
@@ -134,5 +170,6 @@ exit-2 matrix for the repo. If the marker is already absent, report that and ope
   always-on floor (`decisions/2026-07-05-autonomy-modes-v2.md`).
 - **The load-bearing gates are untouched.** The verified-pin gate still denies unverified code, and
   `--auto` still lands only when the branch's required checks pass. A stale or forged marker cannot
-  merge unsafe code — the marker is honored only from the server default branch behind a mandatory
-  fail-closed fetch, and any marker-touching PR is forced to a human tap.
+  merge unsafe code — the marker (and the check-contract) are honored only from the server default
+  branch behind a mandatory fail-closed fetch, and any PR touching the marker **or the check-contract**
+  is forced to a human tap.

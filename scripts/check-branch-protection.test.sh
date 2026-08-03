@@ -314,6 +314,33 @@ OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$PROT_CRE" GH_REPO_FILE="$TMP/repo-aa
   PREFLIGHT_SECREVIEW_EXTERNAL=1 bash "$SCRIPT" "$PROJ" 2>&1)" && RC=0 || RC=$?
 expect "env PREFLIGHT_SECREVIEW_EXTERNAL=1 still attests (b2) → PASS (legit path intact)" 0 "branch-protection: PASS"
 
+# 22d. never-weakens: a committed config CANNOT switch off the (b2) content scan via an
+#     EMPTY security_review.pattern. The config names the review check but sets pattern
+#     to "" — which would collapse the (b2) `uses:` regex to "any uncommented uses: line".
+#     The workflow here has a job named security-review on pull_request but its only
+#     `uses:` is a NON-review action, so a correct pattern would GAP. Empty pattern must
+#     be MALFORMED (GAP), never accepted. (Regression: pre-fix, "" survived jq's `//`,
+#     the empty-pattern regex matched the checkout `uses:` line, and (b2) PASSED.)
+git_proj gp22d '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","pattern":""}}'
+cat > "$PROJ/.github/workflows/ci.yml" <<'EOF'
+on:
+  pull_request:
+jobs:
+  security-review:
+    steps:
+      - uses: actions/checkout@0000000000000000000000000000000000000000
+EOF
+git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "non-review workflow" 2>/dev/null || true
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed empty pattern fails closed (GAP), does not defeat (b2)" 1 "is present on 'main' but is not valid"
+
+# 22e. And an EMPTY security_review.check is the analogous hole for the (b2) name match →
+#     also MALFORMED (GAP). Locks the classifier: a present-but-empty sub-field is never
+#     accepted (jq `//` substitutes the default only on a genuinely ABSENT field, not "").
+git_proj gp22e '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"","pattern":"claude-code-security-review"}}'
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed empty security_review.check fails closed (GAP)" 1 "is present on 'main' but is not valid"
+
 # 22. Absent config on a real git repo (git show non-zero) → falls back to keel default,
 #     checked against the keel-default protection → PASS. Confirms absent (not malformed)
 #     routes to the default, distinct from the GAP cases above.

@@ -71,11 +71,15 @@ draft that read it, so the committed field is deliberately ignored).
   runs against **that declared name** (not the literal string `security-review`), and if the declared
   name is not a member of `required_checks` the assertion GAPs. The effective set must include a
   security-review check, still asserted as workflow **content** (b2) or explicit external attestation.
-  (2) A present-but-**malformed** config (unparseable JSON, or `required_checks` not a non-empty array)
-  → **GAP, fail closed** — never a silent pass and never a silent fall-back-to-default (absence falls
-  back; a broken *present* config is an error to surface, not paper over). (3) The config cannot switch
-  off the (b2) content scan or the (d) `allow_auto_merge` assertion — both run regardless of what the
-  file says.
+  (2) A present-but-**malformed** config → **GAP, fail closed** — never a silent pass and never a
+  silent fall-back-to-default (absence falls back; a broken *present* config is an error to surface,
+  not paper over). "Malformed" is strict at the fail-closed read boundary: unparseable JSON,
+  `required_checks` not a non-empty array of **non-empty** strings, **or a present-but-empty
+  `security_review.check` / `security_review.pattern`** — an empty `pattern` would collapse the (b2)
+  `uses:` scan to "any uncommented `uses:` line" and an empty `check` is the analogous (b2) name-match
+  hole, so both are rejected (jq's `//` substitutes the keel default only on a genuinely *absent*
+  field, never on `""`). (3) The config cannot switch off the (b2) content scan or the (d)
+  `allow_auto_merge` assertion — both run regardless of what the file says.
 - [auto] **The preflight delegation honors the committed config without breaking the config-block-edit
   path.** `scripts/check-auto-preflight.sh` today unconditionally forwards its resolved
   `PREFLIGHT_REQUIRED_CHECKS="$REQUIRED_CHECKS"` to `check-branch-protection.sh` (`:144`), which masks

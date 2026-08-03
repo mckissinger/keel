@@ -162,10 +162,23 @@ read_check_contract() {
   content="$(git show "refs/remotes/origin/$db:$CHECK_CONTRACT_FILE" 2>/dev/null)" || return 0
   # Content was read: from here a broken file is malformed (GAP), not absent.
   printf '%s' "$content" | jq -e . >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
-  # required_checks must be a non-empty array whose every element is a string.
-  printf '%s' "$content" | jq -e \
-    '(.required_checks|type=="array") and (.required_checks|length>0) and (.required_checks|all(type=="string"))' \
-    >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
+  # required_checks must be a non-empty array whose every element is a NON-EMPTY
+  # string; and security_review.check / .pattern, WHEN PRESENT, must each be a
+  # non-empty string. An empty `pattern` is a never-weakens hole: it collapses the
+  # (b2) content-scan regex (`uses: ... $SECREVIEW_PATTERN`) to "any uncommented
+  # uses: line", so a repo could commit pattern:"" and pass (b2) with NO real
+  # review workflow; an empty `check` is the analogous hole for the (b2) name match.
+  # A present-but-empty sub-field is therefore MALFORMED (GAP), never accepted —
+  # jq's `//` only substitutes the keel default on `null` (a genuinely ABSENT
+  # field), not on "", so absence still falls back but "" would silently survive.
+  # (Same class as the committed-`external` bypass the pre-pin /security-review
+  # caught; closed here at the same read boundary.)
+  printf '%s' "$content" | jq -e '
+    (.required_checks|type=="array") and (.required_checks|length>0)
+    and (.required_checks|all(type=="string" and length>0))
+    and ((.security_review.check    // "x")|type=="string" and length>0)
+    and ((.security_review.pattern  // "x")|type=="string" and length>0)
+  ' >/dev/null 2>&1 || { CONTRACT_STATE="malformed"; return 0; }
   # NEWLINE-separated so a check CONTEXT MAY CONTAIN SPACES — a consuming repo's
   # real CI names routinely do (e.g. "typecheck · lint · test"); a space-joined
   # string would be word-split back into bogus one-word contexts by the (b) loop.

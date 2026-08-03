@@ -53,9 +53,16 @@ content-scanning forever — the exact never-weakens violation this gate forbids
   name-matching project are byte-for-byte unchanged.
 - **Never-weakens.** The committed contract declares names, it cannot lower the floor: a
   `required_checks` omitting the declared security-review check → GAP (rename yes, remove no); a
-  present-but-malformed (unparseable, or `required_checks` not a non-empty string array) config → GAP,
-  fail closed, never a silent fall-back; the config can switch off neither the (b2) content scan nor
-  the (d) `allow_auto_merge` assertion. An **operator** override that deliberately omits
+  present-but-malformed config → GAP, fail closed, never a silent fall-back. "Malformed" is read
+  strictly at the fail-closed boundary: unparseable JSON, `required_checks` not a non-empty array of
+  **non-empty** strings, **or a present-but-empty `security_review.check` / `security_review.pattern`**.
+  The empty sub-field is a never-weakens hole in its own right — an empty `pattern` collapses the (b2)
+  `uses:` content-scan regex to "any uncommented `uses:` line" (a repo could commit `pattern:""` and
+  pass (b2) with no real review workflow), an empty `check` is the analogous hole for the (b2) name
+  match — the same class as the committed-`external` bypass, caught by the independent verifier and
+  closed at the same read boundary (jq's `//` substitutes the keel default only on a genuinely *absent*
+  field, never on `""`). The config can switch off neither the (b2) content scan nor the (d)
+  `allow_auto_merge` assertion. An **operator** override that deliberately omits
   security-review is still trusted (keel trusts an operator stating the set explicitly) — the
   never-weakens rule binds the committed-config / keel-default path, the ergonomic data file a project
   edits without touching the script.

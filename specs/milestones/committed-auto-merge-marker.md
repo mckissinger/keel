@@ -202,14 +202,16 @@ carve-out below; the carve-out and the entry land together.
     `COMMITTED_ACTIVE` verdict, including the fail-closed cases.
 - [auto] **All other script self-test suites, and every repo lint, pass unchanged:**
   `check-neutral.sh`, `check-skill-frontmatter.sh`, `check-skill-anchors.sh`, `check-plan.sh`,
-  `check-auto-preflight.test.sh`, and `claude plugin validate --strict .` all green. Note: any suite
-  that **executes** the two guard scripts (e.g. `scripts/attended-marker-parity.test.sh`, which runs
-  both `merge-guard.sh` and `guard-branch-rules.sh`) is **expected to still pass** — the committed row
-  is additive and does not alter the attended/mode/no-marker paths it exercises — but it is **not**
-  claimed untouched-by-input; confirm it green rather than asserting an empty relationship.
+  `check-auto-preflight.test.sh`, and `claude plugin validate --strict .` all green.
+  `scripts/attended-marker-parity.test.sh` is **extended** here (per the Reader-parity condition) with
+  committed-marker legs — a valid marker and three fail-closed cases (wrong scope, wrong-typed scope,
+  malformed JSON), each asserted under **both** the jq and the jq-hidden python3 reader — and every
+  pre-existing attended leg still passes; confirm it green rather than asserting an empty relationship.
 - [auto] **No unowned surface moved:** `git diff --stat` for this milestone is confined to
   `scripts/check-verified-pin.sh`(+`.test.sh`), `scripts/merge-guard.sh`(+`.test.sh`),
-  `scripts/guard-branch-rules.sh`(+`.test.sh`), `decisions/2026-08-02-committed-auto-merge-marker.md`,
+  `scripts/guard-branch-rules.sh`(+`.test.sh`), `scripts/attended-marker-parity.test.sh` (the shared
+  parity vehicle the Reader-parity condition above extends with the committed reader's legs — a test
+  file only, no production surface), `decisions/2026-08-02-committed-auto-merge-marker.md`,
   `specs/uncertainties/committed-auto-merge-marker/`, and this milestone spec (its pin + the
   security-review amendments below). `session-bootstrap.sh`, `template-contract.md`, the deferral, the
   arming skill, and `implement-feature` are **out of scope** here (M2/M3/M4 own them) and have empty

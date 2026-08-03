@@ -107,3 +107,65 @@ run, not re-derived. **Dispatch the verifier at `xhigh`**. **`/security-review` 
 diff is a pre-pin precondition** — the adversarial question: does any amended orientation/doctrine
 prose overstate the authorization (e.g. imply the agent may self-arm, or that the marker relaxes the
 required checks) — it must not; confirmed findings remediated before the pin.
+
+verified: clean at aa0414c, 2026-08-02, via a fresh-context verifier subagent against this file —
+every `[auto]` condition checked against the real corpus. `scripts/session-bootstrap.sh:200` names
+both markers as the exceptions to never-merge ("a per-session attended marker ... and a committed
+per-project marker (armed by keel:arm-auto-merge, honored in every session of the repo)"), preserves
+all three invariants verbatim ("you still never merge on your own initiative"; "an explicitly-
+instructed, verified-pin-gate-passing bare gh pr merge <pr> --auto may land without the per-merge
+tap"; the never-claim-unobservable line at L174 is byte-unchanged), and cites both decisions
+(`decisions/2026-07-04-attended-auto-merge.md + decisions/2026-08-02-per-project-auto-merge-
+authorization.md`). `scripts/session-bootstrap.test.sh:158-169` was rewritten in lockstep — asserts
+both marker names, `--auto`, `own initiative`, and the new `no marker of either kind` phrase, with the
+stale `with no marker` substring removed; `bash scripts/session-bootstrap.test.sh` → 61 passed, 0
+failed. `skills/auto-merge/SKILL.md` disambiguates all three instances: `when_to_use` (L4), the body
+(L33), and the disarm note (L103-107, "with the file gone **and no committed per-project marker on
+the default branch**, both guards are back to today's ... matrix") — confirmed via `git diff --stat
+main -- skills/auto-merge/SKILL.md` as the only change to that skill (11 lines touched, all three
+sites). `references/template-contract.md:29-41` records `keel:arm-auto-merge` as the third
+security-review wiring trigger ("This adds a **trigger** to the set of wiring moments, not a change to
+the set of required checks — the set is still the three"). `specs/deferrals/per-project-auto-
+merge.md:1-28` carries a RESOLVED banner in place (mode-file-binding-ttl.md precedent, not a
+`_closed.md` archive) recording all four facts — resolved 2026-08-02, the marker shape/decision
+pointer, the security-review-required precondition live at PRs #195/#196, and the attended-vs-headless
+detection deferred by decision to `mode-file-binding-ttl.md` — with the original parked-2026-07-04 body
+preserved verbatim below a `---` divider. `decisions/2026-08-02-per-project-auto-merge-
+authorization.md` (new, append-only) records the standing-authorization doctrine distinct from M1's
+shape decision: the marker as standing human-made authorization (L12-17), why safe — required-checks
+floor + arming gated on that floor + load-bearing gates untouched (L19-37), precedence `mode > attended
+> committed` (L39-50), arming as the third wiring moment (L52-59), and review-feature/never-auto-list
+untouched (L61-67); it amends `decisions/2026-07-04-attended-auto-merge.md` by reference only (no
+in-place edit to that file — confirmed empty diff). Behavioral completeness: `grep -rn "no marker this
+line holds" scripts/ references/ skills/` → empty (confirmed). `grep -rn "keel-auto-merge.json\\|arm-
+auto-merge" scripts/ skills/ references/ decisions/` → the marker path and arming skill are named
+consistently across the full reader family (guard headers, both guard scripts' committed-row comments,
+session-bootstrap.sh, template-contract.md, both decision entries, arm-auto-merge/SKILL.md) with no
+divergent shape. `grep -rn "behaves exactly as today" skills/` → 3 hits: `auto-merge/SKILL.md:4,33`
+carry the "of either kind" disambiguation; `arm-auto-merge/SKILL.md:4,45` remain bare "no committed
+marker" — this is the documented, coherent judgment call in
+`specs/uncertainties/auto-merge-doctrine/arm-auto-merge-phrasing-left-committed-scoped.md`: that file
+is M2-owned and the milestone's own confined-diff condition forbids M3 from touching it; the phrasing
+is accurate within `arm-auto-merge`'s own frame (predicated on the committed marker's absence, which
+the committed row cannot falsify) — confirmed a coherent reading, not a defect. Guard vocabulary:
+`merge-guard.sh:821-830`'s committed row binds `d_auto="allow"` and calls `emit "$d_auto" ...`
+(emits `allow`); `guard-branch-rules.sh:557-567`'s committed defer row is `exit 0` only, no `allow`
+literal anywhere in the file — matches `decisions/2026-08-02-per-project-auto-merge-
+authorization.md:44-50`'s stated vocabulary exactly, never conflated. Suites (run, not re-derived): all
+12 `scripts/*.test.sh` green — session-bootstrap 61, merge-guard 140, guard-branch-rules 79,
+check-verified-pin 38, attended-marker-parity 20, check-auto-preflight 30, check-branch-protection 19,
+check-neutral 17, check-plan 21, check-skill-anchors 14, check-skill-frontmatter 12, repin 13 (464
+total, 0 failed). Lints: `claude plugin validate --strict .` passed; `check-skill-frontmatter.sh`,
+`check-skill-anchors.sh`, `check-plan.sh`, `check-neutral.sh` all PASS. Confined diff: `git diff
+--stat main` touches exactly the seven files the spec names (the six owned surfaces +
+`specs/uncertainties/auto-merge-doctrine/`); `git diff --stat main -- scripts/check-verified-pin.sh
+scripts/merge-guard.sh scripts/guard-branch-rules.sh skills/arm-auto-merge/SKILL.md
+skills/implement-feature/SKILL.md` is empty — the M1/M2 gate scripts, guards, arming skill, and
+implement-feature are untouched. Pre-pin `/security-review` of the milestone's diff (dispatched as an
+independent sub-task): no findings — every changed prose claim (self-arm, required-checks relaxation,
+own-initiative invariant, human-tap rule) cross-checked against the actual unchanged guard-script
+enforcement logic and found accurate; the one pre-existing imprecision in `arm-auto-merge/SKILL.md` is
+out of this diff's scope, already tracked, and not exploitable (the skill is
+`disable-model-invocation` and the real decision is made by the unmodified `merge-guard.sh`).
+(evidence: this verifier session — file:line citations above, suite output, and the security-review
+sub-task report)

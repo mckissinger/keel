@@ -1,7 +1,7 @@
 ---
 name: auto-merge
 description: Toggle keel's per-session attended auto-merge marker — `keel:auto-merge on` writes an untracked `.claude/keel-attended-merge.json` that lets an explicitly-instructed, verified-pin-gate-passing `gh pr merge --auto` land with no per-merge tap and no build-session refusal; `keel:auto-merge off` removes it. The skill only writes or removes that one marker file — it never issues a merge itself, and the verified-pin gate and the no-agent-initiative rule stay intact.
-when_to_use: Human-triggered only, when the user at the keyboard wants to drop the redundant per-merge approval tap (and the build-session merge refusal) for the rest of this session — args `on` / `off`. NOT autonomy (that's keel:auto), NOT a way for the agent to merge on its own initiative — the human invocation IS the authorization, and with no marker every guard behaves exactly as today.
+when_to_use: Human-triggered only, when the user at the keyboard wants to drop the redundant per-merge approval tap (and the build-session merge refusal) for the rest of this session — args `on` / `off`. NOT autonomy (that's keel:auto), NOT a way for the agent to merge on its own initiative — the human invocation IS the authorization, and with no marker of either kind (no attended marker and no committed per-project marker) every guard behaves exactly as today.
 disable-model-invocation: true
 ---
 
@@ -30,7 +30,7 @@ merge guards honor it for **one** command shape: a **bare** `gh pr merge <pr> --
   (exit 0) to `merge-guard.sh` instead of the categorical `exit 2` refusal. Every other
   merge-shaped command, and `git commit` on the default branch, still `exit 2`.
 
-**With no marker, every guard behaves exactly as today.** The marker never unlocks a plain merge,
+**With no marker of either kind (no attended marker and no committed per-project marker), every guard behaves exactly as today.** The marker never unlocks a plain merge,
 a push, a `git merge` to the default branch, or a bundled/chained `--auto` — only the bare
 delegation shape, which is meaningful only where branch protection makes `--auto` real.
 
@@ -100,8 +100,11 @@ invocation — the handoff-first pattern, not a longer marker, is the answer for
 ## `off` — remove the marker
 
 Remove `.claude/keel-attended-merge.json` if it is present (a no-op if it is already absent), and
-report that the per-merge tap is back in force. Removing it is enough — with the file gone, both
-guards are back to today's ask / deny / exit-2 matrix.
+report that the per-merge tap is back in force. Removing it is enough — with the file gone **and no
+committed per-project marker on the default branch**, both guards are back to today's ask / deny /
+exit-2 matrix. (A committed marker, if one is armed, still governs by its own lower-precedence row —
+removing the attended marker uncovers it, it does not disable it; disarm that separately with
+`keel:arm-auto-merge off`.)
 
 ## Boundaries
 

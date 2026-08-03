@@ -27,9 +27,15 @@ These are the same in every generated repo and are exactly what the preflight as
   `verified-pin` + `plan-lint` are the **kickoff tier**: the attended kickoff wires them when the
   repo is stood up (`skills/spec-foundation/SKILL.md`, `skills/adopt/SKILL.md`).
   `security-review` is the **autonomy tier**: it is wired **before any auto posture arms** —
-  genesis wires all three at bootstrap (`decisions/2026-07-genesis-envelope.md`), and an
+  genesis wires all three at bootstrap (`decisions/2026-07-genesis-envelope.md`), an
   already-standing attended project wires it as **preflight remediation** when `auto:feature` /
-  `auto:run` hit the check-(b) gap. All three are still required **before auto**: the preflight
+  `auto:run` hit the check-(b) gap, and — a **third** wiring moment — `keel:arm-auto-merge` asserts
+  the same required check (and, if needed, wires it attended) via `scripts/check-branch-protection.sh`
+  before it writes the committed per-project marker: arming committed per-project auto-merge removes
+  the human merge eyeball from every unwatched session in the repo exactly as an auto posture does, so
+  it compensates with the same control. This adds a **trigger** to the set of wiring moments, not a
+  change to the set of required checks — the set is still the three. All three are still required
+  **before auto**: the preflight
   asserts the full set and fails closed, and the security-review check is auto mode's
   compensating control for the classifier residual the human merge eyeball no longer covers
   (`decisions/2026-07-autonomy-modes.md`). Dropping a job to clear the gate is never the fix.

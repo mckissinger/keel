@@ -197,7 +197,7 @@ Grain ladder — pick the verb that matches the size of the work:
 - Autonomy:  keel:auto feature <slug> / keel:auto run [scope] / keel:auto genesis "<idea>" (human-triggered only; enters and exits the autonomy mode)
 
 Standing invariants — these hold no matter what else the session is doing:
-- Never merge; the user reviews and merges. Open PRs and stop there. One attended exception: if the user has invoked /keel:auto-merge on this session, an explicitly-instructed, verified-pin-gate-passing gh pr merge <pr> --auto may land without the per-merge tap — you still never merge on your own initiative, and with no marker this line holds exactly as written (decisions/2026-07-04-attended-auto-merge.md).
+- Never merge; the user reviews and merges. Open PRs and stop there. Two markers are the exceptions to this default, both a human-made authorization the agent never grants itself: a per-session attended marker (the user invoked /keel:auto-merge on this session) and a committed per-project marker (armed by keel:arm-auto-merge, honored in every session of the repo). Under either, an explicitly-instructed, verified-pin-gate-passing bare gh pr merge <pr> --auto may land without the per-merge tap — you still never merge on your own initiative, and with no marker of either kind this line holds exactly as written (decisions/2026-07-04-attended-auto-merge.md + decisions/2026-08-02-per-project-auto-merge-authorization.md).
 - Never commit to main; builds run on branches.
 - A milestone's code merges only under the two-part control: a fresh-session verified pin (the verification half) plus the pin gate's drift check (no code changed since the pin). Neither half alone proves the other.
 - Attended gates stop and ask; they are never silently deferred.

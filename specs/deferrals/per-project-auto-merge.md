@@ -1,5 +1,33 @@
 # Per-project (committed) auto-merge toggle + its security-review compensation
 
+**RESOLVED 2026-08-02 by feature `per-project-auto-merge`** (`specs/features/per-project-auto-merge.md`;
+plan PR #197, milestones #198/#199 + the doctrine/run-through wave). The four gate items are met:
+
+1. **Committed-setting shape decided.** The marker is `.claude/keel-auto-merge.json` (fields
+   `scope: "project"`, `created`, `invoker`), honored only from the repo's **server default branch**.
+   It lands as a **plan-only PR** via a pin-gate plan-path carve-out in `scripts/check-verified-pin.sh`
+   rather than the tracked `.claude/settings.json` sketched below —
+   `decisions/2026-08-02-committed-auto-merge-marker.md` records the shape, transport, and why the
+   pin gate exempts it.
+2. **The security-review-required precondition is wired and verified live** — the required-checks floor
+   shipped in PRs #195/#196 (full branch protection; `security-review` a required check backed by real
+   workflow **content**, asserted by `scripts/check-branch-protection.sh` check (b2)). The arming skill
+   (`keel:arm-auto-merge`, #199) reuses that exact assertion and refuses to write the marker unless it
+   is live — so the "agent-armed `--auto` in an unwatched session" blast radius the note below feared is
+   answered by the required-checks compensating control, not by trusting the marker.
+3. **The self-arm concern is closed mechanically, not by prose:** the marker is written **only** by the
+   human-invoked `disable-model-invocation` arming skill (the agent never self-arms), the guards honor it
+   only from server truth behind a fail-closed fetch, and any marker-touching PR is forced to a human tap.
+4. **The attended-vs-headless detection question is left deferred BY DECISION, not omission** — it stays
+   in `mode-file-binding-ttl.md` (the harness exposes no confirmed per-session attended/headless signal).
+   The required-checks floor makes the distinction **unnecessary for safety**: whether a session is
+   watched or not, nothing lands that the three required checks did not inspect. The standing-authorization
+   doctrine is `decisions/2026-08-02-per-project-auto-merge-authorization.md`.
+
+The original parking rationale is preserved verbatim below as the record of why it was deferred.
+
+---
+
 **Parked 2026-07-04.** The attended auto-merge toggle
 (`specs/changes/attended-merge-toggle.md`) ships **per-session only**: a human-invoked,
 untracked marker that lives while the user is at the keyboard. The **per-project** variant — a

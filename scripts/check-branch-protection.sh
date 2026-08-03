@@ -134,17 +134,21 @@ override_secreview_check=0
 override_secreview_pattern=0
 [ -n "${PREFLIGHT_SECREVIEW_PATTERN+set}" ] && override_secreview_pattern=1
 [ "$SECREVIEW_PATTERN" != "$KEEL_DEFAULT_SECREVIEW_PATTERN" ] && override_secreview_pattern=1
-override_secreview_external=0
-[ -n "${PREFLIGHT_SECREVIEW_EXTERNAL+set}" ] && override_secreview_external=1
 
 # read_check_contract → CONTRACT_STATE = absent|malformed|valid; on valid, sets
-# CONTRACT_CHECKS / CONTRACT_SECREVIEW_CHECK / CONTRACT_SECREVIEW_PATTERN /
-# CONTRACT_SECREVIEW_EXTERNAL from the committed file on the server default branch.
+# CONTRACT_CHECKS / CONTRACT_SECREVIEW_CHECK / CONTRACT_SECREVIEW_PATTERN from the
+# committed file. NOTE: the committed contract deliberately does NOT carry an
+# `external` attestation — a non-Actions security-review provider is attested ONLY
+# by the per-invocation PREFLIGHT_SECREVIEW_EXTERNAL=1 env var (a loud, named
+# operator one-off). Porting that bypass into the standing committed file would let
+# a repo commit `external: true` and skip (b2) content-scanning forever — the exact
+# never-weakens violation this gate forbids (pre-pin /security-review finding,
+# decisions/2026-08-03-arm-auto-merge-check-contract.md). So the config renames the
+# review check and sets its pattern, but can NEVER switch off the content scan.
 CONTRACT_STATE="absent"
 CONTRACT_CHECKS=""
 CONTRACT_SECREVIEW_CHECK=""
 CONTRACT_SECREVIEW_PATTERN=""
-CONTRACT_SECREVIEW_EXTERNAL=""
 read_check_contract() {
   [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ] || return 0   # deps already gapped; stay absent
   command -v git >/dev/null 2>&1 || return 0
@@ -169,7 +173,8 @@ read_check_contract() {
   [ -n "$CONTRACT_CHECKS" ] || { CONTRACT_STATE="malformed"; return 0; }
   CONTRACT_SECREVIEW_CHECK="$(printf '%s' "$content" | jq -r '.security_review.check // "'"$KEEL_DEFAULT_SECREVIEW_CHECK"'"' 2>/dev/null || printf '%s' "$KEEL_DEFAULT_SECREVIEW_CHECK")"
   CONTRACT_SECREVIEW_PATTERN="$(printf '%s' "$content" | jq -r '.security_review.pattern // "'"$KEEL_DEFAULT_SECREVIEW_PATTERN"'"' 2>/dev/null || printf '%s' "$KEEL_DEFAULT_SECREVIEW_PATTERN")"
-  CONTRACT_SECREVIEW_EXTERNAL="$(printf '%s' "$content" | jq -r 'if (.security_review.external // false) then "1" else "0" end' 2>/dev/null || printf '0')"
+  # .security_review.external is DELIBERATELY NOT read — external attestation is
+  # env-only (see the note above); a committed `external` field is ignored.
   CONTRACT_STATE="valid"
 }
 
@@ -184,10 +189,12 @@ if [ "$override_checks" -eq 0 ]; then
       ;;
     valid)
       REQUIRED_CHECKS="$CONTRACT_CHECKS"
-      # env still wins per-knob for the security-review knobs (precedence env > config).
+      # env still wins per-knob for the security-review name/pattern (precedence
+      # env > config). external attestation is NOT taken from the committed file —
+      # it stays the env-only PREFLIGHT_SECREVIEW_EXTERNAL, so a committed config can
+      # never switch off the (b2) content scan.
       [ "$override_secreview_check" -eq 1 ]   || SECREVIEW_CHECK_NAME="$CONTRACT_SECREVIEW_CHECK"
       [ "$override_secreview_pattern" -eq 1 ] || SECREVIEW_PATTERN="$CONTRACT_SECREVIEW_PATTERN"
-      [ "$override_secreview_external" -eq 1 ] || export PREFLIGHT_SECREVIEW_EXTERNAL="$CONTRACT_SECREVIEW_EXTERNAL"
       ;;
     absent) : ;;   # keel defaults already in place
   esac

@@ -296,6 +296,24 @@ OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$TMP/protection-full.json" GH_REPO_FI
   PREFLIGHT_REQUIRED_CHECKS="verified-pin plan-lint security-review" bash "$SCRIPT" "$PROJ" 2>&1)" && RC=0 || RC=$?
 expect "env override beats the committed config → PASS on the override's set" 0 "branch-protection: PASS"
 
+# 22b. never-weakens: a committed config CANNOT switch off the (b2) content scan via
+#     `security_review.external`. The config declares external:true and names its
+#     review check, but there is NO review workflow content in the repo (rm .github).
+#     external is env-only, so the committed field is ignored → (b2) runs → GAP.
+#     (Regression for the pre-pin /security-review finding: pre-fix, this PASSED,
+#     silently disabling all content scanning.)
+git_proj gp22b '{"required_checks":["verified-pin gate","typecheck · lint · test","security-review"],"security_review":{"check":"security-review","external":true}}'
+rm -rf "$PROJ/.github"                 # no review workflow content at all
+git -C "$PROJ" -c user.email=t@keel.test -c user.name=t commit -qam "drop workflow" 2>/dev/null || true
+run_gate "$PROJ" "$PROT_CRE"
+expect "committed external:true does NOT bypass (b2) — no content → GAP" 1 "no workflow content performs a review"
+
+# 22c. And with the env var set, external attestation still works (the legitimate,
+#     loud, per-invocation path is unchanged) — same repo, PREFLIGHT_SECREVIEW_EXTERNAL=1.
+OUT="$(PATH="$TMP/bin:$PATH" GH_PROT_FILE="$PROT_CRE" GH_REPO_FILE="$TMP/repo-aam-true.json" \
+  PREFLIGHT_SECREVIEW_EXTERNAL=1 bash "$SCRIPT" "$PROJ" 2>&1)" && RC=0 || RC=$?
+expect "env PREFLIGHT_SECREVIEW_EXTERNAL=1 still attests (b2) → PASS (legit path intact)" 0 "branch-protection: PASS"
+
 # 22. Absent config on a real git repo (git show non-zero) → falls back to keel default,
 #     checked against the keel-default protection → PASS. Confirms absent (not malformed)
 #     routes to the default, distinct from the GAP cases above.

@@ -24,15 +24,19 @@ A consuming repo declares its own check names in a committed **`.claude/keel-aut
 ```json
 {
   "required_checks": ["verified-pin gate", "typecheck · lint · test", "security-review"],
-  "security_review": { "check": "security-review", "pattern": "claude-code-security-review", "external": false }
+  "security_review": { "check": "security-review", "pattern": "claude-code-security-review" }
 }
 ```
 
 The plugin's `check-branch-protection.sh` stays the canonical **logic**; the file supplies only
 **names**. `required_checks` are the contexts that must be REQUIRED on the default branch;
 `security_review.check` is which of them is the review (the (b2) content scan keys off that name),
-`pattern` is the uncommented-`uses:` pattern, `external: true` is the committed analog of
-`PREFLIGHT_SECREVIEW_EXTERNAL=1`.
+`pattern` is the uncommented-`uses:` pattern. The committed contract **deliberately carries no
+`external` attestation**: a non-Actions security-review provider is attested ONLY by the
+per-invocation `PREFLIGHT_SECREVIEW_EXTERNAL=1` env var (a loud, named operator one-off). Porting that
+bypass into the *standing* committed file would let a repo commit `external: true` and skip (b2)
+content-scanning forever — the exact never-weakens violation this gate forbids, caught by the pre-pin
+`/security-review`. A committed `external` field is ignored.
 
 ## Transport, precedence, and the never-weakens rules
 

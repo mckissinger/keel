@@ -26,16 +26,18 @@ verifier at `xhigh`.
   "required_checks": ["verified-pin gate", "typecheck · lint · test", "security-review"],
   "security_review": {
     "check": "security-review",
-    "pattern": "claude-code-security-review",
-    "external": false
+    "pattern": "claude-code-security-review"
   }
 }
 ```
 
 `required_checks` is the exact set of status-check contexts that must be REQUIRED on the default
 branch. `security_review.check` is which of those contexts is the security review; `pattern` is the
-uncommented-`uses:` pattern the (b2) content scan matches; `external: true` attests a non-Actions
-provider explicitly (echoed loudly), the committed analog of `PREFLIGHT_SECREVIEW_EXTERNAL=1`.
+uncommented-`uses:` pattern the (b2) content scan matches. The committed contract carries **no
+`external` field** — a non-Actions provider is attested only by the per-invocation
+`PREFLIGHT_SECREVIEW_EXTERNAL=1` env var (a committed `external: true` would let a repo skip the (b2)
+content scan forever, a never-weakens violation; the pre-pin `/security-review` caught the earlier
+draft that read it, so the committed field is deliberately ignored).
 
 ## Done-conditions
 

@@ -66,8 +66,11 @@ a working-tree or branch-only copy is ignored. Shape:
 ```
 
 It **declares names only** — it can *rename* the security-review check but never *remove* it (a set
-omitting it GAPs), and it cannot switch off the (b2) content scan or the `allow_auto_merge` check. A
-present-but-malformed or empty contract fails closed (GAP), never a silent fall-back. Precedence is
+omitting it GAPs), and it cannot switch off the (b2) content scan or the `allow_auto_merge` check. In
+particular it carries **no `external` field**: a non-Actions security-review provider is attested only
+by the per-invocation `PREFLIGHT_SECREVIEW_EXTERNAL=1` env var, never committed (a committed
+`external: true` would silently disable content-scanning forever). A present-but-malformed or empty
+contract fails closed (GAP), never a silent fall-back. Precedence is
 **operator override (`PREFLIGHT_*` env, or an edited config-block default) > committed contract > keel
 default** (`decisions/2026-08-03-arm-auto-merge-check-contract.md`). Commit it as a **plan-only PR**
 (it gets the same `is_plan_path` carve-out as the marker) — and note a PR editing it takes a human tap

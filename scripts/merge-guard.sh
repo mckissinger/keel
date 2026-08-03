@@ -153,6 +153,71 @@
 # is encoded by jq (python3 fallback, m1's pattern), never by interpolation.
 # The marker text is parsed as data too (json_str, the same string-typed reader
 # as the mode file), never eval'd.
+#
+# --- Committed per-project auto-merge marker contract (this guard is the reading
+#     owner; specs/features/per-project-auto-merge.md is the spec) --------------
+#
+# Path:    .claude/keel-auto-merge.json
+# Fields:  scope   — MUST equal "project" (any other value → the file is invalid)
+#          created — when the marker was armed, ISO-8601 UTC (parsed AS DATA)
+#          invoker — who armed it (the keel:arm-auto-merge skill records this)
+# All three are required, non-empty strings; any defect → treated as NO marker,
+# fail closed.
+#
+# ROOT OF TRUST — presence on the SERVER default branch, not the working tree and
+# not any locally-forgeable ref (hardened by the pre-pin security review). The read
+# (read_committed_marker) establishes trust in three fail-closed steps:
+#   1. The authorization branch is the repo's SERVER default branch, from
+#      `gh repo view --json defaultBranchRef` in GIT_CTX — NOT the local
+#      `refs/remotes/origin/HEAD` symref (an agent repoints that with
+#      `git remote set-head`, which is not a merge/push/commit shape, to a branch it
+#      pushed carrying a marker). gh resolves the SAME repo `gh pr merge` targets, so
+#      the marker authorizes exactly the repo the merge acts on (reading at ROOT
+#      instead would let a marker in one repo authorize a merge gh performs in
+#      another). This is also why the read stays at GIT_CTX, not ROOT.
+#   2. A MANDATORY, fail-closed fetch of that branch from origin precedes the read —
+#      never best-effort. A forged local `refs/remotes/origin/<db>` (planted by
+#      `git update-ref`, or committed in a throwaway GIT_CTX with an unreachable
+#      origin) is overwritten by real origin content; a fetch that cannot run means
+#      the marker is NOT honored, rather than falling back to the local ref.
+#   3. The content read from the just-fetched ref is parsed as DATA (json_str);
+#      scope MUST equal "project", created + invoker non-empty; any defect → absent.
+# The server default branch advances only by a human-merged PR, so presence there IS
+# the authorization trail: a locally `Write`-n or branch-only file is ignored. This
+# deliberately INVERTS the untracked attended/mode markers' rule (spoofable-if-
+# tracked, so honored only untracked); this marker's authorization is the git
+# history of the server default branch, so it is honored only when committed there.
+#
+# NO TTL — a committed setting does not expire (contrast the attended marker's 8h
+# and the mode file's 24h). This is safe BECAUSE the read-from-server-default-branch
+# root of trust means the marker got there through a human-merged PR, not because an
+# unexpiring local file is trusted. Its only writer/remover is the human-invoked
+# keel:arm-auto-merge skill (disable-model-invocation).
+#
+# It is the per-project, committed sibling of the mode row and the attended row.
+# PRECEDENCE: mode > attended > committed. Under NO active mode AND no valid
+# attended marker AND a valid committed marker AND the canonical bare
+# `gh pr merge <pr> --auto` shape AND gate PASS, exactly one row changes, mirroring
+# the mode/attended rows: → "allow" (the redundant per-merge tap is dropped;
+# GitHub still merges only when the required checks pass). Everything else is
+# byte-for-byte today's table.
+#
+# HUMAN-TAP RULE (blocks temporary→permanent escalation): any merge-shaped command
+# whose target PR TOUCHES .claude/keel-auto-merge.json is NEVER auto-merged — it is
+# forced to "ask", BEFORE and regardless of every allow row (mode/attended/
+# committed), so no temporary authority (an 8h attended marker, a 24h mode) can
+# auto-land the permanent marker's own arming/disarming PR. The PR's file list is
+# computed with the non-truncating `git diff --name-only base...head` (never the
+# truncatable `gh pr view --json files`), hardened by the security review: a
+# MANDATORY fresh fetch of base+head first (so a stale local head cannot omit a
+# just-pushed marker), `diff.relative` pinned OFF (so a subdirectory GIT_CTX cannot
+# drop out-of-prefix paths), and an empty list on a real PR treated as suspicious;
+# every failure path fails closed to "ask". The residual — forging the SERVER
+# default branch (needs repo write + settings, out of an agent's reach) — is
+# backstopped by the required-checks floor.
+#
+# Safety: the marker text is parsed as DATA (json_str, string-typed), never eval'd,
+# exactly as the mode/attended markers are.
 
 set -euo pipefail
 set -f # no globbing: command text is tokenized as data
@@ -351,6 +416,52 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
   # TTL (8h): an expired / unparseable / future `created` → treated absent.
   created_fresh "$created" 28800 || return 0
   ATTENDED_ACTIVE=1
+  return 0
+}
+
+# --- committed per-project auto-merge marker (see the contract in the header) --
+
+COMMITTED_ACTIVE=0
+
+read_committed_marker() { # committed .claude/keel-auto-merge.json on the SERVER default branch → COMMITTED_ACTIVE
+  COMMITTED_ACTIVE=0
+  local db content scope created invoker
+  # ROOT OF TRUST — hardened after the pre-pin security review (three self-arm
+  # paths it closes are named here):
+  #
+  #   (1) The authorization branch is the repo's SERVER-side default branch, asked
+  #   of `gh repo view` — NOT the local `refs/remotes/origin/HEAD` symref, which an
+  #   agent can repoint with `git remote set-head origin <branch>` (not a
+  #   merge/push/commit shape, so the guards permit it) to a branch it pushed
+  #   carrying a marker. gh resolves the SAME repo `gh pr merge` targets (GIT_CTX's
+  #   origin), so the marker authorizes exactly the repo the merge acts on — never
+  #   a different repo (which reading at ROOT would allow when GIT_CTX's origin
+  #   differs). No gh, or no default branch → fail closed.
+  #
+  #   (2) The refresh fetch is MANDATORY and fail-closed — never best-effort. A
+  #   forged local refs/remotes/origin/<db> (planted with `git update-ref`, or a
+  #   marker committed in a throwaway GIT_CTX whose origin is unreachable) is
+  #   overwritten here by real origin content; if the fetch cannot run at all, we
+  #   do NOT fall back to the local ref — we refuse to honor the marker.
+  #
+  #   (3) The content is read from the just-fetched refs/remotes/origin/<db>,
+  #   parsed as DATA (json_str, never eval'd). scope MUST be the literal "project";
+  #   created + invoker present, non-empty. Any defect → treated as absent. NO TTL
+  #   — a committed setting does not expire; its safety is presence on the
+  #   server default branch (human-merged), not freshness.
+  command -v gh >/dev/null 2>&1 || return 0
+  db="$( (cd "$GIT_CTX" 2>/dev/null && gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null) )" || return 0
+  [ -n "$db" ] || return 0
+  case "$db" in *[!A-Za-z0-9._/-]*) return 0 ;; esac # conservative branch-name charset; anything else → absent
+  gitc fetch origin "+refs/heads/$db:refs/remotes/origin/$db" >/dev/null 2>&1 || return 0
+  content="$(gitc show "refs/remotes/origin/$db:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
+  [ -n "$content" ] || return 0
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  [ "$scope" = "project" ] || return 0
+  [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  COMMITTED_ACTIVE=1
   return 0
 }
 
@@ -604,7 +715,7 @@ classify_cmd() { # <command text> → SHAPE, GH_PR_ARG (+ GIT_COMMIT)
 
 # --- decision ----------------------------------------------------------------
 
-BASE_REF_R="" HEAD_REF_R=""
+BASE_REF_R="" HEAD_REF_R="" BASE_NAME_R="" HEAD_NAME_R=""
 
 resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally resolvable refs
   command -v gh >/dev/null 2>&1 || return 1
@@ -617,6 +728,7 @@ resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally reso
   b="$(json_str "$json" baseRefName)" # DATA: quoted argv/env only from here on
   h="$(json_str "$json" headRefName)"
   if [ -z "$b" ] || [ -z "$h" ]; then return 1; fi
+  BASE_NAME_R="$b" HEAD_NAME_R="$h" # raw branch names for pr_touches_marker's fresh fetch
   if gitc rev-parse --verify --quiet "refs/remotes/origin/$b^{commit}" >/dev/null 2>&1; then
     BASE_REF_R="origin/$b"
   elif gitc rev-parse --verify --quiet "refs/heads/$b^{commit}" >/dev/null 2>&1; then
@@ -632,6 +744,32 @@ resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally reso
     return 1
   fi
   return 0
+}
+
+pr_touches_marker() { # 0 = the PR touches the marker OR the file list is indeterminate (fail closed); 1 = definitely does not
+  # The PR's own change set is base...head (three-dot: symmetric-difference from
+  # the merge base, the same diff shape check-verified-pin.sh uses). Non-truncating
+  # by construction — NOT `gh pr view --json files`, which truncates on large PRs
+  # and would let a padded marker-touching PR evade this control.
+  #
+  # Hardened after the pre-pin security review (fail CLOSED — return 0 → ask):
+  #   - MANDATORY fresh fetch of base + head from origin before diffing, so the
+  #     change set reflects the PR's CURRENT head, not a stale local tracking ref
+  #     (a stale head could omit a marker just pushed onto the PR — the temporary→
+  #     permanent escalation the human-tap rule exists to block). Fetch failure → ask.
+  #   - `diff.relative` pinned OFF: a subdirectory GIT_CTX with diff.relative=true
+  #     would emit cwd-relative paths and DROP out-of-prefix files (the marker among
+  #     them) from the list. With it pinned off git always emits full repo-root-
+  #     relative paths, so a genuinely empty list means no changes (→ does not
+  #     touch), never a dropped marker. --no-renames keeps an add/rename visible.
+  local files
+  [ -n "$BASE_NAME_R" ] && [ -n "$HEAD_NAME_R" ] || return 0
+  gitc fetch origin "+refs/heads/$BASE_NAME_R:refs/remotes/origin/$BASE_NAME_R" \
+                    "+refs/heads/$HEAD_NAME_R:refs/remotes/origin/$HEAD_NAME_R" >/dev/null 2>&1 || return 0
+  files="$(gitc -c diff.relative=false diff --name-only --no-renames \
+             "refs/remotes/origin/$BASE_NAME_R"..."refs/remotes/origin/$HEAD_NAME_R" 2>/dev/null)" || return 0
+  printf '%s\n' "$files" | grep -qxF '.claude/keel-auto-merge.json' && return 0
+  return 1
 }
 
 decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the header contract
@@ -661,7 +799,12 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
   fi
   err="$(mktemp)"
   if (cd "$GIT_CTX" && BASE_REF="$BASE_REF_R" "$gate" "$HEAD_REF_R") >/dev/null 2>"$err"; then
-    if [ "$MODE_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+    if [ "$SHAPE" = "gh-pr-merge" ] && pr_touches_marker; then
+      # Human-tap rule (header contract): a PR arming or disarming the committed
+      # marker is never auto-merged — forced to ask BEFORE and regardless of every
+      # allow row, so no temporary authority can auto-land the permanent marker.
+      emit ask "this PR touches the committed auto-merge marker (.claude/keel-auto-merge.json) — arming or disarming per-project auto-merge always takes a human merge tap; no marker or mode auto-merges its own change (specs/features/per-project-auto-merge.md)"
+    elif [ "$MODE_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
       # The one row a valid mode changes (header contract). The decision word
       # is bound through a variable so the self-test's static scan — a
       # tripwire against a bare unconditional allow literal — stays live.
@@ -675,6 +818,16 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
       # no-bare-`allow`-literal tripwire stays live.
       d_auto="allow"
       emit "$d_auto" "attended auto-merge active — an instructed gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (decisions/2026-07-04-attended-auto-merge.md); the per-merge tap is dropped for this session, GitHub merges when and only when the required checks pass"
+    elif [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ] && [ "$COMMITTED_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+      # The committed per-project sibling of the mode/attended rows (header
+      # contract): a marker committed to the default branch — a standing human
+      # authorization — drops the per-merge tap on the same bare `--auto` + gate-pass
+      # shape, for every session in the repo. Precedence mode > attended > committed
+      # is enforced by the MODE_ACTIVE=0 && ATTENDED_ACTIVE=0 guard; the human-tap
+      # rule above has already excluded a marker-touching PR. Same variable-bound
+      # decision word, so the no-bare-`allow`-literal tripwire stays live.
+      d_auto="allow"
+      emit "$d_auto" "committed per-project auto-merge active — a marker committed to the default branch is a standing human authorization; an instructed gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (specs/features/per-project-auto-merge.md); GitHub merges when and only when the required checks pass"
     else
       emit ask "verified-pin gate passed — per-merge human approval"
     fi
@@ -713,6 +866,14 @@ if [ -z "$SHAPE" ]; then exit 0; fi # not merge-shaped → allow silently
 read_mode_file       # no/invalid mode file → MODE_ACTIVE=0 → today's table exactly
 read_attended_marker # no/invalid marker → ATTENDED_ACTIVE=0; ignored when a mode is active
 detect_strict_auto   # only a single plain `gh pr merge ... --auto` sets AUTO_MERGE
+# The committed marker is consulted only when it could actually decide the row —
+# no active mode, no valid attended marker (precedence: mode > attended > committed),
+# and only for the bare `gh pr merge --auto` shape it can unlock. This also skips
+# its mandatory server fetch under a mode/attended run and on every non-auto shape.
+if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ] \
+   && [ "$SHAPE" = "gh-pr-merge" ] && [ "$AUTO_MERGE" -eq 1 ]; then
+  read_committed_marker # no/invalid marker on the server default branch → COMMITTED_ACTIVE=0
+fi
 
 decide
 exit 0

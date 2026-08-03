@@ -49,6 +49,10 @@ STUBDIR="$TMP/stub-bin"
 mkdir -p "$STUBDIR"
 cat > "$STUBDIR/gh" <<'EOF'
 #!/usr/bin/env bash
+# repo view → the SERVER default branch (the committed reader's root of trust).
+if [ "${1:-}" = "repo" ] && [ "${2:-}" = "view" ]; then
+  printf 'main\n'; exit 0
+fi
 if [ "${1:-}" = "pr" ] && [ "${2:-}" = "view" ]; then
   printf '{"baseRefName":"main","headRefName":"feat-1"}\n'
   exit 0
@@ -147,6 +151,52 @@ run_fixture "tracked"    gate   "$VALID"                                        
 run_fixture "malformed"  gate   '{"scope":"session","created":'                   no
 # Wrong scope → both GATE.
 run_fixture "wrongscope" gate   '{"scope":"project","created":"c","invoker":"i"}' no
+
+# --- committed per-project auto-merge marker parity ---------------------------
+# The committed reader (read_committed_marker → COMMITTED_ACTIVE) is also duplicated
+# across both scripts and also uses the jq/python3-typed json_str, so it gets the
+# same cross-reader parity: armed on the SERVER default branch (main), both scripts
+# reach the SAME conclusion under jq AND under the jq-hidden python3 reader, valid
+# and fail-closed alike. NO attended marker is written, so the committed row is the
+# one under test (precedence mode > attended > committed).
+arm_committed_main() { # <repo> <payload> — commit the marker onto main so origin/main carries it
+  local repo="$1" payload="$2"
+  git -C "$repo" checkout -q main
+  mkdir -p "$repo/.claude"; printf '%s' "$payload" > "$repo/.claude/keel-auto-merge.json"
+  git -C "$repo" add -f .claude/keel-auto-merge.json
+  git -C "$repo" -c user.email=t@keel.test -c user.name=t commit -qm "arm committed"
+  git -C "$repo" update-ref refs/remotes/origin/main "$(git -C "$repo" rev-parse HEAD)"
+  git -C "$repo" checkout -q feat/work # marker leaves the working tree — honor comes from main
+}
+
+run_committed_fixture() { # <name> <expected> <payload>
+  local name="$1" want="$2" payload="$3"
+  make_repo "rc-${name}"
+  local repo="$REPO"
+  arm_committed_main "$repo" "$payload"
+  local modes=("jq:$STUBDIR:$PATH")
+  [ "$PY_OK" -eq 1 ] && modes+=("python3:$SANDBOX")
+  local mode label path mg bg
+  for mode in "${modes[@]}"; do
+    label="${mode%%:*}"; path="${mode#*:}"
+    mg="$(mg_conclusion "$repo" "$path")"
+    bg="$(bg_conclusion "$repo" "$path")"
+    if [ "$mg" = "$want" ] && [ "$bg" = "$want" ]; then
+      ok "committed:$name [$label reader]: both scripts conclude '$want' (mg=$mg, bg=$bg)"
+    else
+      bad "committed:$name [$label reader]: want '$want' from both — got mg=$mg, bg=$bg"
+    fi
+  done
+}
+
+# A valid committed marker on main → both UNLOCK (jq and python3 agree).
+run_committed_fixture "valid"      unlock '{"scope":"project","created":"2026-08-02T00:00:00Z","invoker":"human:keel-arm-auto-merge"}'
+# Wrong scope → both GATE.
+run_committed_fixture "wrongscope" gate   '{"scope":"session","created":"2026-08-02T00:00:00Z","invoker":"i"}'
+# Wrong-TYPED scope (JSON number): json_str must read it absent under BOTH readers.
+run_committed_fixture "typedscope" gate   '{"scope":5,"created":"2026-08-02T00:00:00Z","invoker":"i"}'
+# Malformed JSON → both GATE.
+run_committed_fixture "malformed"  gate   '{"scope":"project","created":'
 
 if [ "$PY_OK" -ne 1 ]; then
   echo "note: python3 not found — the python3-reader parity leg was skipped"

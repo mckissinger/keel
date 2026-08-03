@@ -577,6 +577,255 @@ expect_decision "marker only in the worktree's .claude → not read → ask (mar
 rm -rf "$WT9/.claude"
 STUB_PATH=""
 
+# ---- committed per-project auto-merge marker --------------------------------
+# Contract (merge-guard.sh header): a marker committed to the DEFAULT BRANCH
+# (.claude/keel-auto-merge.json, scope="project" + created + invoker), read ONLY
+# from origin/<default> (never the working tree, never BASE_REF_R) + NO mode + NO
+# attended marker + a bare `gh pr merge <pr> --auto` + gate PASS → allow. Plain →
+# ask. Gate FAIL → deny. A PR that TOUCHES the marker → ask (human-tap rule,
+# before every allow row). Working-tree-only / not-on-default-branch → absent.
+# Precedence: mode > attended > committed.
+
+# A gh stub mapping the PR arg to a head branch so one repo exercises a clean PR
+# (123 → feat-clean), a marker-TOUCHING PR (777 → feat-marker), and an
+# unrelated-history PR (888 → feat-unrelated, no merge base → indeterminate diff).
+mkdir -p "$TMP/bin-committed"
+cat > "$TMP/bin-committed/gh" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" > "$TMP/gh-args.txt"
+# repo view → the SERVER default branch (read_committed_marker's root of trust; the
+# stub answers the bare name, matching production's --jq '.defaultBranchRef.name').
+if [ "\${1:-}" = "repo" ] && [ "\${2:-}" = "view" ]; then
+  printf '%s\n' "\${STUB_DEFAULT_BRANCH:-main}"
+  exit 0
+fi
+if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  head=feat-clean
+  for a in "\$@"; do case "\$a" in 777) head=feat-marker ;; 888) head=feat-unrelated ;; 999) head=feat-arm ;; esac; done
+  printf '{"baseRefName":"main","headRefName":"%s"}\n' "\$head"
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$TMP/bin-committed/gh"
+
+# created 1h ago — committed markers carry NO TTL, but `created` is a required,
+# non-empty field, so use a real timestamp.
+COMMIT_JSON="$(printf '{"scope":"project","created":"%s","invoker":"human:keel-arm-auto-merge"}' "$(ts_ago 1)")"
+arm_committed() { # <repo> <json> — commit the marker onto refs/heads/main so origin/main carries it
+  local repo="$1" json="$2" cur
+  cur="$(git -C "$repo" rev-parse --abbrev-ref HEAD)"
+  git -C "$repo" checkout -q main
+  mkdir -p "$repo/.claude"
+  printf '%s' "$json" > "$repo/.claude/keel-auto-merge.json"
+  git -C "$repo" add -f .claude/keel-auto-merge.json
+  git -C "$repo" -c user.email=t@keel.test -c user.name=t commit -qm "arm committed auto-merge"
+  git -C "$repo" update-ref refs/remotes/origin/main "$(git -C "$repo" rev-parse HEAD)"
+  git -C "$repo" checkout -q "$cur" # the marker file leaves the working tree — honor must come from origin/main
+}
+
+# R10: main default; a clean feature branch, a marker-touching branch, an orphan
+# branch; marker armed on main; passing gate. Gate script is created LAST so the
+# orphan's `git clean` never removes it.
+make_repo r10 main symref; R10="$REPO"
+git -C "$R10" checkout -q -b feat-clean
+echo code > "$R10/src.txt"; git -C "$R10" add -f src.txt
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R10" checkout -q -b feat-marker main
+mkdir -p "$R10/.claude"; printf '%s' "$COMMIT_JSON" > "$R10/.claude/keel-auto-merge.json"
+git -C "$R10" add -f .claude/keel-auto-merge.json
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR (marker-touching)"
+git -C "$R10" checkout -q --orphan feat-unrelated
+git -C "$R10" rm -rf --cached . >/dev/null 2>&1 || true
+git -C "$R10" clean -fdq 2>/dev/null || true
+echo x > "$R10/orphan.txt"; git -C "$R10" add -f orphan.txt
+git -C "$R10" -c user.email=t@keel.test -c user.name=t commit -qm orphan
+git -C "$R10" checkout -q feat-clean
+arm_committed "$R10" "$COMMIT_JSON"
+mkdir -p "$R10/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R10/scripts/check-verified-pin.sh"; chmod +x "$R10/scripts/check-verified-pin.sh"
+STUB_PATH="$TMP/bin-committed"
+
+# The one committed allow row: valid marker on main + clean PR + bare --auto + gate PASS.
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker on main + clean PR + --auto + gate pass → allow" allow "committed per-project auto-merge active"
+run_guard "$R10" 'gh pr merge --auto 123'
+expect_decision "committed: flag order does not matter → allow (delegates to required checks)" allow "required checks"
+run_guard "$R10" 'gh pr merge 123 --auto --rebase'
+expect_decision "committed: --auto with a merge-method flag still allows (positive control)" allow "committed per-project auto-merge active"
+
+# Plain gh pr merge (no --auto) stays ask under the committed marker.
+run_guard "$R10" 'gh pr merge 123 --squash'
+expect_decision "committed marker, no --auto → ask" ask "verified-pin gate passed"
+# Bundled / chained --auto → ask (only the bare shape unlocks).
+run_guard "$R10" 'gh pr merge 123 --auto && echo done'
+expect_decision "committed: chained --auto never allows → ask" ask
+
+# HUMAN-TAP RULE: a marker-touching PR → ask even with a valid marker + passing gate.
+run_guard "$R10" 'gh pr merge 777 --auto'
+expect_decision "committed + marker-touching PR → ask (human-tap, before every allow row)" ask "human merge tap"
+# Indeterminate file list (no merge base) → ask, fail closed.
+run_guard "$R10" 'gh pr merge 888 --auto'
+expect_decision "committed + indeterminate PR diff (no merge base) → ask (fail closed)" ask
+
+# Other merge shapes / non-triggers byte-for-byte today's table under the committed marker.
+run_guard "$R10" 'git merge main'
+expect_decision "committed marker: git merge <default> stays ask" ask
+run_guard "$R10" 'git push origin main'
+expect_decision "committed marker: git push <default> stays ask" ask
+run_guard "$R10" 'git status'
+expect_silent "committed marker: non-merge command stays silent"
+
+# PRECEDENCE mode > attended > committed. Add an attended marker → attended governs.
+write_attended "$R10" "$ATT_JSON"
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed + attended both active → attended governs (allow, attended reason)" allow "attended auto-merge active"
+# Add a mode → mode governs over both.
+write_mode "$R10" "$MODE_JSON"
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed + attended + mode all active → mode governs (allow, mode reason)" allow "autonomy mode active"
+# The human-tap rule fires even under an active mode: a marker-touching PR → ask.
+run_guard "$R10" 'gh pr merge 777 --auto'
+expect_decision "marker-touching PR under an active mode → ask (human-tap before every allow row)" ask "human merge tap"
+rm -f "$R10/.claude/keel-autonomy.json" "$R10/.claude/keel-attended-merge.json"
+
+# Invalid committed markers on the default branch → treated absent → ask floor.
+arm_committed "$R10" '{"scope":"session","created":"2026-08-02T00:00:00Z","invoker":"i"}'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker scope != project → treated absent → ask" ask "verified-pin gate passed"
+arm_committed "$R10" '{"scope":"project","created":"2026-08-02T00:00:00Z"}'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker missing invoker → treated absent → ask" ask "verified-pin gate passed"
+arm_committed "$R10" '{"scope":"project","created":'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "malformed committed marker JSON → treated absent → ask" ask "verified-pin gate passed"
+arm_committed "$R10" '{"scope":5,"created":"2026-08-02T00:00:00Z","invoker":"i"}'
+run_guard "$R10" 'gh pr merge 123 --auto'
+expect_decision "committed marker wrong-typed scope (number) → treated absent → ask (jq/python3 parity)" ask "verified-pin gate passed"
+
+# R11: gate FAIL under a valid committed marker → deny (gate FAIL beats committed).
+make_repo r11 main symref; R11="$REPO"
+git -C "$R11" checkout -q -b feat-clean
+echo code > "$R11/src.txt"; git -C "$R11" add -f src.txt
+git -C "$R11" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+arm_committed "$R11" "$COMMIT_JSON"
+mkdir -p "$R11/scripts"
+cat > "$R11/scripts/check-verified-pin.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "verified-pin: FAIL — synthetic-reason-cm3 (pin drift)" >&2
+exit 1
+EOF
+chmod +x "$R11/scripts/check-verified-pin.sh"
+run_guard "$R11" 'gh pr merge 123 --auto'
+expect_decision "committed marker + --auto + FAILING gate → deny with the gate's stderr" deny "synthetic-reason-cm3"
+
+# R12: the marker in the WORKING TREE but NOT on the default branch → absent → ask.
+make_repo r12 main symref; R12="$REPO"
+git -C "$R12" checkout -q -b feat-clean
+echo code > "$R12/src.txt"; git -C "$R12" add -f src.txt
+git -C "$R12" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+mkdir -p "$R12/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R12/scripts/check-verified-pin.sh"; chmod +x "$R12/scripts/check-verified-pin.sh"
+mkdir -p "$R12/.claude"; printf '%s' "$COMMIT_JSON" > "$R12/.claude/keel-auto-merge.json" # working tree only, never on main
+run_guard "$R12" 'gh pr merge 123 --auto'
+expect_decision "committed marker in the working tree but NOT on the default branch → absent → ask (root of trust)" ask "verified-pin gate passed"
+
+# ---- security-review regression: the four self-arm / tap-evasion paths ---------
+# Each proves a control the pre-pin review found MISSING now holds. All use the
+# committed gh stub (repo view → server default branch "main"; pr view → head).
+ATT_JSON_CM="$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 1)")"
+
+# (Finding 1) origin/HEAD is agent-repointable, so it must NOT be the root of trust.
+# main carries NO marker; a side branch `evil` does, and refs/remotes/origin/HEAD is
+# repointed at it. gh repo view still reports main → marker absent → ask. (The old
+# origin/HEAD-based read would have armed here.)
+make_repo r13a main symref; R13A="$REPO"
+git -C "$R13A" checkout -q -b feat-clean
+echo code > "$R13A/src.txt"; git -C "$R13A" add -f src.txt
+git -C "$R13A" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13A" checkout -q -b evil main
+mkdir -p "$R13A/.claude"; printf '%s' "$COMMIT_JSON" > "$R13A/.claude/keel-auto-merge.json"
+git -C "$R13A" add -f .claude/keel-auto-merge.json
+git -C "$R13A" -c user.email=t@keel.test -c user.name=t commit -qm "plant marker on evil"
+git -C "$R13A" update-ref refs/remotes/origin/evil "$(git -C "$R13A" rev-parse evil)"
+git -C "$R13A" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/evil # the repoint
+git -C "$R13A" checkout -q feat-clean
+mkdir -p "$R13A/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13A/scripts/check-verified-pin.sh"; chmod +x "$R13A/scripts/check-verified-pin.sh"
+STUB_PATH="$TMP/bin-committed"
+run_guard "$R13A" 'gh pr merge 123 --auto'
+expect_decision "finding 1: origin/HEAD repointed at a marker branch → still absent (gh reports main) → ask" ask "verified-pin gate passed"
+
+# (Finding 2a) A FORGED local refs/remotes/origin/main carrying the marker, while
+# refs/heads/main (the real origin content) has none. The MANDATORY fetch overwrites
+# the forged tracking ref with real main → absent → ask.
+make_repo r13b main symref; R13B="$REPO"
+git -C "$R13B" checkout -q -b feat-clean
+echo code > "$R13B/src.txt"; git -C "$R13B" add -f src.txt
+git -C "$R13B" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13B" checkout -q -b forge main
+mkdir -p "$R13B/.claude"; printf '%s' "$COMMIT_JSON" > "$R13B/.claude/keel-auto-merge.json"
+git -C "$R13B" add -f .claude/keel-auto-merge.json
+git -C "$R13B" -c user.email=t@keel.test -c user.name=t commit -qm "forged marker commit"
+git -C "$R13B" update-ref refs/remotes/origin/main "$(git -C "$R13B" rev-parse forge)" # forge the tracking ref
+git -C "$R13B" checkout -q feat-clean
+mkdir -p "$R13B/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13B/scripts/check-verified-pin.sh"; chmod +x "$R13B/scripts/check-verified-pin.sh"
+run_guard "$R13B" 'gh pr merge 123 --auto'
+expect_decision "finding 2a: forged origin/main tracking ref → overwritten by mandatory fetch → absent → ask" ask "verified-pin gate passed"
+
+# (Finding 2b) Same forge, but origin is UNREACHABLE. The mandatory fetch fails →
+# NO fallback to the forged local ref → never allow. (Both the marker read and
+# pr_touches_marker fail closed under an unreachable origin.)
+make_repo r13c main symref; R13C="$REPO"
+git -C "$R13C" checkout -q -b feat-clean
+echo code > "$R13C/src.txt"; git -C "$R13C" add -f src.txt
+git -C "$R13C" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13C" checkout -q -b forge main
+mkdir -p "$R13C/.claude"; printf '%s' "$COMMIT_JSON" > "$R13C/.claude/keel-auto-merge.json"
+git -C "$R13C" add -f .claude/keel-auto-merge.json
+git -C "$R13C" -c user.email=t@keel.test -c user.name=t commit -qm "forged marker commit"
+git -C "$R13C" update-ref refs/remotes/origin/main "$(git -C "$R13C" rev-parse forge)"
+git -C "$R13C" checkout -q feat-clean
+git -C "$R13C" remote set-url origin "$TMP/nonexistent-origin-r13c" # unreachable
+mkdir -p "$R13C/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13C/scripts/check-verified-pin.sh"; chmod +x "$R13C/scripts/check-verified-pin.sh"
+run_guard "$R13C" 'gh pr merge 123 --auto'
+expect_decision "finding 2b: forged ref + UNREACHABLE origin → fetch fails, no local fallback → ask (never allow)" ask
+
+# (Finding 3) A stale local PR-head ref hides a marker just pushed onto the PR.
+# main has NO marker; a TEMPORARY attended authority is active; the PR head `feat-arm`
+# on origin ADDS the marker, but refs/remotes/origin/feat-arm is stale (pre-marker).
+# The mandatory head fetch refreshes → marker seen → human-tap ask (not attended allow).
+make_repo r13d main symref; R13D="$REPO"
+git -C "$R13D" checkout -q -b feat-arm main
+echo x > "$R13D/f.txt"; git -C "$R13D" add -f f.txt
+git -C "$R13D" -c user.email=t@keel.test -c user.name=t commit -qm "feat-arm (pre-marker)"
+git -C "$R13D" update-ref refs/remotes/origin/feat-arm "$(git -C "$R13D" rev-parse feat-arm)" # STALE tracking ref
+mkdir -p "$R13D/.claude"; printf '%s' "$COMMIT_JSON" > "$R13D/.claude/keel-auto-merge.json"
+git -C "$R13D" add -f .claude/keel-auto-merge.json
+git -C "$R13D" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR: add marker (server advance)"
+git -C "$R13D" checkout -q main
+mkdir -p "$R13D/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13D/scripts/check-verified-pin.sh"; chmod +x "$R13D/scripts/check-verified-pin.sh"
+write_attended "$R13D" "$ATT_JSON_CM"
+run_guard "$R13D" 'gh pr merge 999 --auto'
+expect_decision "finding 3: stale head hides a just-pushed marker → mandatory fetch reveals it → human-tap ask" ask "human merge tap"
+
+# (Finding 4) diff.relative=true + a subdirectory GIT_CTX would drop the out-of-prefix
+# marker from the file list. With diff.relative pinned OFF the marker is still seen.
+# main armed (valid marker); PR 777 (feat-marker) touches the marker; hook cwd = a subdir.
+make_repo r13e main symref; R13E="$REPO"
+git -C "$R13E" checkout -q -b feat-clean
+echo code > "$R13E/src.txt"; git -C "$R13E" add -f src.txt
+git -C "$R13E" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13E" checkout -q -b feat-marker main
+mkdir -p "$R13E/.claude"; printf '%s' "$COMMIT_JSON" > "$R13E/.claude/keel-auto-merge.json"
+git -C "$R13E" add -f .claude/keel-auto-merge.json
+git -C "$R13E" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR (marker-touching)"
+git -C "$R13E" checkout -q feat-clean
+arm_committed "$R13E" "$COMMIT_JSON"
+mkdir -p "$R13E/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13E/scripts/check-verified-pin.sh"; chmod +x "$R13E/scripts/check-verified-pin.sh"
+git -C "$R13E" config diff.relative true # the finding-4 lever
+mkdir -p "$R13E/sub"
+run_guard_cwd "$R13E" "$R13E/sub" 'gh pr merge 777 --auto'
+expect_decision "finding 4: diff.relative=true + subdir GIT_CTX → pinned off → marker still seen → human-tap ask" ask "human merge tap"
+STUB_PATH=""
+
 # ---- shipped shape ------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then ok "merge-guard.sh is executable"
 else bad "merge-guard.sh is executable"; fi

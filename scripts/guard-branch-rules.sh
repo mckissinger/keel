@@ -10,12 +10,17 @@
 #   merge-shaped command                     → exit 2 (build sessions never merge)
 #   everything else                          → exit 0, silent
 #
-# ONE exception, the attended-merge marker (contract below): a per-session,
-# human-set marker + no active autonomy mode + a bare `gh pr merge <pr> --auto`
-# (the canonical detect_strict_auto shape) → exit 0, DEFERRING the gate decision
-# to merge-guard.sh, which fires on the same Bash call. Every other merge-shaped
-# command, and `git commit` on the default branch, still → exit 2. No marker →
-# the exit-2 matrix is byte-for-byte today's.
+# TWO exceptions, both DEFERRING (exit 0) the gate decision to merge-guard.sh
+# (which fires on the same Bash call), for a bare `gh pr merge <pr> --auto` (the
+# canonical detect_strict_auto shape) with no active autonomy mode:
+#   1. a per-session, human-set attended-merge marker (contract below); or
+#   2. a committed per-project auto-merge marker on the DEFAULT BRANCH (contract in
+#      merge-guard.sh; honored only as read from origin/$DEFAULT_BRANCH, never the
+#      working tree — a locally-planted file is ignored).
+# Precedence mode > attended > committed. Every other merge-shaped command, and
+# `git commit` on the default branch, still → exit 2. No marker of either kind →
+# the exit-2 matrix is byte-for-byte today's. merge-guard.sh owns the human-tap
+# rule that forces a marker-TOUCHING PR back to ask even under a valid marker.
 #
 # Exit 2 blocks the tool call and feeds stderr back to Claude (PreToolUse exit-code
 # semantics per https://code.claude.com/docs/en/hooks).
@@ -443,6 +448,35 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
   return 0
 }
 
+# The committed per-project auto-merge marker. Reading owner + full contract:
+# merge-guard.sh's header. This read is NOT the security-authoritative one — it only
+# decides whether to DEFER a build-session --auto to merge-guard.sh, which fires on
+# the SAME Bash call and makes the real allow/ask/deny decision with its hardened
+# read (server default branch via gh + mandatory fetch) and the human-tap rule. So a
+# fooled read here can only over-relax to a defer that merge-guard then re-checks, or
+# fail closed to a safe exit-2 block — never an unsupervised merge. Even so it mirrors
+# merge-guard's fail-closed shape: the refresh fetch is MANDATORY (a fetch that cannot
+# run → no defer → exit 2), the marker text is parsed as DATA, scope MUST equal
+# "project", created + invoker non-empty, NO TTL. It does NOT inspect the PR's files —
+# the marker-touching human-tap rule is merge-guard.sh's alone.
+COMMITTED_ACTIVE=0
+read_committed_marker() { # committed .claude/keel-auto-merge.json on the default branch → COMMITTED_ACTIVE
+  COMMITTED_ACTIVE=0
+  local content scope created invoker
+  # Mandatory, fail-closed refresh (overwrites any forged local ref; no reachable
+  # origin → do not defer). merge-guard.sh remains the authoritative backstop.
+  gitc fetch origin "+refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH" >/dev/null 2>&1 || return 0
+  content="$(gitc show "refs/remotes/origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
+  [ -n "$content" ] || return 0
+  scope="$(json_str "$content" scope)"
+  created="$(json_str "$content" created)"
+  invoker="$(json_str "$content" invoker)"
+  [ "$scope" = "project" ] || return 0
+  [ -n "$created" ] && [ -n "$invoker" ] || return 0
+  COMMITTED_ACTIVE=1
+  return 0
+}
+
 AUTO_MERGE=0
 detect_strict_auto() { # WHITELIST: does $CMD exactly match the canonical delegation shape?
   # A CLOSED SET, default-deny (mirrors merge-guard.sh):
@@ -519,6 +553,19 @@ if [ -n "$SHAPE" ]; then
   if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 1 ] \
      && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
     exit 0 # merge-guard.sh owns the gate-pass/-fail decision on this same call
+  fi
+  # The committed per-project sibling of the attended defer (precedence
+  # mode > attended > committed): no active mode, no attended marker, a valid
+  # committed marker on the default branch, and the bare `--auto` shape → defer to
+  # merge-guard.sh (same Bash call), which owns BOTH the gate check and the
+  # human-tap rule (a marker-touching PR resolves to ask there). This guard does
+  # not itself inspect the PR's files.
+  if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ] \
+     && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
+    read_committed_marker
+    if [ "$COMMITTED_ACTIVE" -eq 1 ]; then
+      exit 0 # merge-guard.sh owns the gate-pass/-fail + human-tap decision on this same call
+    fi
   fi
   echo "keel: build sessions never merge — merging is the user's decision, driven through land-feature with per-merge approval. Open the PR and stop there." >&2
   exit 2

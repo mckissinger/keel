@@ -338,6 +338,26 @@ cd "$TMP"
 # validated normally, never exempted) is covered by cases 2 (with pin → pass) and
 # 3 (without pin → fail); chore specs closing the window by case 9.
 
+# 30. The committed auto-merge marker is a PLAN-PATH carve-out: a PR whose sole
+#     changed file is .claude/keel-auto-merge.json is plan-only → exempt. Off BASE2
+#     (window CLOSED) so the pass comes from the carve-out, not the bootstrap window.
+#     (explicit git-add paths, not -A, so an earlier case's nested test repo left in
+#     $TMP is not picked up as a gitlink and does not pollute the diff.)
+fresh c30-marker-only "$BASE2"
+mkdir -p .claude
+printf '{"scope":"project","created":"2026-08-02T00:00:00Z","invoker":"human:keel-arm-auto-merge"}\n' > .claude/keel-auto-merge.json
+git add .claude/keel-auto-merge.json && git commit -qm "arm committed auto-merge (plan-only)"
+check "sole .claude/keel-auto-merge.json change is plan-only → exempt (window closed)" 0 "$BASE2"
+
+# 31. The carve-out widens the plan set by EXACTLY that one file: mixing the marker
+#     with a real code file is still a code PR and still fails with no pinned spec.
+fresh c31-marker-plus-code "$BASE2"
+mkdir -p .claude
+printf '{"scope":"project","created":"2026-08-02T00:00:00Z","invoker":"human:keel-arm-auto-merge"}\n' > .claude/keel-auto-merge.json
+echo "code" > src/with-marker.ts
+git add .claude/keel-auto-merge.json src/with-marker.ts && git commit -qm "marker + code, no pinned spec"
+check "marker + a code file is still a code PR → fails (carve-out did not widen to the code file)" 1 "$BASE2"
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

@@ -40,7 +40,9 @@ overrun a real stop-point. Dispatch the verifier at `xhigh`.
 - [auto] **The stop-point-vs-notify-and-continue mechanism is defined** (the owner's "ask mid-run only
   at true stop-points"): a **stop-point halts the run attended** — the un-pre-authorizable set the
   framework already names (live/paid/irreversible spend, a missing credential, a red substrate routed
-  to the Q12 remedy, a required `/security-review` finding, a verifier **fail** verdict, a merge-guard
+  to the Q12 remedy, a required `/security-review` finding, a `verify-milestone` **`blocked`** verdict
+  (or a `discrepancy` a remediation pass does not clear — the verdict tokens are `clean`/`discrepancy`/`blocked`,
+  there is no `fail`), a merge-guard
   `deny`, a genuine scope change) — surfaced with the five-line gate block and the run ends on it,
   never silently deferred. **Everything else is notify-and-continue**: recorded as a **run-note**
   (in-transcript, and appended to the run's ledger when one exists) and the run **proceeds to the next

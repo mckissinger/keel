@@ -1,7 +1,7 @@
 ---
 name: implement-feature
-description: Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge. Spawns fresh-context verifier subagents ([auto] parallel; [runtime] serial unless the profile's isolation contract is proven). Defaults to interleaved cadence but ALWAYS asks. Never merges.
-when_to_use: After spec-feature has authored a whole feature's milestone specs, to build and verify them end-to-end. NOT for a single milestone (that's implement-milestone), NOT for checking one completed milestone (that's verify-milestone), and NOT for merging the reviewed PRs (that's land-feature, under the user's per-merge approval).
+description: Orchestrate building a whole feature's milestones — connective tissue over implement-milestone + verify-milestone, in dependency order, enforcing the branch/PR/stack rules and stopping at the user's merge — UNLESS a committed auto-merge marker (or an active keel:auto mode) authorizes the run to drive landing itself into a prepared review-feature. Spawns fresh-context verifier subagents ([auto] parallel; [runtime] serial unless the profile's isolation contract is proven). Defaults to interleaved cadence but ALWAYS asks. Never merges on its own initiative.
+when_to_use: After spec-feature has authored a whole feature's milestone specs, to build and verify them end-to-end. NOT for a single milestone (that's implement-milestone), NOT for checking one completed milestone (that's verify-milestone), and — by default — NOT for merging the reviewed PRs (that's land-feature, under the user's per-merge approval); the one exception is a repo with a valid committed auto-merge marker (or an active mode), where the run drives the land-feature choreography itself and ends at a prepared review-feature.
 effort: high
 hooks:
   PreToolUse:
@@ -13,7 +13,7 @@ hooks:
 
 # Implement Feature
 
-Build a feature's milestones end-to-end. This skill is **connective tissue**: it sequences `implement-milestone` and `verify-milestone` in dependency order and enforces the GitHub process, but **re-implements neither** and **stops at the user's merge** (agents never merge).
+Build a feature's milestones end-to-end. This skill is **connective tissue**: it sequences `implement-milestone` and `verify-milestone` in dependency order and enforces the GitHub process, but **re-implements neither** and — **by default** — **stops at the user's merge** (agents never merge on their own initiative). The one standing exception is a repo the human has armed for committed auto-merge (or an active `keel:auto` mode): there the run continues through landing into a **prepared** `review-feature` (see [Where the run ends](#where-the-run-ends--three-authorization-branches-totally-ordered)).
 
 ## First: ask the cadence
 
@@ -45,12 +45,46 @@ Keep the orchestrator's retained state thin (a ledger: slug → branch → PR �
 ## Two hard boundaries
 
 - **Verification is independent.** The orchestrator dispatches verification but does not *judge* it; build and remediation are different subagents from verification.
-- **Stops at merge.** `implement-feature` ends at *all milestones built, verified, pinned, PRs open with correct bases, stack minimal and bottom-up*. **The user merges.** The merge-time choreography is `land-feature`'s, under the user's per-merge approval.
+- **Stops at merge — by default.** With **no** committed auto-merge marker and **no** active mode, `implement-feature` ends at *all milestones built, verified, pinned, PRs open with correct bases, stack minimal and bottom-up* — and **the user merges**, exactly as written. The merge-time choreography is `land-feature`'s, under the user's per-merge approval. The one standing exception — a repo armed for committed auto-merge, or an active mode — is the next section; there the run continues through landing, but even then it stops at a **prepared** `review-feature`, never passing it.
 
-## Under an active autonomy mode
+## Where the run ends — three authorization branches, totally ordered
 
-Under an active `keel:auto` mode (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), two gates change: the cadence ask becomes a **ledgered default** (per `keel:auto`'s ledger contract under `specs/runs/<run-id>/`), and "stops at merge" becomes **enable `gh pr merge --auto` on each pinned, gate-passing PR — per the `land-feature` choreography — and proceed**. Everything else (fresh-context verification, pin discipline, the branch guard) is unchanged. Outside a mode, this section does not apply.
+Which of three end-states the run reaches is decided in **one fixed order** — the first that applies wins, and they are **mutually exclusive**:
+
+1. **Active `keel:auto` mode** → the **autonomy branch**.
+2. **Else a valid committed auto-merge marker** (`.claude/keel-auto-merge.json`, `scope: "project"`, present on the default branch, armed by `keel:arm-auto-merge`) → the **run-through branch**.
+3. **Else** → the **"stops at merge" default** above (the user merges).
+
+This order matches the guards' precedence `mode > committed` (the per-session **attended** marker is *not* an `implement-feature` concern — that marker governs an interactive per-merge flow, not this orchestration). **No branch claims an unobservable outcome** — each reports what `gh` and the checks actually returned, never "merged without a prompt" (a queued `--auto` is reported as *queued behind the required checks*, not as *merged*).
+
+### The run-through branch (reached by a committed marker)
+
+The run **continues through landing** instead of stopping at open PRs. It drives the `land-feature` choreography itself — a **bare, un-chained** `gh pr merge <pr> --auto` on each **pinned, gate-passing** PR (the `merge-guard.sh` committed-project row **emits `allow`**; the build-session `guard-branch-rules.sh` row does not emit allow — it **`exit 0` defers** to `merge-guard.sh`) — then runs the **post-wave consolidated check** on `main`, and then **prepares** `review-feature`. This mirrors the autonomy branch's landing step, but is reached by the **committed marker, not a mode** — and the run **states which authorization it is acting under**. The merge mechanics themselves (bottom-up, retarget-before-delete, close+reopen, re-pin, consolidated check, reconciliation) are `land-feature`'s and unchanged; only *who fires the merge command* differs from the default.
+
+### The autonomy branch (reached by an active mode)
+
+Under an active `keel:auto` mode (per `decisions/2026-07-05-autonomy-modes-v2.md` + `decisions/2026-07-genesis-envelope.md`), two gates change: the cadence ask becomes a **ledgered default** (per `keel:auto`'s ledger contract under `specs/runs/<run-id>/`), and "stops at merge" becomes **enable `gh pr merge --auto` on each pinned, gate-passing PR — per the `land-feature` choreography — and proceed**. Everything else (fresh-context verification, pin discipline, the branch guard) is unchanged.
+
+### Both continuing branches PREPARE `review-feature` — neither passes it
+
+The run **prepares** the human's review and **ends there**; it never renders a verdict on it.
+
+- **UI feature:** render the surfaces and **stage the review inputs** (the activation driver, screenshots, and the workbench composition to diff against, per `review-feature`'s pass), then **halt at the human aesthetic/completeness judgment** — reporting the feature **built-verified-merged, review prepared, not done**.
+- **No-UI feature:** `review-feature` is **skipped** (as its own skill states), and the run reports the feature **done at the consolidated check**.
+
+Either way the **taste gate, the feature-spec sign-off, and the never-auto list are untouched** — the run does not pass, waive, or pre-judge any of them.
+
+### Stop-points vs notify-and-continue
+
+The run asks mid-flight **only at true stop-points**; everything else is recorded and the run proceeds.
+
+- **A stop-point halts the run attended** — surfaced with the five-line gate block (`references/gate-presentation.md`), and the run **ends on it, never silently deferred**. The stop-point set is exactly the un-pre-authorizable set the framework already names: **live/paid/irreversible spend, a missing credential, a red substrate** (routed to the profile's Q12 remedy, never absorbed), **a required `/security-review` finding, a `verify-milestone` `blocked` verdict** (or a `discrepancy` a remediation pass does not clear — a single `discrepancy` is normal build iteration, not a stop-point), **a `merge-guard` `deny`, and a genuine scope change**. This set is the written rule — not a per-run judgment. (The verdict tokens are `verify-milestone`'s own — `clean` / `discrepancy` / `blocked` — there is no `fail` verdict; `blocked` is the state that cannot self-resolve.)
+- **Everything else is notify-and-continue:** recorded as a **run-note** (in-transcript, and appended to the run's ledger when one exists under `specs/runs/<run-id>/`), and the run **proceeds to the next independent milestone**. All run-notes are **surfaced together in the final handoff**, so nothing recorded is lost.
+- **No new notification infrastructure is invented.** The mechanism is run-notes plus the existing five-line halt; keel has no push channel today, and the required-checks floor means a missed notification never lands unreviewed code. If the harness exposes a push affordance the run *may* additionally use it, but nothing in the flow depends on one.
 
 ## Output
 
-A feature whose milestones are all built, independently verified, and pinned, PRs open and correctly based — handed to the user for merge (`land-feature`), then `review-feature`. The handoff reports **each lifecycle gate's derived state**: the pins and PRs this run produced, and the gates still **open** — the user's merges, `land-feature`'s reconciliation + consolidated check, `review-feature`.
+The handoff depends on which authorization branch the run took, and always reports **each lifecycle gate's derived state** — the pins and PRs this run produced, and the gates still open — plus **every run-note gathered along the way, surfaced together**:
+
+- **Default (no marker, no mode):** a feature whose milestones are all built, independently verified, and pinned, PRs open and correctly based — handed to the user for merge (`land-feature`), then `review-feature`. Gates still open: the user's merges, `land-feature`'s reconciliation + consolidated check, `review-feature`.
+- **Run-through (committed marker) or autonomy (mode):** the milestones are additionally **landed** (each via a gate-passing `--auto`) and the consolidated check has run on `main`; the run ends at a **prepared** `review-feature`. For a UI feature the handoff reports it **built-verified-merged, review prepared, not done**, with the review inputs staged; for a no-UI feature it reports the feature **done at the consolidated check**. The taste gate, the feature-spec sign-off, and the never-auto list remain the human's — the run never rendered a verdict on them.

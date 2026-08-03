@@ -768,7 +768,12 @@ pr_touches_marker() { # 0 = the PR touches the marker OR the file list is indete
                     "+refs/heads/$HEAD_NAME_R:refs/remotes/origin/$HEAD_NAME_R" >/dev/null 2>&1 || return 0
   files="$(gitc -c diff.relative=false diff --name-only --no-renames \
              "refs/remotes/origin/$BASE_NAME_R"..."refs/remotes/origin/$HEAD_NAME_R" 2>/dev/null)" || return 0
-  printf '%s\n' "$files" | grep -qxF '.claude/keel-auto-merge.json' && return 0
+  # The marker AND the committed check-contract are both auto-merge trust base: a
+  # PR editing either takes a human tap (the check-contract declares WHICH checks
+  # arming certifies, so silently weakening it under an active authority would let
+  # a later arming rubber-stamp a weak floor — decisions/2026-08-03-arm-auto-merge-
+  # check-contract.md). Match either exact path.
+  printf '%s\n' "$files" | grep -qxF -e '.claude/keel-auto-merge.json' -e '.claude/keel-auto-merge-checks.json' && return 0
   return 1
 }
 
@@ -803,7 +808,7 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
       # Human-tap rule (header contract): a PR arming or disarming the committed
       # marker is never auto-merged — forced to ask BEFORE and regardless of every
       # allow row, so no temporary authority can auto-land the permanent marker.
-      emit ask "this PR touches the committed auto-merge marker (.claude/keel-auto-merge.json) — arming or disarming per-project auto-merge always takes a human merge tap; no marker or mode auto-merges its own change (specs/features/per-project-auto-merge.md)"
+      emit ask "this PR touches the committed auto-merge trust base (.claude/keel-auto-merge.json or .claude/keel-auto-merge-checks.json) — arming/disarming per-project auto-merge, or editing the required-check contract it certifies, always takes a human merge tap; no marker or mode auto-merges its own change (specs/features/per-project-auto-merge.md, decisions/2026-08-03-arm-auto-merge-check-contract.md)"
     elif [ "$MODE_ACTIVE" -eq 1 ] && [ "$AUTO_MERGE" -eq 1 ] && [ "$SHAPE" = "gh-pr-merge" ]; then
       # The one row a valid mode changes (header contract). The decision word
       # is bound through a variable so the self-test's static scan — a

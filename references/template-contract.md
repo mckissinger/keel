@@ -44,8 +44,14 @@ These are the same in every generated repo and are exactly what the preflight as
   `claude-code-security-review` GitHub Action, run on every code PR and exposed under a status
   check named `security-review`. It is recorded as a **default that satisfies the contract, never
   a mandate** — any job asserting the same class of review (a per-PR security read of the diff,
-  surfaced as a required status check) satisfies it, and the check name is config
-  (`PREFLIGHT_REQUIRED_CHECKS`), not a vendor hardcode. `scripts/check-auto-preflight.sh` check
+  surfaced as a required status check) satisfies it, and the check name is config, not a vendor
+  hardcode. **A consuming repo whose CI names differ from keel's declares its own required-check
+  contexts (and its security-review check name/pattern) in a committed
+  `.claude/keel-auto-merge-checks.json`** — read fail-closed from the server default branch by
+  `scripts/check-branch-protection.sh`, precedence operator-override (`PREFLIGHT_*`) > committed
+  contract > keel default; it declares names only and can never drop the security-review check
+  (`decisions/2026-08-03-arm-auto-merge-check-contract.md`). This is the per-project home for check
+  names; the `PREFLIGHT_*` env vars remain the one-off override above it. `scripts/check-auto-preflight.sh` check
   (b2) additionally asserts the job's **content**, not just its name — one workflow under
   `.github/workflows/` that declares the check context, invokes the review implementation on an
   uncommented `uses:` line matching a review-implementation pattern (default

@@ -593,9 +593,15 @@ mkdir -p "$TMP/bin-committed"
 cat > "$TMP/bin-committed/gh" <<EOF
 #!/usr/bin/env bash
 printf '%s\n' "\$*" > "$TMP/gh-args.txt"
+# repo view → the SERVER default branch (read_committed_marker's root of trust; the
+# stub answers the bare name, matching production's --jq '.defaultBranchRef.name').
+if [ "\${1:-}" = "repo" ] && [ "\${2:-}" = "view" ]; then
+  printf '%s\n' "\${STUB_DEFAULT_BRANCH:-main}"
+  exit 0
+fi
 if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
   head=feat-clean
-  for a in "\$@"; do case "\$a" in 777) head=feat-marker ;; 888) head=feat-unrelated ;; esac; done
+  for a in "\$@"; do case "\$a" in 777) head=feat-marker ;; 888) head=feat-unrelated ;; 999) head=feat-arm ;; esac; done
   printf '{"baseRefName":"main","headRefName":"%s"}\n' "\$head"
   exit 0
 fi
@@ -721,6 +727,103 @@ mkdir -p "$R12/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R12/scripts/
 mkdir -p "$R12/.claude"; printf '%s' "$COMMIT_JSON" > "$R12/.claude/keel-auto-merge.json" # working tree only, never on main
 run_guard "$R12" 'gh pr merge 123 --auto'
 expect_decision "committed marker in the working tree but NOT on the default branch → absent → ask (root of trust)" ask "verified-pin gate passed"
+
+# ---- security-review regression: the four self-arm / tap-evasion paths ---------
+# Each proves a control the pre-pin review found MISSING now holds. All use the
+# committed gh stub (repo view → server default branch "main"; pr view → head).
+ATT_JSON_CM="$(printf '{"scope":"session","created":"%s","invoker":"human:keel-auto-merge"}' "$(ts_ago 1)")"
+
+# (Finding 1) origin/HEAD is agent-repointable, so it must NOT be the root of trust.
+# main carries NO marker; a side branch `evil` does, and refs/remotes/origin/HEAD is
+# repointed at it. gh repo view still reports main → marker absent → ask. (The old
+# origin/HEAD-based read would have armed here.)
+make_repo r13a main symref; R13A="$REPO"
+git -C "$R13A" checkout -q -b feat-clean
+echo code > "$R13A/src.txt"; git -C "$R13A" add -f src.txt
+git -C "$R13A" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13A" checkout -q -b evil main
+mkdir -p "$R13A/.claude"; printf '%s' "$COMMIT_JSON" > "$R13A/.claude/keel-auto-merge.json"
+git -C "$R13A" add -f .claude/keel-auto-merge.json
+git -C "$R13A" -c user.email=t@keel.test -c user.name=t commit -qm "plant marker on evil"
+git -C "$R13A" update-ref refs/remotes/origin/evil "$(git -C "$R13A" rev-parse evil)"
+git -C "$R13A" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/evil # the repoint
+git -C "$R13A" checkout -q feat-clean
+mkdir -p "$R13A/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13A/scripts/check-verified-pin.sh"; chmod +x "$R13A/scripts/check-verified-pin.sh"
+STUB_PATH="$TMP/bin-committed"
+run_guard "$R13A" 'gh pr merge 123 --auto'
+expect_decision "finding 1: origin/HEAD repointed at a marker branch → still absent (gh reports main) → ask" ask "verified-pin gate passed"
+
+# (Finding 2a) A FORGED local refs/remotes/origin/main carrying the marker, while
+# refs/heads/main (the real origin content) has none. The MANDATORY fetch overwrites
+# the forged tracking ref with real main → absent → ask.
+make_repo r13b main symref; R13B="$REPO"
+git -C "$R13B" checkout -q -b feat-clean
+echo code > "$R13B/src.txt"; git -C "$R13B" add -f src.txt
+git -C "$R13B" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13B" checkout -q -b forge main
+mkdir -p "$R13B/.claude"; printf '%s' "$COMMIT_JSON" > "$R13B/.claude/keel-auto-merge.json"
+git -C "$R13B" add -f .claude/keel-auto-merge.json
+git -C "$R13B" -c user.email=t@keel.test -c user.name=t commit -qm "forged marker commit"
+git -C "$R13B" update-ref refs/remotes/origin/main "$(git -C "$R13B" rev-parse forge)" # forge the tracking ref
+git -C "$R13B" checkout -q feat-clean
+mkdir -p "$R13B/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13B/scripts/check-verified-pin.sh"; chmod +x "$R13B/scripts/check-verified-pin.sh"
+run_guard "$R13B" 'gh pr merge 123 --auto'
+expect_decision "finding 2a: forged origin/main tracking ref → overwritten by mandatory fetch → absent → ask" ask "verified-pin gate passed"
+
+# (Finding 2b) Same forge, but origin is UNREACHABLE. The mandatory fetch fails →
+# NO fallback to the forged local ref → never allow. (Both the marker read and
+# pr_touches_marker fail closed under an unreachable origin.)
+make_repo r13c main symref; R13C="$REPO"
+git -C "$R13C" checkout -q -b feat-clean
+echo code > "$R13C/src.txt"; git -C "$R13C" add -f src.txt
+git -C "$R13C" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13C" checkout -q -b forge main
+mkdir -p "$R13C/.claude"; printf '%s' "$COMMIT_JSON" > "$R13C/.claude/keel-auto-merge.json"
+git -C "$R13C" add -f .claude/keel-auto-merge.json
+git -C "$R13C" -c user.email=t@keel.test -c user.name=t commit -qm "forged marker commit"
+git -C "$R13C" update-ref refs/remotes/origin/main "$(git -C "$R13C" rev-parse forge)"
+git -C "$R13C" checkout -q feat-clean
+git -C "$R13C" remote set-url origin "$TMP/nonexistent-origin-r13c" # unreachable
+mkdir -p "$R13C/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13C/scripts/check-verified-pin.sh"; chmod +x "$R13C/scripts/check-verified-pin.sh"
+run_guard "$R13C" 'gh pr merge 123 --auto'
+expect_decision "finding 2b: forged ref + UNREACHABLE origin → fetch fails, no local fallback → ask (never allow)" ask
+
+# (Finding 3) A stale local PR-head ref hides a marker just pushed onto the PR.
+# main has NO marker; a TEMPORARY attended authority is active; the PR head `feat-arm`
+# on origin ADDS the marker, but refs/remotes/origin/feat-arm is stale (pre-marker).
+# The mandatory head fetch refreshes → marker seen → human-tap ask (not attended allow).
+make_repo r13d main symref; R13D="$REPO"
+git -C "$R13D" checkout -q -b feat-arm main
+echo x > "$R13D/f.txt"; git -C "$R13D" add -f f.txt
+git -C "$R13D" -c user.email=t@keel.test -c user.name=t commit -qm "feat-arm (pre-marker)"
+git -C "$R13D" update-ref refs/remotes/origin/feat-arm "$(git -C "$R13D" rev-parse feat-arm)" # STALE tracking ref
+mkdir -p "$R13D/.claude"; printf '%s' "$COMMIT_JSON" > "$R13D/.claude/keel-auto-merge.json"
+git -C "$R13D" add -f .claude/keel-auto-merge.json
+git -C "$R13D" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR: add marker (server advance)"
+git -C "$R13D" checkout -q main
+mkdir -p "$R13D/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13D/scripts/check-verified-pin.sh"; chmod +x "$R13D/scripts/check-verified-pin.sh"
+write_attended "$R13D" "$ATT_JSON_CM"
+run_guard "$R13D" 'gh pr merge 999 --auto'
+expect_decision "finding 3: stale head hides a just-pushed marker → mandatory fetch reveals it → human-tap ask" ask "human merge tap"
+
+# (Finding 4) diff.relative=true + a subdirectory GIT_CTX would drop the out-of-prefix
+# marker from the file list. With diff.relative pinned OFF the marker is still seen.
+# main armed (valid marker); PR 777 (feat-marker) touches the marker; hook cwd = a subdir.
+make_repo r13e main symref; R13E="$REPO"
+git -C "$R13E" checkout -q -b feat-clean
+echo code > "$R13E/src.txt"; git -C "$R13E" add -f src.txt
+git -C "$R13E" -c user.email=t@keel.test -c user.name=t commit -qm "feat-clean work"
+git -C "$R13E" checkout -q -b feat-marker main
+mkdir -p "$R13E/.claude"; printf '%s' "$COMMIT_JSON" > "$R13E/.claude/keel-auto-merge.json"
+git -C "$R13E" add -f .claude/keel-auto-merge.json
+git -C "$R13E" -c user.email=t@keel.test -c user.name=t commit -qm "arm via PR (marker-touching)"
+git -C "$R13E" checkout -q feat-clean
+arm_committed "$R13E" "$COMMIT_JSON"
+mkdir -p "$R13E/scripts"; printf '#!/usr/bin/env bash\nexit 0\n' > "$R13E/scripts/check-verified-pin.sh"; chmod +x "$R13E/scripts/check-verified-pin.sh"
+git -C "$R13E" config diff.relative true # the finding-4 lever
+mkdir -p "$R13E/sub"
+run_guard_cwd "$R13E" "$R13E/sub" 'gh pr merge 777 --auto'
+expect_decision "finding 4: diff.relative=true + subdir GIT_CTX → pinned off → marker still seen → human-tap ask" ask "human merge tap"
 STUB_PATH=""
 
 # ---- shipped shape ------------------------------------------------------------

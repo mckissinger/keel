@@ -164,24 +164,33 @@
 # All three are required, non-empty strings; any defect → treated as NO marker,
 # fail closed.
 #
-# ROOT OF TRUST — presence on the DEFAULT BRANCH, not the working tree. The marker
-# is honored ONLY as read from the default-branch ref proper,
-# `origin/$DEFAULT_BRANCH`, via `git show "origin/$DEFAULT_BRANCH:<path>"` — NEVER
-# the working-tree file and NEVER `BASE_REF_R` (the target PR's base branch, which
-# under the stacked-PR choreography is a SIBLING milestone branch; reading from it
-# would honor a marker an agent planted on a lower stack branch). The default
-# branch advances only by a human-merged PR, so presence there IS the
-# authorization trail: a locally `Write`-n or branch-only .claude/keel-auto-merge.json
-# is ignored. This deliberately INVERTS the untracked attended/mode markers' rule
-# (they are spoofable-if-tracked, so honored only untracked); this marker's
-# authorization is exactly the git history of the default branch, so it is honored
-# only when committed there. A best-effort refresh of the remote ref (mirroring
-# check-verified-pin.sh's step -1) precedes the read so a human's disarm on real
-# `main` is seen; a clone that never fetches at all is the named residual.
+# ROOT OF TRUST — presence on the SERVER default branch, not the working tree and
+# not any locally-forgeable ref (hardened by the pre-pin security review). The read
+# (read_committed_marker) establishes trust in three fail-closed steps:
+#   1. The authorization branch is the repo's SERVER default branch, from
+#      `gh repo view --json defaultBranchRef` in GIT_CTX — NOT the local
+#      `refs/remotes/origin/HEAD` symref (an agent repoints that with
+#      `git remote set-head`, which is not a merge/push/commit shape, to a branch it
+#      pushed carrying a marker). gh resolves the SAME repo `gh pr merge` targets, so
+#      the marker authorizes exactly the repo the merge acts on (reading at ROOT
+#      instead would let a marker in one repo authorize a merge gh performs in
+#      another). This is also why the read stays at GIT_CTX, not ROOT.
+#   2. A MANDATORY, fail-closed fetch of that branch from origin precedes the read —
+#      never best-effort. A forged local `refs/remotes/origin/<db>` (planted by
+#      `git update-ref`, or committed in a throwaway GIT_CTX with an unreachable
+#      origin) is overwritten by real origin content; a fetch that cannot run means
+#      the marker is NOT honored, rather than falling back to the local ref.
+#   3. The content read from the just-fetched ref is parsed as DATA (json_str);
+#      scope MUST equal "project", created + invoker non-empty; any defect → absent.
+# The server default branch advances only by a human-merged PR, so presence there IS
+# the authorization trail: a locally `Write`-n or branch-only file is ignored. This
+# deliberately INVERTS the untracked attended/mode markers' rule (spoofable-if-
+# tracked, so honored only untracked); this marker's authorization is the git
+# history of the server default branch, so it is honored only when committed there.
 #
 # NO TTL — a committed setting does not expire (contrast the attended marker's 8h
-# and the mode file's 24h). This is safe BECAUSE the read-from-default-branch root
-# of trust means the marker got there through a human-merged PR, not because an
+# and the mode file's 24h). This is safe BECAUSE the read-from-server-default-branch
+# root of trust means the marker got there through a human-merged PR, not because an
 # unexpiring local file is trusted. Its only writer/remover is the human-invoked
 # keel:arm-auto-merge skill (disable-model-invocation).
 #
@@ -199,10 +208,13 @@
 # committed), so no temporary authority (an 8h attended marker, a 24h mode) can
 # auto-land the permanent marker's own arming/disarming PR. The PR's file list is
 # computed with the non-truncating `git diff --name-only base...head` (never the
-# truncatable `gh pr view --json files`); an indeterminate list fails closed to
-# "ask". The residual — forging the local default-branch ref itself (`git
-# update-ref`/`git branch -f`, not merge/push/commit-shaped) — is the existing
-# markers' own threat model, backstopped by the required-checks floor.
+# truncatable `gh pr view --json files`), hardened by the security review: a
+# MANDATORY fresh fetch of base+head first (so a stale local head cannot omit a
+# just-pushed marker), `diff.relative` pinned OFF (so a subdirectory GIT_CTX cannot
+# drop out-of-prefix paths), and an empty list on a real PR treated as suspicious;
+# every failure path fails closed to "ask". The residual — forging the SERVER
+# default branch (needs repo write + settings, out of an agent's reach) — is
+# backstopped by the required-checks floor.
 #
 # Safety: the marker text is parsed as DATA (json_str, string-typed), never eval'd,
 # exactly as the mode/attended markers are.
@@ -411,24 +423,42 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
 
 COMMITTED_ACTIVE=0
 
-read_committed_marker() { # committed .claude/keel-auto-merge.json on the default branch → COMMITTED_ACTIVE
+read_committed_marker() { # committed .claude/keel-auto-merge.json on the SERVER default branch → COMMITTED_ACTIVE
   COMMITTED_ACTIVE=0
-  local content scope created invoker
-  # Root of trust: the marker is honored ONLY as read from the default-branch ref
-  # (origin/$DEFAULT_BRANCH), NEVER the working tree and NEVER BASE_REF_R (a sibling
-  # branch under a stack). Best-effort refresh first (mirrors check-verified-pin.sh
-  # step -1): a failed fetch warns and proceeds with the local image — never fatal.
-  gitc fetch origin "+refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH" >/dev/null 2>&1 \
-    || echo "keel merge-guard: WARN — could not refresh 'origin/$DEFAULT_BRANCH' for the committed auto-merge marker; proceeding with the local ref" >&2
-  content="$(gitc show "origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
+  local db content scope created invoker
+  # ROOT OF TRUST — hardened after the pre-pin security review (three self-arm
+  # paths it closes are named here):
+  #
+  #   (1) The authorization branch is the repo's SERVER-side default branch, asked
+  #   of `gh repo view` — NOT the local `refs/remotes/origin/HEAD` symref, which an
+  #   agent can repoint with `git remote set-head origin <branch>` (not a
+  #   merge/push/commit shape, so the guards permit it) to a branch it pushed
+  #   carrying a marker. gh resolves the SAME repo `gh pr merge` targets (GIT_CTX's
+  #   origin), so the marker authorizes exactly the repo the merge acts on — never
+  #   a different repo (which reading at ROOT would allow when GIT_CTX's origin
+  #   differs). No gh, or no default branch → fail closed.
+  #
+  #   (2) The refresh fetch is MANDATORY and fail-closed — never best-effort. A
+  #   forged local refs/remotes/origin/<db> (planted with `git update-ref`, or a
+  #   marker committed in a throwaway GIT_CTX whose origin is unreachable) is
+  #   overwritten here by real origin content; if the fetch cannot run at all, we
+  #   do NOT fall back to the local ref — we refuse to honor the marker.
+  #
+  #   (3) The content is read from the just-fetched refs/remotes/origin/<db>,
+  #   parsed as DATA (json_str, never eval'd). scope MUST be the literal "project";
+  #   created + invoker present, non-empty. Any defect → treated as absent. NO TTL
+  #   — a committed setting does not expire; its safety is presence on the
+  #   server default branch (human-merged), not freshness.
+  command -v gh >/dev/null 2>&1 || return 0
+  db="$( (cd "$GIT_CTX" 2>/dev/null && gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null) )" || return 0
+  [ -n "$db" ] || return 0
+  case "$db" in *[!A-Za-z0-9._/-]*) return 0 ;; esac # conservative branch-name charset; anything else → absent
+  gitc fetch origin "+refs/heads/$db:refs/remotes/origin/$db" >/dev/null 2>&1 || return 0
+  content="$(gitc show "refs/remotes/origin/$db:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
   [ -n "$content" ] || return 0
   scope="$(json_str "$content" scope)"
   created="$(json_str "$content" created)"
   invoker="$(json_str "$content" invoker)"
-  # scope MUST be the literal "project"; created and invoker present, non-empty.
-  # A partial file, a wrong scope, or malformed JSON fails closed. NO TTL — a
-  # committed setting does not expire; its safety is presence on the default
-  # branch (human-merged), not freshness.
   [ "$scope" = "project" ] || return 0
   [ -n "$created" ] && [ -n "$invoker" ] || return 0
   COMMITTED_ACTIVE=1
@@ -685,7 +715,7 @@ classify_cmd() { # <command text> → SHAPE, GH_PR_ARG (+ GIT_COMMIT)
 
 # --- decision ----------------------------------------------------------------
 
-BASE_REF_R="" HEAD_REF_R=""
+BASE_REF_R="" HEAD_REF_R="" BASE_NAME_R="" HEAD_NAME_R=""
 
 resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally resolvable refs
   command -v gh >/dev/null 2>&1 || return 1
@@ -698,6 +728,7 @@ resolve_gh_context() { # gh pr view → BASE_REF_R / HEAD_REF_R, as locally reso
   b="$(json_str "$json" baseRefName)" # DATA: quoted argv/env only from here on
   h="$(json_str "$json" headRefName)"
   if [ -z "$b" ] || [ -z "$h" ]; then return 1; fi
+  BASE_NAME_R="$b" HEAD_NAME_R="$h" # raw branch names for pr_touches_marker's fresh fetch
   if gitc rev-parse --verify --quiet "refs/remotes/origin/$b^{commit}" >/dev/null 2>&1; then
     BASE_REF_R="origin/$b"
   elif gitc rev-parse --verify --quiet "refs/heads/$b^{commit}" >/dev/null 2>&1; then
@@ -719,10 +750,24 @@ pr_touches_marker() { # 0 = the PR touches the marker OR the file list is indete
   # The PR's own change set is base...head (three-dot: symmetric-difference from
   # the merge base, the same diff shape check-verified-pin.sh uses). Non-truncating
   # by construction — NOT `gh pr view --json files`, which truncates on large PRs
-  # and would let a padded marker-touching PR evade this control. Any diff error
-  # (unresolvable refs, no merge base) → fail closed (return 0 → the caller emits ask).
+  # and would let a padded marker-touching PR evade this control.
+  #
+  # Hardened after the pre-pin security review (fail CLOSED — return 0 → ask):
+  #   - MANDATORY fresh fetch of base + head from origin before diffing, so the
+  #     change set reflects the PR's CURRENT head, not a stale local tracking ref
+  #     (a stale head could omit a marker just pushed onto the PR — the temporary→
+  #     permanent escalation the human-tap rule exists to block). Fetch failure → ask.
+  #   - `diff.relative` pinned OFF: a subdirectory GIT_CTX with diff.relative=true
+  #     would emit cwd-relative paths and DROP out-of-prefix files (the marker among
+  #     them) from the list. With it pinned off git always emits full repo-root-
+  #     relative paths, so a genuinely empty list means no changes (→ does not
+  #     touch), never a dropped marker. --no-renames keeps an add/rename visible.
   local files
-  files="$(gitc diff --name-only "$BASE_REF_R"..."$HEAD_REF_R" 2>/dev/null)" || return 0
+  [ -n "$BASE_NAME_R" ] && [ -n "$HEAD_NAME_R" ] || return 0
+  gitc fetch origin "+refs/heads/$BASE_NAME_R:refs/remotes/origin/$BASE_NAME_R" \
+                    "+refs/heads/$HEAD_NAME_R:refs/remotes/origin/$HEAD_NAME_R" >/dev/null 2>&1 || return 0
+  files="$(gitc -c diff.relative=false diff --name-only --no-renames \
+             "refs/remotes/origin/$BASE_NAME_R"..."refs/remotes/origin/$HEAD_NAME_R" 2>/dev/null)" || return 0
   printf '%s\n' "$files" | grep -qxF '.claude/keel-auto-merge.json' && return 0
   return 1
 }
@@ -822,10 +867,12 @@ read_mode_file       # no/invalid mode file → MODE_ACTIVE=0 → today's table 
 read_attended_marker # no/invalid marker → ATTENDED_ACTIVE=0; ignored when a mode is active
 detect_strict_auto   # only a single plain `gh pr merge ... --auto` sets AUTO_MERGE
 # The committed marker is consulted only when it could actually decide the row —
-# no active mode, no valid attended marker (precedence: mode > attended > committed).
-# This also skips its best-effort fetch under a mode/attended run.
-if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ]; then
-  read_committed_marker # no/invalid marker on the default branch → COMMITTED_ACTIVE=0
+# no active mode, no valid attended marker (precedence: mode > attended > committed),
+# and only for the bare `gh pr merge --auto` shape it can unlock. This also skips
+# its mandatory server fetch under a mode/attended run and on every non-auto shape.
+if [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ] \
+   && [ "$SHAPE" = "gh-pr-merge" ] && [ "$AUTO_MERGE" -eq 1 ]; then
+  read_committed_marker # no/invalid marker on the server default branch → COMMITTED_ACTIVE=0
 fi
 
 decide

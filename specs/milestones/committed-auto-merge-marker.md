@@ -7,22 +7,25 @@
 is the primitive the whole feature stands on; nothing else in the feature is committable or honored
 until it lands.
 
-**The root of trust that makes "committed" real (closes the two adversarial-pass blockers).** The
-guards honor the marker **only when it is present on the default branch (`main`)**, read via git
-(`git show <default-branch-ref>:.claude/keel-auto-merge.json` as data) — never from the working tree.
-`main` advances **only** by a human-merged PR (the standing never-commit-to-`main` invariant + branch
-protection), so presence-on-`main` *is* the authorization trail: an agent that merely `Write`s the
-file locally (or commits it on a branch) has an untracked / not-on-`main` file the guards **ignore**.
-And a merge-shaped command whose target PR **touches `.claude/keel-auto-merge.json`** is **never
-auto-merged** — it forces the per-merge human tap regardless of any active marker or mode — so no
-*temporary* authority (an 8h attended marker, a 24h mode) can auto-land the *permanent* marker's own
-PR. Together these move "the agent never self-arms" from a prose promise to a **mechanical control** —
-raising the bar from a plain-file `Write` (which these ignore) to forging the local default-branch ref
-itself (`git update-ref` / `git branch -f`, which are not merge/push/commit-shaped and so pass both
-guards' classifiers). That ref-forgery residual is **named, not hidden**: it is the same threat model
-the existing untracked markers already carry, and the **required-checks floor on the protected branch
-remains the real backstop** — nothing lands that the three checks did not pass, self-armed or not.
-This is what the plan-pass flagged prose alone as missing.
+**The root of trust that makes "committed" real (closes the two adversarial-pass blockers, then
+hardened by the pre-pin security review — see the "Security-review hardening" section below).** The
+guards honor the marker **only when it is present on the repo's SERVER default branch**, read via git
+after a mandatory fetch (`git show refs/remotes/origin/<db>:.claude/keel-auto-merge.json` as data,
+where `<db>` is the server default branch from `gh repo view`, **not** the locally-rewritable
+`origin/HEAD` symref) — never from the working tree, never from a locally-forgeable tracking ref. The
+server default branch advances **only** by a human-merged PR (the standing never-commit-to-`main`
+invariant + branch protection), so presence there *is* the authorization trail: an agent that merely
+`Write`s the file locally, commits it on a branch, or even forges a local `refs/remotes/origin/<db>`
+has nothing the guards honor — the mandatory fetch overwrites a forged tracking ref with real origin
+content, and if it can't fetch, the marker is **not honored** (no fallback). And a merge-shaped
+command whose target PR **touches `.claude/keel-auto-merge.json`** is **never auto-merged** — it forces
+the per-merge human tap regardless of any active marker or mode (with a mandatory fresh fetch of the PR
+head, so a stale local ref can't hide a just-pushed marker) — so no *temporary* authority (an 8h
+attended marker, a 24h mode) can auto-land the *permanent* marker's own PR. Together these move "the
+agent never self-arms" from a prose promise to a **mechanical control**. The residual is now only
+forging the **server** default branch (needs repo write + settings — an admin action out of an agent's
+reach), and the **required-checks floor on the protected branch remains the real backstop** — nothing
+lands that the three checks did not pass, self-armed or not.
 
 **Feature:** `specs/features/per-project-auto-merge.md`. **No-UI** → two-dimension done-conditions
 (logic/invariants + behavioral completeness). **Depends on:** nothing (foundational). **Parallelizable:**
@@ -62,19 +65,23 @@ carve-out below; the carve-out and the entry land together.
   fields — `scope` MUST equal `"project"` (any other value → invalid → treated as NO marker, fail
   closed), `created` (ISO-8601 UTC, parsed **as data**, never eval'd), `invoker` (who armed it); all
   required, non-empty strings; **any defect → treated as absent, fail closed**. **The root of trust is
-  presence on the default branch, not the working tree:** the marker is honored **only** as read from
-  the **default-branch ref proper** — `origin/$DEFAULT_BRANCH` (the `detect_default_branch` result,
-  the same ref `check-verified-pin.sh` treats as `main`), via
-  `git show "origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json"` parsed as data. **It is emphatically
-  NOT `BASE_REF_R`** — that variable is the *target PR's base branch* (resolved from
-  `gh pr view --json baseRefName`), which under the stacked-PR choreography is a **sibling milestone
-  branch**, not `main`; reading from it would honor a marker an agent planted on a lower stack branch
-  (the very forgery this root of trust exists to block). A working-tree copy, a branch-only commit, or
-  an untracked file that is **not on the default branch** is **ignored**. Mirror
-  `check-verified-pin.sh`'s step-`-1` **best-effort refresh** of the default-branch remote ref before
-  the read (a failed fetch warns and proceeds with the local image — never a hard failure), so a
-  human's disarm on real `main` is seen without an indefinite stale-clone honor window; the residual
-  (a clone that never fetches at all) is named, not silently assumed away. This **inverts** the
+  presence on the SERVER default branch, not the working tree and not any locally-forgeable ref**
+  (this clause was **hardened by the pre-pin security review** — see the "Security-review hardening"
+  section below; the three fail-closed steps): **(1)** the authorization branch is the repo's
+  **server** default branch, from `gh repo view --json defaultBranchRef` run in `GIT_CTX` — **NOT**
+  the local `refs/remotes/origin/HEAD` symref that `detect_default_branch` reads (an agent repoints it
+  with `git remote set-head`, which is not a merge/push/commit shape, to a branch it pushed carrying a
+  marker). gh resolves the **same repo `gh pr merge` targets**, so the marker authorizes exactly the
+  repo the merge acts on — which is also why the read stays at `GIT_CTX`, not `ROOT` (reading at `ROOT`
+  would let a marker in one repo authorize a merge gh performs in another). **It is emphatically NOT
+  `BASE_REF_R`** — the *target PR's base branch* (from `gh pr view --json baseRefName`), a **sibling
+  milestone branch** under a stack. **(2)** A **MANDATORY, fail-closed** fetch of that branch from
+  origin precedes the read — **never best-effort**: a forged local `refs/remotes/origin/<db>` (planted
+  with `git update-ref`, or committed in a throwaway `GIT_CTX` whose origin is unreachable) is
+  overwritten by real origin content, and a fetch that cannot run means the marker is **not honored**,
+  rather than falling back to the local ref. **(3)** The content is read from the just-fetched
+  `refs/remotes/origin/<db>` via `git show`, parsed as data. A working-tree copy, a branch-only commit,
+  or an untracked file **not on the server default branch** is **ignored**. This **inverts** the
   untracked-markers' rule deliberately and the header states the difference and why: the untracked
   attended/mode markers are spoofable-if-tracked, so they are honored only untracked; this marker is
   the opposite — its authorization *is* the git history of the default branch (which advances only by
@@ -113,17 +120,22 @@ carve-out below; the carve-out and the entry land together.
   `scripts/merge-guard.sh` and its sibling copy in `scripts/guard-branch-rules.sh` — the same
   two-copy pattern the scripts already use for `read_attended_marker`), mirroring
   `read_attended_marker`: STRING-TYPED field reads (jq `select(type)` / python3 `isinstance`, so a
-  wrong-typed field reads as absent), the marker text — **read from `origin/$DEFAULT_BRANCH` via
-  `git show`, never the working-tree file and never `BASE_REF_R`** — parsed **as data** (`json_str`,
-  never eval'd), `scope != "project"` or any missing/empty field or a marker absent from the default
+  wrong-typed field reads as absent), the marker text — **read from the server default branch via a
+  MANDATORY fetch then `git show refs/remotes/origin/<db>` (see the hardened root of trust above),
+  never the working-tree file and never `BASE_REF_R`** — parsed **as data** (`json_str`, never
+  eval'd), `scope != "project"` or any missing/empty field or a marker absent from the server default
   branch → `COMMITTED_ACTIVE=0` (fail closed). It sets a `COMMITTED_ACTIVE` flag consumed by each
-  script's decision path. (`guard-branch-rules.sh` already carries `detect_default_branch`; it needs
-  no `gh` machinery for this read.) **Repo context (the milestone-#187 split):** the *file path*
-  `.claude/keel-auto-merge.json` stays ROOT-rooted (markers are project assets, like the attended
-  marker), but the `git show "origin/$DEFAULT_BRANCH:<path>"` read runs against **`GIT_CTX`** — the
-  same checkout `decide()` judges and where `DEFAULT_BRANCH` is detected — so the honor decision
-  reflects the git state of the repo the merge command runs in. State this ROOT-path / GIT_CTX-git-
-  state split explicitly in both readers so a builder does not read from the wrong repo.
+  script's decision path. **The two readers are NOT identical, deliberately:** `merge-guard.sh`'s is
+  the **security-authoritative** read (server default branch via `gh repo view` + mandatory fetch);
+  `guard-branch-rules.sh`'s only decides whether to **defer** the build-session `--auto` to
+  `merge-guard.sh` on the same call, so a fooled read there can at worst over-relax to a defer
+  `merge-guard.sh` re-checks (or fail closed to a safe exit-2 block) — it therefore keeps
+  `detect_default_branch` for the name but mirrors the **mandatory fail-closed fetch**, and both state
+  that `merge-guard.sh` is the backstop. **Repo context (the milestone-#187 split):** the *file path*
+  `.claude/keel-auto-merge.json` stays ROOT-rooted (markers are project assets), but the marker read
+  runs against **`GIT_CTX`** — the repo `gh pr merge` targets — so the marker authorizes exactly that
+  repo (never `ROOT`, which could authorize a different repo). State this ROOT-path / GIT_CTX split
+  explicitly in both readers so a builder does not read from the wrong repo.
 - [auto] **Any merge-shaped command whose target PR touches the marker file is never auto-merged** —
   the human-tap rule that blocks a *temporary* authority from auto-landing the *permanent* marker.
   **This check lives only in `merge-guard.sh` `decide()`** (which already resolves the PR's base/head
@@ -132,7 +144,10 @@ carve-out below; the carve-out and the entry land together.
   would let a padded marker-touching PR evade the control); if that list **includes**
   `.claude/keel-auto-merge.json`, or if the file list **cannot be determined** (diff error), the
   decision is **`ask`** — before and regardless of the mode/attended/committed allow rows, fail closed.
-  So arming or disarming always takes a human merge tap. **`guard-branch-rules.sh` needs no file-list
+  So arming or disarming always takes a human merge tap. **Hardened by the pre-pin security review**
+  (see the section below): a **MANDATORY fresh fetch** of base+head precedes the diff (so a stale
+  local head cannot omit a just-pushed marker), **`diff.relative` is pinned OFF** (so a subdirectory
+  `GIT_CTX` cannot drop the out-of-prefix marker), and every failure path fails closed to `ask`. **`guard-branch-rules.sh` needs no file-list
   check of its own:** on a valid committed marker + bare `--auto` it `exit 0`-defers (below), and
   `merge-guard.sh` — firing on the same Bash call — applies this human-tap rule and emits `ask` for a
   marker-touching PR. This keeps the `gh`-dependent file-list logic in the one guard that already has
@@ -165,7 +180,14 @@ carve-out below; the carve-out and the entry land together.
     **the escalation case the rule exists for**: a marker-touching PR under an active **mode** or a
     valid **attended** marker → still `ask` (the tap fires *before and regardless of* every allow row),
     and an **indeterminate file list** (diff error) → `ask` (fail closed); the `d_auto` negative static
-    tripwire still green with the third row present.
+    tripwire still green with the third row present. **Security-review regressions** (each proven to
+    return `allow` on the pre-fix code and `ask` now): finding 1 — `refs/remotes/origin/HEAD` repointed
+    at a marker branch, gh still reports the real default → `ask`; finding 2a — a forged
+    `refs/remotes/origin/<db>` overwritten by the mandatory fetch → `ask`; finding 2b — forged ref +
+    unreachable origin → fetch fails, no local fallback → `ask`; finding 3 — a stale local PR-head ref
+    hiding a just-pushed marker, revealed by the mandatory head fetch → human-tap `ask`; finding 4 —
+    `diff.relative=true` + a subdirectory `GIT_CTX`, still detected via the pinned-off diff → human-tap
+    `ask`.
   - `scripts/guard-branch-rules.test.sh` — committed marker on the default branch + bare `--auto` +
     no mode + no attended → `exit 0` (defer, regardless of whether the PR touches the marker — the tap
     is merge-guard's job on the same call); committed + any non-`--auto` merge → `exit 2`;
@@ -188,9 +210,55 @@ carve-out below; the carve-out and the entry land together.
 - [auto] **No unowned surface moved:** `git diff --stat` for this milestone is confined to
   `scripts/check-verified-pin.sh`(+`.test.sh`), `scripts/merge-guard.sh`(+`.test.sh`),
   `scripts/guard-branch-rules.sh`(+`.test.sh`), `decisions/2026-08-02-committed-auto-merge-marker.md`,
-  and this milestone spec (its pin). `session-bootstrap.sh`, `template-contract.md`, the deferral, the
+  `specs/uncertainties/committed-auto-merge-marker/`, and this milestone spec (its pin + the
+  security-review amendments below). `session-bootstrap.sh`, `template-contract.md`, the deferral, the
   arming skill, and `implement-feature` are **out of scope** here (M2/M3/M4 own them) and have empty
   diffs.
+
+## Security-review hardening (2026-08-02, supersedes the earlier clauses it names)
+
+The pre-pin `/security-review` (a hard-invariant precondition for this milestone) found **four**
+concretely-exploitable self-arm / tap-evasion paths in the first build, each defeating the milestone's
+central guarantee via ordinary agent-available commands (no server-side control). All four were
+confirmed to return `allow` on the pre-fix code and are now closed and regression-tested. This section
+is the reviewed record; where it conflicts with the earlier done-condition prose, **this governs**.
+
+- **Finding 1 — `origin/HEAD` was the root of trust, and it is agent-repointable.** The read resolved
+  the default branch via `detect_default_branch`, whose first source is the local
+  `refs/remotes/origin/HEAD` symref; `git remote set-head origin <branch>` (not a merge/push/commit
+  shape, so the guards permit it) repoints it at a branch the agent pushed carrying a marker. **Fix:**
+  resolve the authorization branch from the **server** — `gh repo view --json defaultBranchRef` in
+  `GIT_CTX` — never the symref; no gh / no default branch → fail closed.
+- **Finding 2 — the marker read went through `GIT_CTX` with a best-effort fetch, so a forged local
+  ref (or a crafted `cwd` whose origin is unreachable) was honored.** **Fix:** the refresh fetch is
+  **mandatory and fail-closed** — a forged `refs/remotes/origin/<db>` is overwritten by real origin
+  content, and a fetch that cannot run means the marker is not honored (no fallback). The read stays at
+  `GIT_CTX` (the repo `gh pr merge` targets) rather than moving to `ROOT`: reading at `ROOT` while gh
+  merges the `GIT_CTX` repo would let a marker in one repo authorize a merge in another — a worse hole.
+- **Finding 3 — `pr_touches_marker` diffed a stale local PR-head ref, so a marker pushed onto the PR
+  after the last fetch was invisible, letting a temporary authority auto-land the arming PR.** **Fix:**
+  a **mandatory fresh fetch of base+head** precedes the diff; fetch failure → `ask`.
+- **Finding 4 — `pr_touches_marker` honored `diff.relative` and failed open on an empty list.** With
+  `diff.relative=true` and a subdirectory `GIT_CTX`, the out-of-prefix marker was dropped. **Fix:**
+  the diff is pinned with `-c diff.relative=false --no-renames`, so full repo-root-relative paths are
+  always emitted (a genuinely empty list then correctly means "no changes", not a dropped marker).
+
+The net effect: the residual is no longer "forge a local ref" (an agent can do that) but "forge the
+**server** default branch" (repo write + settings — an admin action out of an agent's reach), with the
+required-checks floor as the standing backstop.
+
+**Named residual (git-transport desync, backstopped, below the remediation bar).** The mandatory
+fetches trust that `git fetch origin` and `gh` resolve the *same* content. A non-merge-shaped git-config
+rewrite (`git config url.<evil>.insteadOf …`, `git remote set-url`) could in principle point `git
+fetch origin` at attacker content while `gh` still hits real GitHub — forging `COMMITTED_ACTIVE=1` and
+dropping the *local* human tap. Confidence is low (gh most likely honors `insteadOf` during remote
+resolution, which fails the read closed) and the impact is bounded: it drops only the local tap, never
+the **server-side required checks** (verified-pin, plan-lint, security-review, guards), which remain
+the real merge gate — exactly the model `decisions/2026-08-01-required-checks-protection.md` sets. A
+belt-and-suspenders close (resolve and fetch the concrete `gh`-reported clone URL rather than the
+config-rewritable `origin` alias) is possible but not taken here; the residual is named, consistent
+with the guard header already scoping git remote config out of reach and naming required-checks as the
+floor.
 
 ## verification
 
@@ -200,13 +268,17 @@ fail-closed on every defect), the `is_plan_path` carve-out is exactly one file (
 its plan-only/mixed-PR test pair, the `decide()` committed row's five-way guard + precedence + the
 whitelist forfeit, the `d_auto` tripwire covering three rows, the `read_committed_marker` fail-closed
 typing, the guard-branch-rules defer row + precedence, and the confined diff. Suites run, not
-re-derived. Confirm specifically that the **root of trust is read from `main`** (a working-tree-only
-marker is ignored) and that the **human-tap rule** fires before any auto-allow on a marker-touching
-PR. **Dispatch the verifier at `xhigh`** (two hard-invariant gates). **`/security-review` of the
-milestone's diff is a pre-pin precondition** — the adversarial questions, each now answerable by a
-mechanical control the spec names (not prose): (1) does the plan-path carve-out open any path for a
-*code* file to land unpinned — it must widen the plan set by exactly one named file; (2) can an agent
-**self-arm** — it must not: the marker is honored only from `main`, and any marker-touching PR forces
-a human tap, so neither a local `Write` nor a temporary-authority auto-merge of the marker's PR arms
-it; (3) does the committed row let a non-canonical/bundled `--auto` land — it must not. Confirmed
-findings remediated before the pin.
+re-derived. Confirm specifically that the **root of trust is the SERVER default branch** (`gh repo
+view`, not `origin/HEAD`; a working-tree-only or forged-local-ref marker is ignored) and that the
+**human-tap rule** fires before any auto-allow on a marker-touching PR. **Dispatch the verifier at
+`xhigh`** (two hard-invariant gates). **`/security-review` of the milestone's diff is a pre-pin
+precondition — it has already run once and its four findings are remediated and regression-tested
+(the "Security-review hardening" section); a re-review of the remediated diff confirms the fixes
+hold before the pin.** The adversarial questions, each now answerable by a mechanical control the spec
+names (not prose): (1) does the plan-path carve-out open any path for a *code* file to land unpinned —
+it must widen the plan set by exactly one named file; (2) can an agent **self-arm** — it must not: the
+marker is honored only from the server default branch (via `gh`, with a mandatory fail-closed fetch),
+and any marker-touching PR forces a human tap (with a fresh head fetch), so neither a local `Write`, a
+repointed `origin/HEAD`, a forged tracking ref, nor a temporary-authority auto-merge of the marker's
+PR arms it; (3) does the committed row let a non-canonical/bundled `--auto` land — it must not.
+Confirmed findings remediated before the pin.

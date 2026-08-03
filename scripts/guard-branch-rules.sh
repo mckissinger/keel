@@ -449,21 +449,24 @@ read_attended_marker() { # .claude/keel-attended-merge.json → ATTENDED_ACTIVE;
 }
 
 # The committed per-project auto-merge marker. Reading owner + full contract:
-# merge-guard.sh's header. DUPLICATED here (self-contained idiom) only to decide
-# whether to DEFER a build-session --auto to merge-guard.sh. UNLIKE the attended /
-# mode markers this one's root of trust is presence on the DEFAULT BRANCH: it is
-# read from `origin/$DEFAULT_BRANCH` via gitc (NOT the working tree, NOT a `cwd`
-# path), so a locally-planted or branch-only file is ignored. NO TTL (a committed
-# setting does not expire). This guard does NOT inspect the PR's files — the
-# human-tap rule on a marker-touching PR is merge-guard.sh's, applied on the same
-# Bash call after this defer.
+# merge-guard.sh's header. This read is NOT the security-authoritative one — it only
+# decides whether to DEFER a build-session --auto to merge-guard.sh, which fires on
+# the SAME Bash call and makes the real allow/ask/deny decision with its hardened
+# read (server default branch via gh + mandatory fetch) and the human-tap rule. So a
+# fooled read here can only over-relax to a defer that merge-guard then re-checks, or
+# fail closed to a safe exit-2 block — never an unsupervised merge. Even so it mirrors
+# merge-guard's fail-closed shape: the refresh fetch is MANDATORY (a fetch that cannot
+# run → no defer → exit 2), the marker text is parsed as DATA, scope MUST equal
+# "project", created + invoker non-empty, NO TTL. It does NOT inspect the PR's files —
+# the marker-touching human-tap rule is merge-guard.sh's alone.
 COMMITTED_ACTIVE=0
 read_committed_marker() { # committed .claude/keel-auto-merge.json on the default branch → COMMITTED_ACTIVE
   COMMITTED_ACTIVE=0
   local content scope created invoker
-  gitc fetch origin "+refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH" >/dev/null 2>&1 \
-    || echo "keel: WARN — could not refresh 'origin/$DEFAULT_BRANCH' for the committed auto-merge marker; proceeding with the local ref" >&2
-  content="$(gitc show "origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
+  # Mandatory, fail-closed refresh (overwrites any forged local ref; no reachable
+  # origin → do not defer). merge-guard.sh remains the authoritative backstop.
+  gitc fetch origin "+refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH" >/dev/null 2>&1 || return 0
+  content="$(gitc show "refs/remotes/origin/$DEFAULT_BRANCH:.claude/keel-auto-merge.json" 2>/dev/null)" || return 0
   [ -n "$content" ] || return 0
   scope="$(json_str "$content" scope)"
   created="$(json_str "$content" created)"

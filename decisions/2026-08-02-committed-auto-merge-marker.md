@@ -87,6 +87,9 @@ the pin gate's suspenders.
 
 This entry is the reviewed record for the `is_plan_path` carve-out; the carve-out and this entry land
 together in the M1 code PR, verified by a fresh `verify-milestone` session (never self-pinned). The
-root-of-trust read (marker honored only from `origin/$DEFAULT_BRANCH`) and the human-tap rule are the
-two mechanical controls that move "the agent never self-arms" from prose to enforcement — see the M1
-milestone spec's done-conditions for their `file:line` contracts.
+root-of-trust read (marker honored only from the repo's **server default branch** — `gh repo view`,
+not the rewritable `origin/HEAD` symref — behind a **mandatory fail-closed fetch**) and the human-tap
+rule (with a fresh PR-head fetch) are the two mechanical controls that move "the agent never
+self-arms" from prose to enforcement. These were hardened during the pre-pin `/security-review`, which
+found four self-arm / tap-evasion paths in the first build; see the M1 milestone spec's
+"Security-review hardening" section and its done-conditions for the `file:line` contracts.

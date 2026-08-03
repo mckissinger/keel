@@ -278,8 +278,18 @@ if printf '%s\n' "$REQUIRED_CHECKS_NL" | grep -qxF "$SECREVIEW_CHECK_NAME"; then
       if [ -d "$SECREVIEW_WF_DIR" ]; then
         for wf in "$SECREVIEW_WF_DIR"/*.yml "$SECREVIEW_WF_DIR"/*.yaml; do
           [ -f "$wf" ] || continue
-          grep -q "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
-          grep -Eq "^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]*$SECREVIEW_PATTERN" "$wf" 2>/dev/null || continue
+          # SECREVIEW_CHECK_NAME and SECREVIEW_PATTERN are LITERAL strings — a check
+          # context name and an action reference — NEVER regexes. Match them with
+          # grep -F so a committed contract cannot inject a trivially-matching regex
+          # (`pattern:".*"`, `check:"."`, a bare space) that defeats (b2) while
+          # passing the length>0 validation. (Third never-weakens hole of the same
+          # class as committed-`external` and empty-pattern; the value is used as
+          # DATA, so it is matched literally.) The uncommented-`uses:`-line anchor
+          # stays an ERE (fixed, not attacker-controlled); the per-file line is then
+          # comment-stripped (`sed 's/#.*$//'`) so the pattern must appear in real
+          # content, not a trailing comment, before the literal match.
+          grep -qF "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
+          grep -E "^[[:space:]]*-?[[:space:]]*uses:" "$wf" 2>/dev/null | sed 's/#.*$//' | grep -qF "$SECREVIEW_PATTERN" || continue
           grep -q "pull_request" "$wf" 2>/dev/null || continue
           b2_ok=1; break
         done

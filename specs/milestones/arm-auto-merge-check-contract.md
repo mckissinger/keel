@@ -78,8 +78,11 @@ draft that read it, so the committed field is deliberately ignored).
   `security_review.check` / `security_review.pattern`** — an empty `pattern` would collapse the (b2)
   `uses:` scan to "any uncommented `uses:` line" and an empty `check` is the analogous (b2) name-match
   hole, so both are rejected (jq's `//` substitutes the keel default only on a genuinely *absent*
-  field, never on `""`). (3) The config cannot switch off the (b2) content scan or the (d)
-  `allow_auto_merge` assertion — both run regardless of what the file says.
+  field, never on `""`). Beyond emptiness, the declared `check` / `pattern` are matched **literally**
+  (`grep -F`), never as regexes, so a non-empty but trivially-matching value (`pattern:".*"`,
+  `check:"."`, a bare space) cannot collapse the (b2) scan to a near-universal match either — the
+  contract carries DATA, matched as literal strings. (3) The config cannot switch off the (b2) content
+  scan or the (d) `allow_auto_merge` assertion — both run regardless of what the file says.
 - [auto] **The preflight delegation honors the committed config without breaking the config-block-edit
   path.** `scripts/check-auto-preflight.sh` today unconditionally forwards its resolved
   `PREFLIGHT_REQUIRED_CHECKS="$REQUIRED_CHECKS"` to `check-branch-protection.sh` (`:144`), which masks

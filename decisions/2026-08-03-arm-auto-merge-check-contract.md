@@ -61,7 +61,12 @@ content-scanning forever — the exact never-weakens violation this gate forbids
   pass (b2) with no real review workflow), an empty `check` is the analogous hole for the (b2) name
   match — the same class as the committed-`external` bypass, caught by the independent verifier and
   closed at the same read boundary (jq's `//` substitutes the keel default only on a genuinely *absent*
-  field, never on `""`). The config can switch off neither the (b2) content scan nor the (d)
+  field, never on `""`). **Rejecting empty is necessary but not sufficient: `check` and `pattern` are
+  matched LITERALLY (`grep -F`), never as regexes** — a non-empty but trivially-matching regex
+  (`pattern:".*"`, `check:"."`, a bare space) would otherwise, spliced into a `grep -E`, collapse the
+  (b2) `uses:`/name scan to a near-universal match and pass with a non-review workflow (a third
+  same-class fail-open the verifier's adversarial re-probe found; the values are contract DATA, so they
+  are matched as literal strings). The config can switch off neither the (b2) content scan nor the (d)
   `allow_auto_merge` assertion. An **operator** override that deliberately omits
   security-review is still trusted (keel trusts an operator stating the set explicitly) — the
   never-weakens rule binds the committed-config / keel-default path, the ergonomic data file a project

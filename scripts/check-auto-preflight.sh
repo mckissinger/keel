@@ -43,7 +43,8 @@
 
 set -uo pipefail
 
-ROOT="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="${1:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 cd "$ROOT"
 
 # --- config block (a project copy edits these; env overrides for one-offs) ----
@@ -122,76 +123,28 @@ if [ -f "$INVENTORY_FILE" ]; then
   done < "$INVENTORY_FILE"
 fi
 
-# --- (b) branch protection: the required checks are actually REQUIRED ---------
-if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
-  default_branch="main"
-  if command -v git >/dev/null 2>&1; then
-    if ref="$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null)"; then
-      default_branch="${ref#refs/remotes/origin/}"
-    else
-      for b in main master; do
-        if git show-ref --verify --quiet "refs/heads/$b" 2>/dev/null \
-          || git show-ref --verify --quiet "refs/remotes/origin/$b" 2>/dev/null; then
-          default_branch="$b"; break
-        fi
-      done
-    fi
-  fi
-  if prot="$(gh api "repos/{owner}/{repo}/branches/$default_branch/protection" 2>/dev/null)"; then
-    contexts="$(printf '%s' "$prot" | jq -r \
-      '[(.required_status_checks.contexts // []), ((.required_status_checks.checks // []) | map(.context))] | add | .[]?' \
-      2>/dev/null || true)"
-    for want in $REQUIRED_CHECKS; do
-      found=0
-      while IFS= read -r have; do
-        [ "$have" = "$want" ] && found=1
-      done <<EOF
-$contexts
-EOF
-      [ "$found" -eq 1 ] \
-        || gap "protection: check '$want' is not a REQUIRED status check in branch protection on '$default_branch' (a check that exists but is not required does not gate the merge) — remediate attended: wire '$want' as a CI check job, make it a required status check on '$default_branch', then re-run this preflight. Which jobs the autonomy tier requires, and the recorded default implementation of each, live in keel's references/template-contract.md tier 1. Never drop a job from the required set to get past this gate."
-    done
-  else
-    gap "protection: no readable branch protection on '$default_branch' (gh api .../protection failed — configure it attended before an auto run)"
-  fi
+# --- (b) + (b2) + (d) branch protection: delegated to the shared assertion -----
+# The merge-relevant subset — the required checks are actually REQUIRED, the
+# security-review check is CONTENT (not just a name), and allow_auto_merge is
+# enabled — is the SAME assertion keel:arm-auto-merge runs, so it lives in ONE
+# script both call and can never drift. check-branch-protection.sh emits its gaps
+# to stderr in the same GAP vocabulary and defaults; a non-zero exit is one
+# preflight gap here (its own gap lines already named the specifics on stderr).
+# The delegated script reads its required-check set from PREFLIGHT_REQUIRED_CHECKS,
+# so pass THIS preflight's resolved REQUIRED_CHECKS across the process boundary
+# explicitly — the config-block value at the top of this file is a plain shell
+# variable that a child does not inherit, and a project copy that HARDENED its
+# required set by editing that block (the documented "a project copy edits these"
+# path) would otherwise be silently dropped and the child would fall back to its
+# own three-check default (a fail-open regression vs the pre-extraction preflight).
+# An env-var override already in the environment still wins: REQUIRED_CHECKS above
+# was resolved from PREFLIGHT_REQUIRED_CHECKS first, so re-exporting it is faithful.
+BP="$SCRIPT_DIR/check-branch-protection.sh"
+if [ -x "$BP" ]; then
+  PREFLIGHT_REQUIRED_CHECKS="$REQUIRED_CHECKS" "${BASH:-bash}" "$BP" "$ROOT" >/dev/null || fails=$((fails + 1))
+else
+  gap "branch-protection: $BP is missing or not executable — cannot assert the required-checks / auto-merge posture (fail closed)"
 fi
-
-# --- (b2) the security-review check is CONTENT, not just a name ---------------
-# Check (b) proves a required check NAMED security-review exists; nothing there
-# proves the job behind the name performs a review (#189's pin recorded the
-# gap). Assert workflow content: a file under .github/workflows/ both declares
-# the check context and matches the review-implementation pattern. Additive to
-# (b), fail-closed. A non-Actions provider (an external status-check service
-# has no workflow file to scan) is attested explicitly and echoed loudly —
-# a deliberate, visible operator statement, never a silent bypass.
-SECREVIEW_CHECK_NAME="security-review"
-SECREVIEW_PATTERN="${PREFLIGHT_SECREVIEW_PATTERN:-claude-code-security-review}"
-SECREVIEW_WF_DIR="${PREFLIGHT_WF_DIR:-.github/workflows}"
-case " $REQUIRED_CHECKS " in
-  *" $SECREVIEW_CHECK_NAME "*)
-    if [ "${PREFLIGHT_SECREVIEW_EXTERNAL:-0}" = "1" ]; then
-      echo "auto-preflight: security-review content asserted by OPERATOR ATTESTATION (PREFLIGHT_SECREVIEW_EXTERNAL=1), not by workflow scan — a non-Actions provider is trusted here on the operator's word" >&2
-    else
-      # Three per-file requirements, so a comment naming the action, a
-      # workflow_dispatch-only workflow, or cross-file string scatter cannot
-      # satisfy the gate: the file must (1) declare the check context, (2)
-      # invoke the review implementation on an UNCOMMENTED `uses:` line, and
-      # (3) trigger on pull_request.
-      b2_ok=0
-      if [ -d "$SECREVIEW_WF_DIR" ]; then
-        for wf in "$SECREVIEW_WF_DIR"/*.yml "$SECREVIEW_WF_DIR"/*.yaml; do
-          [ -f "$wf" ] || continue
-          grep -q "$SECREVIEW_CHECK_NAME" "$wf" 2>/dev/null || continue
-          grep -Eq "^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*[^#]*$SECREVIEW_PATTERN" "$wf" 2>/dev/null || continue
-          grep -q "pull_request" "$wf" 2>/dev/null || continue
-          b2_ok=1; break
-        done
-      fi
-      [ "$b2_ok" -eq 1 ] \
-        || gap "security-review content: the required check exists in name; no workflow content performs a review — no file under $SECREVIEW_WF_DIR declares '$SECREVIEW_CHECK_NAME', invokes the review implementation on an uncommented 'uses:' line matching '$SECREVIEW_PATTERN', AND triggers on pull_request. Remediate attended: wire the review job (the recorded default implementation lives in keel's references/template-contract.md tier 1), or set PREFLIGHT_SECREVIEW_PATTERN for a different in-Actions implementation, or attest a non-Actions provider explicitly with PREFLIGHT_SECREVIEW_EXTERNAL=1. Never clear this gate by renaming or dropping the check."
-    fi
-    ;;
-esac
 
 # --- (c) contract env-var names resolve — names only, never values ------------
 env_file_has() { # <NAME> — a NAME= line exists; the value is never read out
@@ -219,21 +172,6 @@ else
       fi
     done
   done < "$CONTRACT_FILE"
-fi
-
-# --- (d) the repo can auto-merge: allow_auto_merge is enabled -----------------
-# `gh pr merge --auto` only queues a merge when the repo allows auto-merge;
-# otherwise it drops to an interactive prompt that stalls a headless run. Assert
-# the setting up front. Fail closed: an API error → a gap, never a silent pass.
-if [ "$HAVE_GH" -eq 1 ] && [ "$HAVE_JQ" -eq 1 ]; then
-  if repo_json="$(gh api "repos/{owner}/{repo}" 2>/dev/null)"; then
-    aam="$(printf '%s' "$repo_json" | jq -r '.allow_auto_merge // false' 2>/dev/null || true)"
-    if [ "$aam" != "true" ]; then
-      gap "auto-merge: allow_auto_merge is not enabled on the repo (gh api repos/{owner}/{repo} .allow_auto_merge = ${aam:-missing}) — \`gh pr merge --auto\` would fall back to an interactive prompt and stall a headless run. Enable it attended: repo Settings → General → 'Allow auto-merge', or gh api -X PATCH repos/{owner}/{repo} -f allow_auto_merge=true"
-    fi
-  else
-    gap "auto-merge: gh api repos/{owner}/{repo} failed — cannot confirm allow_auto_merge is enabled (fail closed; enable it attended before an auto run)"
-  fi
 fi
 
 if [ "$fails" -eq 0 ]; then

@@ -162,3 +162,27 @@ valid), not regressions of prior code. `/security-review` runs **pre-pin**; a fi
 the ordered-flow encoding the verifier confirms by reading the skill + docs — **no `[runtime]`**: the skill
 issues no live security-settings mutation (print-only), so there is nothing that only a live run proves. On
 a clean verdict the verifier writes the `verified:` pin; the build session never pins its own work.
+
+verified: clean at 2a6b853, 2026-08-03, via a fresh-context verify-milestone pass against this file — every
+`[auto]` condition checked against the real code, never the builder's claims. Full proof run green: all 13
+`scripts/*.test.sh` (unfiltered, run by name), `check-plan.sh`, `check-neutral.sh`,
+`check-skill-frontmatter.sh`, `check-skill-anchors.sh`, `claude plugin validate --strict .`. Scaffold-validity
+proven by `check-prep-auto-merge.test.sh` (6/6): materialized `templates/security-review.yml` PASSES
+`check-branch-protection.sh` (b2) verbatim, pins a full 40-hex SHA
+(`anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda`), that SHA equals keel's
+own pin in `.github/workflows/ci.yml:115` (single source), a names-only generated contract is accepted, and
+the template+contract flip a name-mismatch fixture from (b2) GAP to PASS (with a D2 control proving the
+scaffold is load-bearing, not decorative). Both `check-prep-auto-merge.test.sh` and the previously-unwired
+`check-branch-protection.test.sh` confirmed wired as named steps in `ci.yml` (L78, L83) — no glob sweep.
+`[attended]` conditions confirmed by reading: SKILL.md's ordered wedge-gated flow (scaffold PR → confirm
+`security-review` reported via `.../check-runs` → print protection/`allow_auto_merge` → arm), the
+reporting-contexts-not-protection derivation, collision = warn+don't-overwrite (SKILL.md:45-47), the
+print-never-run/secret-is-human boundary (locked by `scripts/skill-anchors/prep-auto-merge.txt`, no
+imperative mutation call found — only fenced print-templates), cross-refs present in
+`references/template-contract.md:65-71` and `skills/arm-auto-merge/SKILL.md:56-60`, the decision doc
+`decisions/2026-08-03-prep-auto-merge.md`, and both uncertainty records under
+`specs/uncertainties/prep-auto-merge/`. Pre-pin `/security-review` (dispatched sub-agent + independent
+adversarial diff read) found **no HIGH/MEDIUM findings**: real `on: pull_request` trigger, least-privilege
+`permissions:`, byte-identical review job to keel's own dogfooded one, no reintroduction of the #205
+`pattern`/`external` names-only violation, and no place in the skill prose where a mutation command is
+directed to run rather than print (evidence in PR).

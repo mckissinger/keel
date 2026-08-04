@@ -53,6 +53,14 @@ own job names — `verified-pin`, `plan-lint`, `security-review`. A consuming re
 never uses those names (it's `verified-pin gate`, `typecheck · lint · test`, and so on), so on such
 a repo the assertion would GAP on a pure **name mismatch**, not a real protection hole.
 
+**The easy path: `keel:prep-auto-merge`.** On a repo that isn't set up for auto-merge at all — no
+required security-review workflow, check names ≠ keel's, `allow_auto_merge` off — don't hand-assemble any
+of this. Run **`keel:prep-auto-merge`** first: it discovers the gaps with this same assertion, scaffolds
+the security-review workflow *and* generates this check-contract (from the repo's actually-reporting
+contexts), and prints the branch-protection / `allow_auto_merge` commands — everything this skill then
+certifies. It never arms; it points back here. The rest of this section is the **manual fallback** — the
+shape to author by hand when you're not using prep, and the reference for what prep generates.
+
 The fix is a **committed per-project check-contract** — `.claude/keel-auto-merge-checks.json` — where
 the repo declares *its own* required-check contexts and *which* of them is its security-review check.
 The assertion reads it fail-closed from the server default branch (the same transport as the marker), so

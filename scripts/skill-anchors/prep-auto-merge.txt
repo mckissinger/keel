@@ -1,0 +1,15 @@
+# prep-auto-merge — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+# These lock the invariants a cold edit could silently erode: assert≠provision,
+# print-never-run for the settings mutations, secret-is-human, verbatim scaffold,
+# reuse-the-assertion, the wedge gate, and reporting-contexts (not protection) as
+# the check-name source. check-skill-anchors.sh IS the [auto] grep for them.
+skills/prep-auto-merge/SKILL.md	the tool that builds the floor is never the tool that certifies it
+skills/prep-auto-merge/SKILL.md	reusing the assertion, never re-authoring it
+skills/prep-auto-merge/SKILL.md	Prints — never runs:
+skills/prep-auto-merge/SKILL.md	Reminds — never sets:
+skills/prep-auto-merge/SKILL.md	never sets the `ANTHROPIC_API_KEY` secret
+skills/prep-auto-merge/SKILL.md	committed template is the tested artifact
+skills/prep-auto-merge/SKILL.md	a protection command that requires a not-yet-reporting context
+skills/prep-auto-merge/SKILL.md	points at `keel:arm-auto-merge`
+skills/prep-auto-merge/SKILL.md	never** `gh api …/protection`'s required-status-checks list

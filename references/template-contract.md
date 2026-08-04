@@ -62,6 +62,14 @@ These are the same in every generated repo and are exactly what the preflight as
   non-Actions provider), and triggers on `pull_request` — so a comment naming the action or a
   `workflow_dispatch`-parked job cannot satisfy it.
 
+  **Scaffolding this wiring: `keel:prep-auto-merge`.** A consuming repo need not hand-assemble the
+  recipe below — the human-invoked `keel:prep-auto-merge` skill materializes it: it copies the
+  security-review workflow (this recipe, SHA-pinned in lockstep with keel's own) verbatim, generates the
+  names-only check-contract from the repo's reporting contexts, and prints the branch-protection /
+  `allow_auto_merge` commands, all as prerequisites for `keel:arm-auto-merge` (which then independently
+  certifies them). The recipe here stays the single source; prep *materializes* it —
+  `decisions/2026-08-03-prep-auto-merge.md`.
+
   **The proven concrete recipe (as of 2026-08, dogfooded live on keel's own repo —
   `specs/milestones/_landed` will carry `required-checks-live` once its wave archives).** An
   example shape that satisfies the contract, never a mandate:

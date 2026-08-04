@@ -1,0 +1,25 @@
+# Scaffolded by keel:prep-auto-merge — a real per-PR security review behind the
+# required status check named `security-review` (the autonomy tier's compensating
+# control; references/template-contract.md tier 1). This file is copied VERBATIM
+# into the target repo — do not hand-edit the pinned SHA: it is kept in lockstep
+# with keel's own .github/workflows/ci.yml security-review job (a tag move must not
+# silently swap the reviewer's code). Before this can go green, set the repo's
+# ANTHROPIC_API_KEY Actions secret (keel:prep-auto-merge never sets it for you).
+name: security-review
+
+on:
+  pull_request:
+
+jobs:
+  # The job name IS the status-check context `security-review` that branch
+  # protection requires — a name AND real workflow content, not a name alone.
+  security-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # Pinned to a full commit SHA so a tag move cannot swap the action's code.
+      - uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda
+        with:
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}

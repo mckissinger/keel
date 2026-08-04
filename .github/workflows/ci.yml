@@ -71,6 +71,17 @@ jobs:
       - name: auto preflight self-test
         run: bash scripts/check-auto-preflight.test.sh
 
+      # The branch-protection assertion keel:arm-auto-merge + preflight share — prove
+      # it (wired with prep-auto-merge; keel runs tests by NAME, not a glob, so an
+      # unwired test never runs — this is the floor this repo's arming trusts).
+      - name: branch-protection assertion self-test
+        run: bash scripts/check-branch-protection.test.sh
+      # The prep-auto-merge scaffold artifacts — the security-review template stays a
+      # valid review job with its SHA in lockstep with keel's own workflow, and the
+      # generated names-only check-contract is certified.
+      - name: prep-auto-merge scaffold self-test
+        run: bash scripts/check-prep-auto-merge.test.sh
+
       # The skill-frontmatter lint keel ships to projects — prove it, and lint keel's own skills.
       - name: skill frontmatter lint self-test
         run: bash scripts/check-skill-frontmatter.test.sh

@@ -46,3 +46,5 @@ the diff touches only the five live surfaces named in `decisions/2026-08-03-buil
 this chore spec and that decision doc; no historical record is rewritten; all combined checks green. This
 is a doc/frontmatter value swap — no gate/guard/hook/merge-decision semantics — so no `/security-review`.
 On a clean verdict the verifier writes the `verified:` pin; the build session never pins its own work.
+
+verified: clean at 910a714, 2026-08-03, via fresh-context verifier (all five Applied-item done-conditions confirmed with file:line evidence — model-routing.md and milestones-and-verification.md carry no `claude-opus-4-8`/"Opus 4.8", skill pins in implement-milestone/implement-feature/punch-list read `claude-opus-5`, `agents/verifier.md` still `claude-fable-5`, decision doc reverses 2026-08-01 and amends 2026-07-25 by reference as owner judgment, diff scope is exactly the 7 named files; `claude plugin validate --strict .`, `check-neutral.sh`, `check-plan.sh`, `check-skill-frontmatter.sh`, `check-skill-anchors.sh`, and the three self-tests all PASS)

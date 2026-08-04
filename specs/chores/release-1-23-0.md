@@ -57,3 +57,5 @@ branch is one commit ahead of `main`. No merge-decision mechanism, gate, hook, o
 touched by a version-string bump → no `/security-review`. The version-visible-to-the-installed-runtime
 effect is a [runtime] property that only a reinstall proves — carried into the post-merge install (tag +
 plugin update on merge), correctly out of branch scope.
+
+verified: clean at f9032df, 2026-08-03, via fresh-context keel:verifier subagent — exactly two files change (.claude-plugin/plugin.json version 1.22.0→1.23.0 only, valid JSON; this chore spec); marketplace.json unchanged (no version field); skill count 31 (prep-auto-merge added since 1.22.0, absent at the v1.22.0 tag); history since v1.22.0 is exactly #204/#205/#206/#207; one commit ahead of main; all 5 combined checks green; no gate/guard/hook semantics in the diff → no /security-review.

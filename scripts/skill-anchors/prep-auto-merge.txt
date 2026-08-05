@@ -4,6 +4,15 @@
 # print-never-run for the settings mutations, secret-is-human, verbatim scaffold,
 # reuse-the-assertion, the wedge gate, and reporting-contexts (not protection) as
 # the check-name source. check-skill-anchors.sh IS the [auto] grep for them.
+#
+# The reporting probe reads a PR head, never the default-branch head — a PR-only
+# security-review never reports on the default head (prep-auto-merge-reporting-probe,
+# decisions/2026-08-04-prep-reporting-probe.md). The two positive anchors lock the
+# corrected prose; the NEGATIVE anchor ('!') keeps the old default-sha probe from
+# ever silently reappearing.
+skills/prep-auto-merge/SKILL.md	one commit where PR-only checks
+skills/prep-auto-merge/SKILL.md	gone green on a PR
+!skills/prep-auto-merge/SKILL.md	commits/<default-sha>/check-runs
 skills/prep-auto-merge/SKILL.md	the tool that builds the floor is never the tool that certifies it
 skills/prep-auto-merge/SKILL.md	reusing the assertion, never re-authoring it
 skills/prep-auto-merge/SKILL.md	Prints — never runs:

@@ -103,3 +103,35 @@ the skill's procedure prose — so there is no new security surface (the origina
 untouched here). The verifier still reads the reframed gate for **safety soundness** (the wedge property) as
 an `[attended]` gate, and a genuine soundness doubt is a stop-point. On a clean verdict the verifier writes
 the `verified:` pin; the build session never pins its own work.
+
+verified: clean at 01c51c8, 2026-08-04, via a fresh-context verifier subagent against this file — every
+`[auto]` condition checked against the real code. `grep -n 'commits/<default-sha>/check-runs' skills/prep-auto-merge/SKILL.md`
+returns nothing; `scripts/skill-anchors/prep-auto-merge.txt:15` carries the negative anchor
+`!skills/prep-auto-merge/SKILL.md<TAB>commits/<default-sha>/check-runs`, and the negative-anchor mechanism was
+proven real (not toothless) by reintroducing the banned string into a scratch copy of the skill and confirming
+`check-skill-anchors.sh` fails with "contains a BANNED string" pointing at that exact anchor line, then
+confirming the real checkout is clean. `gh pr checks` is present in both step 1b (SKILL.md:53) and step 2
+(SKILL.md:74); the literal phrase "merged to \`main\`" is present in step 2 (SKILL.md:76); the scaffolded
+`security-review` name is named explicitly in the step-1b derivation (SKILL.md:56-58). `check-branch-protection.sh`
+is still run (SKILL.md:23,41,127, never re-authored) and the "never `gh api …/protection`'s required-status-checks
+list" invariant survives (SKILL.md:58) — both anchors still pass. Safety-soundness read of the reframed wedge
+gate (SKILL.md:71-80): the context is required only when **both** (a) gone green on a PR — a real scan, not a
+cached-skip hollow green, per the retained cache-mask caveat (SKILL.md:104-107) — **and** (b) the workflow is
+merged to `main` hold; "until both hold, print only the next step" (SKILL.md:77) and "never a protection command
+that requires a not-yet-reporting context — that is the wedge" (SKILL.md:79) leave no path that prints the
+protection command before both conditions hold — sound, no stop-point. Derivation source (step 1b, SKILL.md:48-66)
+pins a concrete commit — the repo's most-recent PR head via `gh pr checks`/`commits/<its-head-sha>/check-runs`,
+falling back to CI workflow job/context names only when the repo has no PR — not an unresolved "a PR head", adds
+`security-review` explicitly (not observed), routes the generated set through human confirmation in the PR, and
+preserves "include every enforced check" + "never the protection list" — concrete, not toothless.
+`decisions/2026-08-04-prep-reporting-probe.md` records the bug, the `crelaunch` dogfood incident, the
+PR-only-never-on-default-head root cause, and the fix, and amends `2026-08-03-prep-auto-merge.md` by reference
+without editing it. `git diff --name-only main...HEAD` is confined to exactly the 3 expected files
+(`decisions/2026-08-04-prep-reporting-probe.md`, `scripts/skill-anchors/prep-auto-merge.txt`,
+`skills/prep-auto-merge/SKILL.md` — the two spec files landed on `main` already via the prior spec-change PR
+#210); the landed `specs/milestones/prep-auto-merge.md` and `decisions/2026-08-03-prep-auto-merge.md` are
+unmodified, and neither a scaffold template nor `check-prep-auto-merge.test.sh` is in the diff. Proof run: all
+13 committed `scripts/*.test.sh` suites green (435 assertions total, 0 failed), including
+`check-prep-auto-merge.test.sh` unchanged at 30/30 passing; `check-skill-frontmatter.sh`,
+`check-skill-anchors.sh`, `check-plan.sh`, `check-neutral.sh` all PASS directly; `claude plugin validate --strict .`
+passed.

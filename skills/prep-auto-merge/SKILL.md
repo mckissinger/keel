@@ -47,13 +47,19 @@ though the goal is near-one-command:
      the mismatch for the human; never blindly overwrite a review they may already run.
    - **(b) — check NAMES differ from keel's:** author `.claude/keel-auto-merge-checks.json`, a **names-only**
      contract (`decisions/2026-08-03-arm-auto-merge-check-contract.md`; **no `pattern`/`external`**). Its
-     `required_checks` are the repo's **actually-reporting** check contexts — the check-runs that have
-     reported on the default branch's head
-     (`gh api repos/{owner}/{repo}/commits/<default-sha>/check-runs --jq '.check_runs[].name'`), or the
-     repo's own CI workflow job names — **never** `gh api …/protection`'s required-status-checks list (which
-     is 404/incomplete on exactly this repo — that is the gap). It must **include every check the repo
-     already enforces** (a committed contract *replaces* the asserted set, so a narrow read would silently
-     weaken the floor). Present the full generated set to the human to confirm in the PR. Shape:
+     `required_checks` are the repo's **actually-reporting** check contexts, read from a **PR head** — the
+     one commit where PR-only checks (the `security-review` among them) *and* push-triggered checks both
+     report. Because the scaffold PR does not exist yet when this file is authored, pin the source to the
+     repo's **most-recent PR** (open or merged): `gh pr checks <most-recent-pr>` (equivalently
+     `gh api repos/{owner}/{repo}/commits/<pr-head-sha>/check-runs --jq '.check_runs[].name'`) — **most-recent**
+     so the set can't drift to a stale long-merged PR. If the repo has **no PR at all**, fall back to the
+     repo's own **CI workflow job/context names** (from `.github/workflows/`). Then **add the scaffolded
+     `security-review` context name explicitly** — it has not run anywhere yet, so it is named, never
+     observed. Two hard lines: **never** `gh api …/protection`'s required-status-checks list (404/incomplete
+     on exactly this repo — that is the gap), and **never** the default-branch head (a PR-only check never
+     reports there). It must **include every check the repo already enforces** (a committed contract *replaces* the
+     asserted set, so a narrow read would silently weaken the floor). Present the full generated set to the
+     human to confirm in the PR. Shape:
 
      ```json
      { "required_checks": ["<reporting context>", "…"], "security_review": { "check": "security-review" } }
@@ -62,12 +68,17 @@ though the goal is near-one-command:
    - Commit these on a branch and open **one plain code PR** with `gh pr create`. **Do not push to the
      default branch, do not merge** — the human reviews and merges.
 
-2. **After that PR merges and the review job has reported once, apply the protection + auto-merge.**
-   **Confirm the review job has actually reported** before printing any command that requires it —
-   `gh api repos/{owner}/{repo}/commits/<default-sha>/check-runs --jq '.check_runs[].name'` must list
-   `security-review`. Until it does, print only the next step (*"merge the workflow PR and let it run once
-   on `<default>` first"*) — **never** a protection command that requires a not-yet-reporting context (that
-   is the wedge). Once it reports, **print** (do not run) these, for the human to apply:
+2. **Once the review job has gone green on a PR and the workflow is on `main`, apply the protection + auto-merge.**
+   The `security-review` context may be required only when **both** hold: **(a)** it has **gone green on a PR**
+   — the scaffold PR's own head is the first, since adding the workflow makes it run on that PR — confirmed
+   via `gh pr checks <pr>` (equivalently `gh api repos/{owner}/{repo}/commits/<pr-head-sha>/check-runs`), **and
+   it was a real scan, not the cached-skip hollow green** (see the cache caveat below); **and (b)** the
+   workflow is **merged to `main`**, so every future PR inherits it. Never probe the default-branch head — a
+   PR-only check never reports there. Until **both** hold, print only the next step (*"merge the workflow PR;
+   its `security-review` runs on the PR itself"*).
+   **Never** a protection command that requires a not-yet-reporting context — that is the wedge.
+   Once both hold, **print** (do not run) these, for the human
+   to apply:
 
    ```bash
    # Branch protection — required checks (the reporting contexts, including security-review),

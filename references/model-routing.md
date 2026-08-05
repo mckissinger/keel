@@ -3,13 +3,13 @@
 The canonical owner of which model and reasoning effort each keel surface runs at. Skill and agent
 frontmatter that pins a value must **match its row here** — this file is authoritative and ages in one
 place (the capability ledger's own anti-staleness point). It is tied to
-`decisions/2026-08-01-build-model-opus-4-8.md`, `decisions/2026-07-25-two-model-routing.md`,
+`decisions/2026-08-03-build-model-opus-5.md`, `decisions/2026-08-01-build-model-opus-4-8.md`, `decisions/2026-07-25-two-model-routing.md`,
 `decisions/2026-07-21-model-effort-routing.md`, and `decisions/2026-07-01-model-capability-ledger.md`.
 
 ## The decorrelation principle
 
 **Verify on a different model than you generate on.** With cost no longer the governing constraint, every
-surface that *produces* code runs the strong generation model (Opus 4.8); what stays deliberately *different*
+surface that *produces* code runs the strong generation model (Opus 5); what stays deliberately *different*
 is judgment — the independent `verifier` runs a distinct, at-least-as-capable model (Fable 5) so the check
 does not share the builder's blind spots. This is the surviving half of the earlier cost-era asymmetry
 principle ("economize on generation, never on judgment", `decisions/2026-07-21-model-effort-routing.md`):
@@ -26,18 +26,18 @@ A subagent's model is resolved in this order (first present wins):
 
 This is why `implement-feature` can raise a `reasoning-heavy` milestone's build to `xhigh` by setting an
 explicit `effort` arg on the dispatch call, and why the `punch-list` per-group dispatch can pin
-`claude-opus-4-8` at `low`/`medium`, regardless of the dispatched skill's own frontmatter — the
+`claude-opus-5` at `low`/`medium`, regardless of the dispatched skill's own frontmatter — the
 per-invocation arg sits at the top of the order. (The build *model* no longer varies by grain — every build
-runs Opus 4.8 — so the override that matters at dispatch is now effort, not model.)
+runs Opus 5 — so the override that matters at dispatch is now effort, not model.)
 
 ## The routing table
 
 | keel surface | Mechanism | Model | Effort |
 |---|---|---|---|
-| `agents/verifier.md` | agent frontmatter (base) + escalation on the dispatch call | `claude-fable-5` (decorrelated from the Opus-4.8 builder) | base `high`, **dispatched at ≥ the builder's effort for the milestone** (`reasoning-heavy` → `xhigh`) |
-| `implement-milestone` (run directly) | skill frontmatter | `claude-opus-4-8` | `high` |
-| build subagent dispatched by `implement-feature` | orchestration reads milestone `Routing:` tag; sets an explicit **effort arg on the dispatch (Agent/Task) call** — the **model no longer varies by grain** | `claude-opus-4-8` | `mechanical` → `high`; `reasoning-heavy` → `xhigh` |
-| `punch-list` workers (per-**group** dispatched subagents) | model arg on the per-group dispatch call | `claude-opus-4-8` | `low`/`medium` |
+| `agents/verifier.md` | agent frontmatter (base) + escalation on the dispatch call | `claude-fable-5` (decorrelated from the Opus-5 builder) | base `high`, **dispatched at ≥ the builder's effort for the milestone** (`reasoning-heavy` → `xhigh`) |
+| `implement-milestone` (run directly) | skill frontmatter | `claude-opus-5` | `high` |
+| build subagent dispatched by `implement-feature` | orchestration reads milestone `Routing:` tag; sets an explicit **effort arg on the dispatch (Agent/Task) call** — the **model no longer varies by grain** | `claude-opus-5` | `mechanical` → `high`; `reasoning-heavy` → `xhigh` |
+| `punch-list` workers (per-**group** dispatched subagents) | model arg on the per-group dispatch call | `claude-opus-5` | `low`/`medium` |
 | `debug` | skill frontmatter (effort only) | `inherit` | `high` |
 | `implement-feature` | skill frontmatter (effort only) | `inherit` | `high` |
 | `auto` | skill frontmatter (effort only) | `inherit` | `high` |
@@ -74,10 +74,10 @@ hardest milestones is forbidden, not merely discouraged.
 
 ## Notes
 
-- Effort options are model-dependent (Fable 5 supports `low`→`max`; Opus 4.8 covers the range keel routes, `low`→`xhigh`).
+- Effort options are model-dependent (Fable 5 supports `low`→`max`; Opus 5 covers the range keel routes, `low`→`xhigh`).
 - The dispatch mechanism is an **explicit per-invocation arg on the Agent/Task dispatch call** — the
   override at the top of the resolution order, not a reliance on the dispatched skill's own frontmatter.
-  `implement-feature` sets an **effort** arg (the build model is Opus 4.8 either way); `punch-list` sets a
-  **model** arg (`claude-opus-4-8`) plus effort for its per-group workers.
+  `implement-feature` sets an **effort** arg (the build model is Opus 5 either way); `punch-list` sets a
+  **model** arg (`claude-opus-5`) plus effort for its per-group workers.
 - The platform already routes its built-in `Explore`/search subagents to Haiku; keel benefits from that
   without owning it (out of scope here).

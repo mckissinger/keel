@@ -57,3 +57,5 @@ Recorded at build time, re-run by the verifier: `bash scripts/check-neutral.sh`,
 `bash scripts/check-plan.sh`, `bash scripts/check-skill-frontmatter.sh`,
 `bash scripts/check-skill-anchors.sh`, plus all 13 script self-tests
 (`guard-branch-rules.test.sh` and `merge-guard.test.sh` carry the new/updated cases).
+
+verified: clean at 00def02, 2026-08-06, via fresh-context verifier subagent — four seam findings at 5bcc46b remediated, all four re-checked clean (evidence in PR #214)

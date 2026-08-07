@@ -834,7 +834,26 @@ decide() { # merge-shaped: ask/deny — plus the one mode-gated row in the heade
       d_auto="allow"
       emit "$d_auto" "committed per-project auto-merge active — a marker committed to the default branch is a standing human authorization; an instructed gh pr merge --auto on a gate-passing PR delegates the merge to the server-side required checks (specs/features/per-project-auto-merge.md); GitHub merges when and only when the required checks pass"
     else
-      emit ask "verified-pin gate passed — per-merge human approval"
+      # Shape-aware ask (harvest 2026-08-05 F4): an authorization exists but the
+      # command failed the closed-set whitelist — name the canonical shape, or
+      # the ask reads as a policy stop-point. The decision stays ask either way.
+      # The committed marker is read here on demand (the main-flow read runs only
+      # for the bare AUTO shape) — but only when the working tree carries the
+      # marker file, so the unarmed common path pays no gh/fetch. This gate is
+      # message-only: a marker on the server but absent from this checkout just
+      # gets the generic ask, and the fail-closed read leaves COMMITTED_ACTIVE=0
+      # on any error, same result.
+      if [ "$SHAPE" = "gh-pr-merge" ] && [ "$AUTO_MERGE" -eq 0 ] \
+         && [ "$MODE_ACTIVE" -eq 0 ] && [ "$ATTENDED_ACTIVE" -eq 0 ] \
+         && [ -f "$ROOT/.claude/keel-auto-merge.json" ]; then
+        read_committed_marker
+      fi
+      if [ "$SHAPE" = "gh-pr-merge" ] && [ "$AUTO_MERGE" -eq 0 ] \
+         && { [ "$MODE_ACTIVE" -eq 1 ] || [ "$ATTENDED_ACTIVE" -eq 1 ] || [ "$COMMITTED_ACTIVE" -eq 1 ]; }; then
+        emit ask "verified-pin gate passed, and a valid auto-merge authorization exists — but this command is not the canonical bare shape, so the authorization does not apply: emit exactly 'gh pr merge <pr> --auto' (merge-method flag --squash|--merge|--rebase allowed; no pipes, no chaining, no other flags, nothing else on the line — the emission contract in this script's header), or take the per-merge human tap"
+      else
+        emit ask "verified-pin gate passed — per-merge human approval"
+      fi
     fi
   else
     reason="$(cat "$err" 2>/dev/null || true)"

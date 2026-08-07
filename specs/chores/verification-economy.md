@@ -58,3 +58,5 @@ Recorded at build time, re-run by the verifier: `bash scripts/check-neutral.sh`,
 `session-bootstrap.test.sh`, `check-skill-frontmatter.test.sh`, `check-skill-anchors.test.sh`,
 `check-auto-preflight.test.sh`, `attended-marker-parity.test.sh`, `check-branch-protection.test.sh`,
 `check-prep-auto-merge.test.sh`).
+
+verified: clean at d358e62, 2026-08-06, via fresh-context verifier subagent — clean verdict at 2e1ea35, then a comment-only repin.sh header delta with self-tests re-run green (evidence in PR #213)

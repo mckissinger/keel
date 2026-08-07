@@ -1,9 +1,12 @@
 # Chore batch — release 1.24.0
 
-Minor release surfacing the 2026-08-05 harvest slate implementation to the installed runtime.
-The changes are fully merged on `main` (PRs #212–#215, each chore batch carrying its own
-verified pin) but installed plugins report `1.23.0`; the version must move before
-`claude plugin update` can pick them up. The `v1.24.0` release tag is cut on merge.
+Minor release surfacing everything merged since the 1.23.0 release commit (#208) to the
+installed runtime — the 2026-08-05 harvest slate implementation (PRs #212–#215, each chore
+batch carrying its own verified pin) plus the three intervening merges (#209 build model back
+to `claude-opus-5`; #210/#211 prep-auto-merge reporting probe targets the PR head). Installed
+plugins report `1.23.0`; the version must move before `claude plugin update` can pick these up.
+(No `v1.23.0` git tag was cut — tagging lapsed after `v1.22.0`; the version string, not the tag,
+is what plugin update consumes.)
 
 ## Applied items
 
@@ -22,10 +25,14 @@ verified pin) but installed plugins report `1.23.0`; the version must move befor
     enumeration, report-never-teardown, Q13-sibling carve-out, 502-row ownership routing),
     authored at provision, run by both entry preflights.
   - **harvest digest** (#212): specs/reviews/2026-08-05-harvest.md + cursor update (plan-only).
+  - **build model returns to Opus 5** (#209): five build/execution surfaces `claude-opus-4-8` →
+    `claude-opus-5` (decisions/2026-08-03-build-model-opus-5.md); **prep-auto-merge reporting
+    probe** (#210/#211): probes the PR head, not the default-branch head.
   - Guard/hook semantics deltas since `1.23.0`, for the record: guard-branch-rules.sh and
     merge-guard.sh message text only (all decisions, exit codes, and allow/ask/deny rows
-    unchanged, asserted by their extended self-tests); implement-milestone's allowed-tools adds
-    `Bash(git fetch origin*)` for the branch-from-origin rule.
+    unchanged, asserted by their extended self-tests); implement-milestone frontmatter changes
+    are `model:` → `claude-opus-5` (#209) and allowed-tools adding `Bash(git fetch origin*)`
+    for the branch-from-origin rule (#214).
   `.claude-plugin/marketplace.json` carries no `version` field, so it is unchanged.
 
 ## Combined checks

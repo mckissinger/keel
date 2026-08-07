@@ -1,8 +1,8 @@
 {
   "name": "keel",
   "displayName": "Keel",
-  "version": "1.23.0",
-  "description": "Foundation-first autonomous build workflow for Claude Code: spec the foundation, build feature-by-feature, gate every milestone with independent verification and a commit-pinned record. Stack-neutral — each project derives its own verification profile.",
+  "version": "1.24.0",
+  "description": "Foundation-first autonomous build workflow for Claude Code: spec the foundation, build feature-by-feature, gate every milestone with independent verification and a commit-pinned record. Stack-neutral \u2014 each project derives its own verification profile.",
   "author": {
     "name": "Michael Kissinger",
     "email": "mckissinger@gmail.com"

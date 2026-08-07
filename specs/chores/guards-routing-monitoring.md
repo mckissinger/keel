@@ -58,4 +58,4 @@ Recorded at build time, re-run by the verifier: `bash scripts/check-neutral.sh`,
 `bash scripts/check-skill-anchors.sh`, plus all 13 script self-tests
 (`guard-branch-rules.test.sh` and `merge-guard.test.sh` carry the new/updated cases).
 
-verified: clean at 00def02, 2026-08-06, via fresh-context verifier subagent — four seam findings at 5bcc46b remediated, all four re-checked clean (evidence in PR #214)
+verified: clean at 989119a, 2026-08-06, via fresh-context verifier subagent — four seam findings at 5bcc46b remediated, all four re-checked clean (evidence in PR #214) — carried forward from 00def02: CI-green rule: update-branch absorbed verification-economy (#213), own content unchanged; evidence = PR #214 re-fired required checks

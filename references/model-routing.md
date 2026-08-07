@@ -24,19 +24,24 @@ A subagent's model is resolved in this order (first present wins):
 
 **per-invocation dispatch model > skill/agent frontmatter `model:` > `CLAUDE_CODE_SUBAGENT_MODEL` > session model.**
 
-This is why `implement-feature` can raise a `reasoning-heavy` milestone's build to `xhigh` by setting an
-explicit `effort` arg on the dispatch call, and why the `punch-list` per-group dispatch can pin
-`claude-opus-5` at `low`/`medium`, regardless of the dispatched skill's own frontmatter — the
-per-invocation arg sits at the top of the order. (The build *model* no longer varies by grain — every build
-runs Opus 5 — so the override that matters at dispatch is now effort, not model.)
+**The harness reality check (field-observed, 2026-08-05 harvest F7): not every dispatch mechanism carries
+every override.** The Agent/Task dispatch exposes a per-invocation **`model`** arg but **no `effort`
+arg** — so a per-dispatch effort override exists only where the mechanism supports it: **Workflow's
+`agent()` takes both `model` and `effort`** (this is how the `punch-list` workflow pins
+`claude-opus-5` at `low`/`medium` per group), while an Agent-tool dispatch resolves effort from the next
+rung down — the dispatched skill/agent frontmatter, then `CLAUDE_CODE_SUBAGENT_MODEL`'s session, then the
+session effort. A `reasoning-heavy` build that needs `xhigh` therefore rides an effort-carrying mechanism
+(a Workflow dispatch, or a session set to `xhigh`) — never a prescribed dispatch arg the harness doesn't
+have. (The build *model* no longer varies by grain — every build runs Opus 5 — so in practice the
+frontmatter defaults already carry most rows, and the per-invocation override that matters is Workflow's.)
 
 ## The routing table
 
 | keel surface | Mechanism | Model | Effort |
 |---|---|---|---|
-| `agents/verifier.md` | agent frontmatter (base) + escalation on the dispatch call | `claude-fable-5` (decorrelated from the Opus-5 builder) | base `high`, **dispatched at ≥ the builder's effort for the milestone** (`reasoning-heavy` → `xhigh`) |
+| `agents/verifier.md` | agent frontmatter | `claude-fable-5` (decorrelated from the Opus-5 builder) | `high` for **every** milestone — capability decorrelation carries the never-weaker invariant (see the invariant section below) |
 | `implement-milestone` (run directly) | skill frontmatter | `claude-opus-5` | `high` |
-| build subagent dispatched by `implement-feature` | orchestration reads milestone `Routing:` tag; sets an explicit **effort arg on the dispatch (Agent/Task) call** — the **model no longer varies by grain** | `claude-opus-5` | `mechanical` → `high`; `reasoning-heavy` → `xhigh` |
+| build subagent dispatched by `implement-feature` | orchestration reads milestone `Routing:` tag; `mechanical` rides `implement-milestone`'s frontmatter (`high`, nothing to set); `reasoning-heavy` → `xhigh` **via an effort-carrying mechanism** (Workflow `agent()` or session effort — the Agent/Task dispatch has no effort arg; see Resolution order) | `claude-opus-5` | `mechanical` → `high`; `reasoning-heavy` → `xhigh` |
 | `punch-list` workers (per-**group** dispatched subagents) | model arg on the per-group dispatch call | `claude-opus-5` | `low`/`medium` |
 | `debug` | skill frontmatter (effort only) | `inherit` | `high` |
 | `implement-feature` | skill frontmatter (effort only) | `inherit` | `high` |
@@ -61,23 +66,29 @@ rule — enumerated here so coverage is auditable, never "covered by omission":
 A reader can `ls skills/` and confirm every one of the 29 skills is either in the table above or in this
 default list, and the `verifier` agent is in the table — nothing is treated by omission.
 
-## Verifier effort-escalation (a hard rule, not a note)
+## The verifier-strength invariant (a hard rule, not a note)
 
-The `verifier` subagent is dispatched at **effort ≥ the builder's effort for that milestone** — keyed to
-the milestone's `Routing:` tag: `reasoning-heavy` → `xhigh`, `mechanical` → `high` — **never below the
-build it audits.** `verify-milestone` and `implement-feature` both apply this when they spawn verification.
+The invariant: **the independent check is never weaker than the build it audits** — measured in
+*capability*, not in effort-ladder position. The reason is `decisions/2026-07-01-model-capability-ledger.md`:
+independent verification exists to guard against self-justification, which a *more* capable builder
+exhibits *more* convincingly; an independent check weaker than the builder defeats that guard.
 
-The reason is `decisions/2026-07-01-model-capability-ledger.md`: independent verification exists to guard
-against self-justification, which a *more* capable builder exhibits *more* convincingly. An independent
-check weaker than the builder defeats that guard — so pinning the verifier below the builder on the
-hardest milestones is forbidden, not merely discouraged.
+**Under the current model pair, the invariant resolves to a flat `high`.** With the verifier on Fable 5
+and every build on Opus 5, Fable 5 at `high` already exceeds the Opus-5 builder at `xhigh` (Anthropic's
+Fable 5 effort guidance, 2026-08: Fable's lower effort tiers "often exceed `xhigh` performance on prior
+models") — so the verifier dispatches at `high` for every milestone, `reasoning-heavy` included, cutting
+verification wall-clock with no capability loss. The old effort-escalation form of this rule (dispatch
+the verifier at effort ≥ the builder's, keyed to the `Routing:` tag) **reactivates automatically whenever
+the verifier's model does not strictly exceed the build model** — same-model verification anywhere, or a
+future pair where the capability gap closes. The invariant is model-pair-relative; it is never retired.
 
 ## Notes
 
 - Effort options are model-dependent (Fable 5 supports `low`→`max`; Opus 5 covers the range keel routes, `low`→`xhigh`).
-- The dispatch mechanism is an **explicit per-invocation arg on the Agent/Task dispatch call** — the
-  override at the top of the resolution order, not a reliance on the dispatched skill's own frontmatter.
-  `implement-feature` sets an **effort** arg (the build model is Opus 5 either way); `punch-list` sets a
-  **model** arg (`claude-opus-5`) plus effort for its per-group workers.
+- Per-invocation overrides ride only mechanisms that carry them (Resolution order, harness reality check):
+  the Agent/Task dispatch carries **model only**; Workflow's `agent()` carries **model + effort** —
+  `punch-list`'s per-group workers get `claude-opus-5` at `low`/`medium` through the workflow's `agent()`
+  args; `implement-feature`'s `reasoning-heavy` → `xhigh` rides a Workflow dispatch or session effort,
+  never a nonexistent Agent-tool effort arg.
 - The platform already routes its built-in `Explore`/search subagents to Haiku; keel benefits from that
   without owning it (out of scope here).

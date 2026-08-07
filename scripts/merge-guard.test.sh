@@ -243,9 +243,11 @@ run_guard "$R5" 'gh pr merge 123 --auto'
 expect_decision "genesis-level + expired created (25h) → treated absent → ask" ask "verified-pin gate passed"
 write_mode "$R5" "$MODE_JSON"
 
-# Fail-closed row 2: plain gh pr merge (no --auto) stays ask even under a mode.
+# Fail-closed row 2: plain gh pr merge (no --auto) stays ask even under a mode —
+# and the reason is SHAPE-AWARE (an authorization exists; the ask names the
+# canonical bare shape rather than reading as a policy stop — harvest 2026-08-05 F4).
 run_guard "$R5" 'gh pr merge 123 --squash'
-expect_decision "valid mode, no --auto → ask even under mode" ask "verified-pin gate passed"
+expect_decision "valid mode, no --auto → ask even under mode, shape-aware reason" ask "not the canonical bare shape"
 
 # Under a mode, the other merge shapes and non-triggers are byte-for-byte today's table.
 run_guard "$R5" 'git merge main'

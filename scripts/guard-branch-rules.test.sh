@@ -154,15 +154,19 @@ run_rules "$R2" 'gh pr merge 123 --auto'
 expect_silent "expired mode file (25h) does not suppress the attended defer → exit 0"
 rm -f "$R2/.claude/keel-autonomy.json"
 
-# Plain gh pr merge (no --auto) under the marker → exit 2.
+# Plain gh pr merge (no --auto) under the marker → exit 2, with the SHAPE-AWARE
+# message (an authorization exists; the deny names the canonical shape, never the
+# generic policy line — harvest 2026-08-05 F4).
 run_rules "$R2" 'gh pr merge 123'
-expect_block "attended marker + plain gh pr merge (no --auto) → exit 2" "never merge"
+expect_block "attended marker + plain gh pr merge (no --auto) → exit 2, shape hint" "canonical bare shape"
 
-# Bundled / evaded --auto under the marker → exit 2 (only the bare shape defers).
+# Bundled / evaded --auto under the marker → exit 2, shape-aware message.
 run_rules "$R2" 'gh pr merge 123 --auto && echo done'
-expect_block "attended marker + chained --auto → exit 2 (only the bare shape defers)" "never merge"
+expect_block "attended marker + chained --auto → exit 2, shape hint (only the bare shape defers)" "canonical bare shape"
 run_rules "$R2" 'gh pr merge 123 --auto --admin'
-expect_block "attended marker + --admin alongside --auto → exit 2" "never merge"
+expect_block "attended marker + --admin alongside --auto → exit 2, shape hint" "canonical bare shape"
+run_rules "$R2" 'gh pr merge 123 --auto | tail -5'
+expect_block "attended marker + piped --auto → exit 2, shape hint (the field-observed shape)" "canonical bare shape"
 
 # Other merge shapes under the marker → exit 2 (only gh pr merge --auto defers).
 run_rules "$R2" 'git push origin main'
@@ -261,11 +265,12 @@ expect_silent "committed marker + --auto with a merge-method flag → exit 0 (de
 run_rules "$RCM" 'gh pr merge --auto 123'
 expect_silent "committed marker + --auto before the PR arg → exit 0 (defer)"
 
-# Plain / bundled / other merge shapes still exit 2 under the committed marker.
+# Plain / bundled / other merge shapes still exit 2 under the committed marker —
+# with the committed-marker shape hint (harvest 2026-08-05 F4).
 run_rules "$RCM" 'gh pr merge 123'
-expect_block "committed marker + plain gh pr merge (no --auto) → exit 2" "never merge"
+expect_block "committed marker + plain gh pr merge (no --auto) → exit 2, shape hint" "committed auto-merge marker is armed"
 run_rules "$RCM" 'gh pr merge 123 --auto && echo done'
-expect_block "committed marker + chained --auto → exit 2 (only the bare shape defers)" "never merge"
+expect_block "committed marker + chained --auto → exit 2, shape hint (only the bare shape defers)" "committed auto-merge marker is armed"
 run_rules "$RCM" 'git push origin main'
 expect_block "committed marker + git push <default> → exit 2" "never merge"
 run_rules "$RCM" 'git merge main'

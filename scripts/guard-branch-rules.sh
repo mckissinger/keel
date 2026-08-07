@@ -567,6 +567,22 @@ if [ -n "$SHAPE" ]; then
       exit 0 # merge-guard.sh owns the gate-pass/-fail + human-tap decision on this same call
     fi
   fi
+  # Shape-aware deny (harvest 2026-08-05 F4): when an authorization EXISTS but the
+  # command failed the closed-set whitelist, say which — a generic deny reads as a
+  # policy stop-point and costs a user round-trip. Every path still exits 2; this
+  # changes the message, never the decision.
+  if [ "$SHAPE" = "gh-pr-merge" ] && [ "$AUTO_MERGE" -eq 0 ]; then
+    SHAPE_HINT="emit exactly 'gh pr merge <pr> --auto' (merge-method flag --squash|--merge|--rebase allowed; no pipes, no chaining, no other flags, nothing else on the line), per the emission contract in scripts/merge-guard.sh's header."
+    if [ "$MODE_ACTIVE" -eq 1 ] || [ "$ATTENDED_ACTIVE" -eq 1 ]; then
+      echo "keel: an auto-merge authorization is active, but this command is not the canonical bare shape — $SHAPE_HINT" >&2
+      exit 2
+    fi
+    read_committed_marker
+    if [ "$COMMITTED_ACTIVE" -eq 1 ]; then
+      echo "keel: a committed auto-merge marker is armed, but this command is not the canonical bare shape — $SHAPE_HINT" >&2
+      exit 2
+    fi
+  fi
   echo "keel: build sessions never merge — merging is the user's decision, driven through land-feature with per-merge approval. Open the PR and stop there." >&2
   exit 2
 fi

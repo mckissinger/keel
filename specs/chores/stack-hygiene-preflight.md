@@ -36,3 +36,5 @@ work, out of scope here. Owner-authorized compressed implementation (fresh-conte
 Recorded at build time, re-run by the verifier: `bash scripts/check-neutral.sh`,
 `bash scripts/check-plan.sh`, `bash scripts/check-skill-frontmatter.sh`,
 `bash scripts/check-skill-anchors.sh`, plus all 13 script self-tests.
+
+verified: clean at bb7a1f2, 2026-08-07, via fresh-context verifier subagent — three consistency findings at d23b328 remediated, all three re-checked clean (evidence in PR #215)

@@ -7,10 +7,13 @@
 # When a conflict-only rebase (the land-feature cascade, the diamond finish, the
 # spec-foundation rebase rule) moves a verified branch's code tip, the pin is
 # self-invalidating: it names a SHA that is no longer the tip. The process rule
-# is: re-run the suite green, then re-pin with a carry-forward note. This script
-# mechanizes the SECOND half only — the edit + plan-only commit + postcondition
-# assertions. RE-RUNNING THE SUITES GREEN FIRST IS THE CALLER'S JOB: this script
-# invokes no test command, and running it never substitutes for the green re-run.
+# is: establish the green evidence (the PR's green required checks when code is
+# byte-identical outside plan paths — the CI-green rule — or a local suite run
+# when conflict resolution touched content), then re-pin with a carry-forward
+# note. This script mechanizes the SECOND half only — the edit + plan-only
+# commit + postcondition assertions. ESTABLISHING THE GREEN EVIDENCE FIRST IS
+# THE CALLER'S JOB: this script invokes no test command, and running it never
+# substitutes for that evidence.
 # (Hand-editing the line and amending has repeatedly raced itself — a stale amend
 # that never landed the edit; hence a script with postconditions.)
 #

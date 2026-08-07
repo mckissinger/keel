@@ -10,7 +10,7 @@ what plugin update consumes — tagging lapsed after `v1.22.0`.)
 
 - **plugin-version-1.25.0** — `.claude-plugin/plugin.json` `version` bumped `1.24.0` → `1.25.0`
   (minor: one new agent and new autonomy-doctrine capability, no removals, no breaking changes;
-  skill count stays 31; agent count 2 → 3). Since 1.24.0:
+  skill count stays 31; agent count 1 → 2). Since 1.24.0:
   - **judgment-oracle** (#217 plan, #218 implementation): new read-only `agents/oracle.md`
     (`claude-fable-5` at `high`, verifier-mirroring posture) — under an active autonomy mode the
     orchestrating session may consult it on *judgment* questions (spec-underdetermined choices

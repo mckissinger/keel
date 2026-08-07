@@ -1,0 +1,20 @@
+# judgment-oracle — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The consult contract's three boundary sentences, pinned so a later reword
+# cannot silently drop the authorization line, the cap, or the no-forward-motion
+# invariant. Each literal was confirmed present verbatim on ONE physical line in
+# its named file — check-skill-anchors.sh matches fixed strings (grep -F)
+# line-by-line. No negative anchors: pure addition, nothing retired.
+
+# --- the boundary: authorization is never consultable, never-auto list by reference ---
+skills/auto/SKILL.md	Authorization-shaped asks are never consultable: merge authority outside the sanctioned `--auto` path, scope widening, gate deferrals, and anything the never-auto list names (`decisions/2026-07-genesis-envelope.md` §(c), by reference — the list is not restated here).
+
+# --- the cap: 5 per feature, the would-be 6th is itself a stop-point ---
+skills/auto/SKILL.md	At most **5 consults per feature**; the would-be 6th consult is itself a stop-point that halts the run attended — that volume signals a spec too ambiguous to run unattended
+
+# --- the invariant, exact: a consult only ever proceeds on `answered` ---
+skills/auto/SKILL.md	A consult never converts a stop-point into forward motion; `answered` is the only disposition on which the run proceeds.
+
+# --- the oracle polices its own side of the line: refuses by reframing, never answers a "may I" ---
+agents/oracle.md	You return the disposition `reframed-as-authorization`, with the reframing stated

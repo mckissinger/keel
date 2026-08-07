@@ -267,10 +267,28 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
   file carrying the wrong target can't steer the suite. The ban governs the session's own reads; this
   governs test-setup code, so it neither duplicates nor weakens the ban.
 - **Known-failure-signature table.** Signature → classified remedy (e.g. "gateway 502 → a second
-  **unisolated** stack is running; stop it", "auth failure on seed → stale env file; re-derive it",
+  **unisolated** stack is running; run the stack-hygiene check to identify its owner — this
+  project's stray → stop it; foreign → surface it with its teardown command per the hygiene
+  output rule, never stop it yourself", "auth failure on seed → stale env file; re-derive it",
   "a permission denial on a `.env*` read → working as intended; run the recorded env name-check
   command instead"), consulted before any diagnosis and **accreting like the ⚠ scars**: every
   newly diagnosed substrate failure adds a row.
+- **Stack-hygiene check — the machine-wide enumeration.** The one **committed** command that
+  enumerates every running local-stack instance **on the machine** (the stack CLI's list-all form,
+  or the container runtime's ps grouped by project identity), classifies each against the identity
+  assignment above as **this project's or foreign**, and reports counts + identities — names only,
+  seconds. **This project's identity includes its Q13-derived instance identities** (the base
+  assignment plus every per-instance offset the Q13 contract derives): a proven-contract sibling
+  instance is this project's, never classified foreign — a committed command matching only the
+  base would surface a legitimate sweep sibling with a teardown command mid-run. Foreign stacks degrade this project's runs invisibly: the recorded scar is **five
+  stacks / 55 containers from other projects** driving a 40s-vs-19s suite variance that presented
+  as a hydration flake and stayed invisible until the user complained about machine load. Output
+  rule: the check **reports** each foreign stack with its named teardown command; it **never tears
+  one down** — a foreign stack is another project's state, so teardown is **offered attended**
+  (or recorded as a run-note when unattended), never automatic. **A foreign-stack finding is a
+  hygiene report, not a red substrate**: the check is green when it executes and reports — zero
+  foreign stacks is not its success condition, and only *this* project's substrate being unhealthy
+  is the preflight stop-point. Finalized at provision like the identity assignment.
 - **Fragile-gate preflight scripts.** Every runtime gate that carries a **remembered precondition** —
   an env export, a datastore reset/clean step, a required key-prefix — names a **committed, executable
   preflight script** that sets the precondition up, **asserts** it, and **fails loud** when it is
@@ -284,7 +302,8 @@ rests on and that no milestone owns. The build/verify verbs assert this contract
 
 **Authorship splits.** The structural answers — the singletons, the invocation path — are
 *derived* at spec time like every other question. The ports/identity assignment, the env
-re-derivation command, the env name-check command, the signature-table seeding, the duration
+re-derivation command, the env name-check command, the stack-hygiene command, the
+signature-table seeding, the duration
 budgets, and the proven-green health check are **finalized at provision** — a derived profile
 carrying "finalized at provision" placeholders for those is well-formed, not incomplete. Which singletons exist here feeds the
 spine's serialization rule (see "What stays in the methodology" below), and the flake

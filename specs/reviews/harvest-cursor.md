@@ -41,6 +41,18 @@ decided to stop here," never as "everything below is covered."
 | `-Users-michaelkissinger-Dev-Projects-ai-re-dev` | 1 (Jul 17) | `2026-07-18-harvest.md` |
 | `-Users-michaelkissinger-Dev-Projects-keel--claude-worktrees-keele-hardening-skill-aceb19` | 1 (Jul 17) | `2026-07-18-harvest.md` |
 | `-Users-michaelkissinger-Dev-Projects` | 1 (Jul 17) | `2026-07-18-harvest.md` |
+| `-Users-michaelkissinger-Dev-Projects-cre-list` | 9 (Jul 18–Aug 5) | `2026-08-05-harvest.md` |
+| `-Users-michaelkissinger-Dev-Projects-sessionsmith-ai-ai` | 23 (Jul 23–Aug 5) | `2026-08-05-harvest.md` |
+| `-Users-michaelkissinger-Dev-Projects-new-test-proj` | 9 (Jul 19–Aug 5) | `2026-08-05-harvest.md` |
+| `-Users-michaelkissinger-Dev-Projects-new-test-proj--claude-worktrees-agent-a4df37c356416ec25` | 8 (Jul 27–Aug 3) | `2026-08-05-harvest.md` |
+| `-Users-michaelkissinger-rv-rez` | 5 (Jul 31–Aug 6) | `2026-08-05-harvest.md` |
+
+**2026-08-05 run — watermark held at 2026-07-18 by rule.** Step-0 enumeration found 12 active
+sources / 89 sessions; the user scoped the run to four projects (the five rows above, 54
+sessions). The seven other enumerated sources (keel 12, test-proj-1 10, hermes 1, ai-re-dev 1,
+redev-test 3, jarvis-2-0 worktree 3, keel marketing worktree 5) had their miners stopped at the
+user's instruction and remain unmined above the floor; the watermark advances only when every
+enumerated source returns a miner report.
 
 ## Provenance — the path drift that motivated enumeration
 

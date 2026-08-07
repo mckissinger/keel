@@ -53,7 +53,7 @@ frontmatter defaults already carry most rows, and the per-invocation override th
 | `spec-foundation` | skill frontmatter (effort only) | `inherit` | `xhigh` |
 | `status` | skill frontmatter (effort only) | `inherit` | `high` |
 | `review-feature` | skill frontmatter (effort only) | `inherit` | `high` |
-| `verify-milestone` | skill frontmatter (effort only); dispatches the `verifier` subagent under the escalation rule | `inherit` | `high` |
+| `verify-milestone` | skill frontmatter (effort only); dispatches the `verifier` subagent under the verifier-strength invariant (flat `high` under the current pair) | `inherit` | `high` |
 | **Every other skill** (default rule below) | no pinned model | `inherit` | `high` |
 
 ## The default rule

@@ -2,7 +2,7 @@
 
 Two orchestration contracts every keel skill that spawns subagents or watches long-running
 checks applies. Owned here; the orchestration skills (`implement-feature`, `land-feature`,
-`verify-milestone`, `auto`) cite this file and do not restate it. Both contracts are paid-for:
+`verify-milestone`) cite this file and do not restate it. Both contracts are paid-for:
 the 2026-08-05 harvest recorded five lost-report incidents in two projects in one week (F6) and
 a recurring per-check babysitting pattern plus two false "ALL MERGED" reads (F8).
 

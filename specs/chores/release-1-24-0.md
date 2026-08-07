@@ -41,3 +41,5 @@ is what plugin update consumes.)
 `bash scripts/check-skill-frontmatter.sh`, `bash scripts/check-skill-anchors.sh`, plus all 13
 script self-tests. The released content itself landed verified with #213/#214/#215 (their batch
 pins) and is unaffected by a version-string change.
+
+verified: clean at bbf67db, 2026-08-07, via fresh-context verifier subagent — two findings at 3a8afbb (plugin.json em-dash re-encoding, incomplete delta record) remediated and re-checked clean (evidence in PR #216)

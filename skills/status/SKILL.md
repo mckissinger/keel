@@ -22,12 +22,13 @@ Answer "where are we, and what's next?" from ground truth. This is the one owner
 - Open PRs with base branch + CI state (`gh pr list`, `gh pr checks`).
 - Local branches vs `main`, worktrees, and dirty working-tree state.
 - The autonomy mode file / auto-merge marker — presence **and** expiry.
+- The provisioned-script sync manifest — `scripts/KEEL-SYNC`'s recorded version vs the installed keel plugin version (a missing manifest in a repo that carries copied keel scripts is itself a drift signal).
 
 ## Output contract — glance-first, in this order
 
 1. **The single next action, first.** One keel verb + its argument (`/verify-milestone <slug>`, `/spec-feature <slug>`, "merge PR #12") — the reader should be able to stop after line one.
 2. **Per-unit state.** Each in-scope feature/milestone classified into **exactly one** lifecycle state — specced / building / built-unverified / verified-pinned / PR-open / merged / feature-done-pending-review — with its evidence (the pin line, the PR number, the branch).
-3. **Blocked-on-user.** Unmerged green PRs, pending attended gates, expired or expiring markers — the things only the user can move.
+3. **Blocked-on-user.** Unmerged green PRs, pending attended gates, expired or expiring markers — the things only the user can move. A sync-manifest version behind the installed keel is reported here with its remedy: **one batch sync chore PR re-copying every script the manifest lists** — never left for serial per-script discovery at the next skill step that shells one.
 4. **Open deferrals.** Every open entry in `specs/deferrals/` — one line each: slug, one-clause summary, and whether its reopen trigger has arrived (**triggered** entries listed first, since a triggered deferral is a candidate for the next action in line one). Draining the ledger must not depend on the operator remembering it exists, so this section appears even when nothing is triggered — as a bare count plus slugs when the list is long.
 5. **Open flakes.** Every open entry in `specs/flakes/` — one line each: slug, the attached spec-or-test path, its measured reproduction rate and hit count — **ordered highest hit count first** (the escalation-relevant order, mirroring how the deferrals section surfaces triggered entries first), in the same read-only shape as the deferrals section. This is a sibling section, distinct from the deferrals one — a flake and a deferral are different artifacts. Like deferrals, it appears even when the list is empty-or-short, as a bare count.
 

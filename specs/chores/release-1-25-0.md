@@ -33,3 +33,5 @@ what plugin update consumes — tagging lapsed after `v1.22.0`.)
 `bash scripts/check-skill-frontmatter.sh`, `bash scripts/check-skill-anchors.sh`, plus the script
 self-tests. The released content itself landed verified with #218 (its milestone pin) and is
 unaffected by a version-string change.
+
+verified: clean at fba230e, 2026-08-07, via fresh-context verifier subagent — version line is the sole plugin.json change (no re-encoding), diff is exactly the two chore files, delta record complete and accurate vs 7f393d5..origin/main (#217/#218 only; one finding at b4a72b6 — agent count misstated 2 → 3 — remediated to 1 → 2 and re-checked clean), no guard/hook/frontmatter deltas, marketplace.json unchanged, plugin validate --strict + 4 check scripts + all 13 script self-tests green (evidence in PR)

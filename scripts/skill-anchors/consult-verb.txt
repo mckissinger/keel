@@ -1,0 +1,17 @@
+# consult-verb — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The mechanism/policy ownership split, pinned from both sides, plus the
+# attended boundary sentence that survives in every posture. Each literal was
+# confirmed present verbatim on ONE physical line in its named file —
+# check-skill-anchors.sh matches fixed strings (grep -F) line-by-line. No
+# negative anchors: pure addition, nothing retired.
+
+# --- the boundary: a consult is never how an authorization question gets answered ---
+skills/consult/SKILL.md	An oracle consult is never how an authorization question gets answered — the oracle recommends on judgment; authorization is the human's, mode or no mode.
+
+# --- the split, consult side: policy belongs to auto's contract, cited never restated ---
+skills/consult/SKILL.md	all belong to the consult contract in `skills/auto/SKILL.md` — cited here by reference, never restated
+
+# --- the split, auto side: the mechanism is the consult verb's, the policy is the contract's ---
+skills/auto/SKILL.md	is owned by `skills/consult/SKILL.md` and is used here unchanged; what this contract owns is the **policy** below

@@ -1,0 +1,51 @@
+# Chore batch — release 1.26.0
+
+Minor release surfacing everything merged since the 1.25.0 release commit (#219) to the installed
+runtime — the consult-verb change (plan #220, implementation #221, the milestone carrying its own
+verified pin at ae1e969). Installed plugins report `1.25.0`; the version must move before
+`claude plugin update` can pick these up. (The version string, not a git tag, is what plugin
+update consumes — tagging lapsed after `v1.22.0`.)
+
+## Applied items
+
+- **plugin-version-1.26.0** — `.claude-plugin/plugin.json` `version` bumped `1.25.0` → `1.26.0`
+  (minor: one new skill and a broadened consult capability, no removals, no breaking changes;
+  skill count 31 → 32; agent count unchanged at 2). Since 1.25.0:
+  - **consult-verb** (#220 plan, #221 implementation): new `skills/consult/SKILL.md` — the
+    attended consult verb owning the consult **mechanism** (distill one judgment question into a
+    brief of question + viable options + relevant paths, dispatch `agents/oracle.md`, report
+    recommendation + rationale + disposition), with a worked brief, attended semantics (no cap;
+    `uncertain` and `reframed-as-authorization` halt nothing; decision tail offers a `decisions/`
+    record and never auto-writes), and model-invocability (no `disable-model-invocation`).
+    `agents/oracle.md` generalized so no sentence presumes a mode-only dispatcher: its
+    `name`/`tools`/`disallowedTools`/`model`/`effort` frontmatter lines are byte-unchanged (only
+    `description:` moved), and every rule survives — the three disposition values, the
+    recommendation/rationale/disposition report shape, the one-question-per-dispatch rule, the
+    read-only rules, and the anchored refusal sentence. Two of those rules were **reworded**
+    while keeping their meaning, so the record is exact: the one-question bullet now says "the
+    viable options the consulting session considered" (was "the orchestrator considered"), and
+    the Report-shape section's closing sentence now attributes disposition handling to whichever
+    dispatcher applies (was the consult contract alone). `skills/auto/SKILL.md`'s consult
+    contract changed in exactly two ways: the mechanism-owner citation sentence, and the
+    mode-gated bullet's now-false attended closing
+    clause (every policy clause and all four judgment-oracle anchors intact).
+    `skills/debug/SKILL.md` gained one pointer (undiscriminated competing root causes are a
+    consultable judgment question). `references/model-routing.md`: `consult` in the default list,
+    plus the drift repair — `arm-auto-merge` and `prep-auto-merge` gained table rows and the
+    coverage-audit count moved 29 → 32, so every skill on disk is again covered by the table or
+    the list. Anchor set `scripts/skill-anchors/consult-verb.txt`; one builder uncertainty under
+    `specs/uncertainties/consult-verb/`.
+  - Guard/hook semantics deltas since `1.25.0`, for the record: none — no guard script, gate,
+    preflight, or never-auto list changed (#221's no-gate-change invariant, verified in its pin).
+    The only skill frontmatter change is the new `consult` skill's own (which pins no `model:`
+    or `effort:`, per its default-list routing placement).
+  `.claude-plugin/marketplace.json` carries no `version` field, so it is unchanged.
+
+## Combined checks
+
+`claude plugin validate --strict .`, `bash scripts/check-neutral.sh`, `bash scripts/check-plan.sh`,
+`bash scripts/check-skill-frontmatter.sh`, `bash scripts/check-skill-anchors.sh`, plus the script
+self-tests. The released content itself landed verified with #221 (its milestone pin) and is
+unaffected by a version-string change.
+
+verified: clean at 3620051, 2026-08-07, via fresh-context verifier subagent — version line is the sole plugin.json change (byte-compared against origin/main with the version line excluded), diff is exactly the two chore files, delta record complete and accurate vs 7053ba9..origin/main (#220/#221 only; skill count 31 → 32 and agent count 2 confirmed by git ls-tree at both revisions; milestone pin ae1e969 present; oracle frontmatter freeze, auto's two-way change, and all four judgment-oracle anchors independently confirmed; routing enumeration shows all 32 skills covered, none doubled), no guard/hook deltas, marketplace.json unchanged, plugin validate --strict + 4 check scripts + all 13 script self-tests (486 assertions, 0 failed) green at this SHA. One finding at 5186356 — the oracle bullet claimed sentences "unchanged" when two rules were reworded-but-preserved — remediated at 9053144 and re-checked clean; a cosmetic over-width line was rewrapped here with the full suite re-run after (evidence in PR)

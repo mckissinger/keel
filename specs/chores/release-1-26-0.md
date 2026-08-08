@@ -17,10 +17,15 @@ update consumes — tagging lapsed after `v1.22.0`.)
     recommendation + rationale + disposition), with a worked brief, attended semantics (no cap;
     `uncertain` and `reframed-as-authorization` halt nothing; decision tail offers a `decisions/`
     record and never auto-writes), and model-invocability (no `disable-model-invocation`).
-    `agents/oracle.md` generalized so no sentence presumes a mode-only dispatcher — its
-    `name`/`tools`/`disallowedTools`/`model`/`effort` frontmatter lines, report shape, three
-    dispositions, one-question rule, read-only rules, and anchored refusal sentence all
-    unchanged. `skills/auto/SKILL.md`'s consult contract changed in exactly two ways: the
+    `agents/oracle.md` generalized so no sentence presumes a mode-only dispatcher: its
+    `name`/`tools`/`disallowedTools`/`model`/`effort` frontmatter lines are byte-unchanged (only
+    `description:` moved), and every rule survives — the three disposition values, the
+    recommendation/rationale/disposition report shape, the one-question-per-dispatch rule, the
+    read-only rules, and the anchored refusal sentence. Two of those rules were **reworded**
+    while keeping their meaning, so the record is exact: the one-question bullet now says "the
+    viable options the consulting session considered" (was "the orchestrator considered"), and
+    the Report-shape section's closing sentence now attributes disposition handling to whichever
+    dispatcher applies (was the consult contract alone). `skills/auto/SKILL.md`'s consult contract changed in exactly two ways: the
     mechanism-owner citation sentence, and the mode-gated bullet's now-false attended closing
     clause (every policy clause and all four judgment-oracle anchors intact).
     `skills/debug/SKILL.md` gained one pointer (undiscriminated competing root causes are a

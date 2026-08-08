@@ -10,8 +10,10 @@
 # --- the boundary: a consult is never how an authorization question gets answered ---
 skills/consult/SKILL.md	An oracle consult is never how an authorization question gets answered — the oracle recommends on judgment; authorization is the human's, mode or no mode.
 
-# --- the split, consult side: policy belongs to auto's contract, cited never restated ---
-skills/consult/SKILL.md	all belong to the consult contract in `skills/auto/SKILL.md` — cited here by reference, never restated
+# --- the split, consult side: the WHOLE policy enumeration belongs to auto's contract ---
+# Pins the enumeration too, not just the trailing rule — a reword dropping the cap or the
+# halt rules from the owned-there list would otherwise still pass the lint.
+skills/consult/SKILL.md	Mode-gating, the judgment-only boundary as a run rule, the per-feature cap, the mode's disposition-halt rules, and the ledger records all belong to the consult contract in `skills/auto/SKILL.md` — cited here by reference, never restated
 
 # --- the split, auto side: the mechanism is the consult verb's, the policy is the contract's ---
 skills/auto/SKILL.md	is owned by `skills/consult/SKILL.md` and is used here unchanged; what this contract owns is the **policy** below

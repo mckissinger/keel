@@ -25,8 +25,9 @@ update consumes — tagging lapsed after `v1.22.0`.)
     while keeping their meaning, so the record is exact: the one-question bullet now says "the
     viable options the consulting session considered" (was "the orchestrator considered"), and
     the Report-shape section's closing sentence now attributes disposition handling to whichever
-    dispatcher applies (was the consult contract alone). `skills/auto/SKILL.md`'s consult contract changed in exactly two ways: the
-    mechanism-owner citation sentence, and the mode-gated bullet's now-false attended closing
+    dispatcher applies (was the consult contract alone). `skills/auto/SKILL.md`'s consult
+    contract changed in exactly two ways: the mechanism-owner citation sentence, and the
+    mode-gated bullet's now-false attended closing
     clause (every policy clause and all four judgment-oracle anchors intact).
     `skills/debug/SKILL.md` gained one pointer (undiscriminated competing root causes are a
     consultable judgment question). `references/model-routing.md`: `consult` in the default list,

@@ -20,9 +20,15 @@ and the 08-01/08-03 amendments); none of the four product repos records its own 
 pin-date-vs-timeline is the only attribution available, and a pin can lag its build by a day
 (boundary smear in both directions).
 
-**Eras:** pre-07-25 = Sonnet builds / Opus verifier (three-tier routing). 07-25→07-31 = Opus 5
+**Eras (corrected 2026-08-13 after owner review):** 06-24→07-21 = **unrouted** — no routing
+policy existed before `decisions/2026-07-21-model-effort-routing.md`, so builds ran the session's
+model, which no repo records; the owner's recollection is **Opus 4.8**, and nothing contradicts
+it. 07-21→07-24 = the three-day routed sliver: Sonnet-alias mechanical builds, Opus-alias
+(= Opus 4.8; Opus 5 did not exist yet) reasoning-heavy builds and verifier. 07-25→07-31 = Opus 5
 builds / Fable 5 verifier. 08-01→08-02 = Opus 4.8 builds / Fable 5. 08-03→now = Opus 5 builds /
-Fable 5.
+Fable 5. The pre-07-25 verifier was the Opus alias (= Opus 4.8) throughout — a strictly duller
+examiner than Fable 5, so the pre-era remediation rate is a floor measured with a different
+instrument.
 
 ## Results
 
@@ -31,7 +37,7 @@ finding-remediation round before the clean verdict):
 
 | era | builder | verifier | pins | remediated | rate |
 |---|---|---|---|---|---|
-| pre-07-25 | Sonnet (mech) | Opus | 288 | 87 | 30% |
+| pre-07-25 | session model (owner recalls Opus 4.8; unrecorded) | Opus 4.8 | 288 | 87 | 30% |
 | 07-25 → 07-31 | Opus 5 | Fable 5 | 51 | 23 | **45%** |
 | 08-01 → 08-02 | Opus 4.8 | Fable 5 | 12 | 0 | **0%** |
 | 08-03 → now | Opus 5 | Fable 5 | 62 | 33 | **53%** |
@@ -59,8 +65,12 @@ populations are comparable*.
    reasoning-heavy tags there sit on CLI/skill/prose milestones, not the heaviest work. A wave of
    small cleanup milestones right after a big feature wave would read exactly like this.
 2. **Verifier and builder switched together on 07-25**, so pre-era's 30% is measured by a weaker
-   (Opus) verifier and is not comparable to any Fable-verified row. The only clean builder-only
-   contrast is Opus-5-v1 (45%, n=51) vs Opus-4.8 (0%, n=12) — same verifier, same process.
+   (Opus 4.8) verifier and is not comparable to any Fable-verified row — a meaningful share of
+   the 30% → 45–53% jump is plausibly the sharper examiner, not the builder. The only clean
+   builder-only contrast is Opus-5-v1 (45%, n=51) vs Opus-4.8 (0%, n=12) — same verifier, same
+   process. Per-project practice wobbled (SessionSmith pins record "Opus" verifiers 07-27→08-04;
+   BidLevel records Fable dispatched below the escalation floor by user instruction), but each
+   project's verifier was constant *across* that v1-vs-4.8 contrast, so the contrast survives.
 3. **Process strictness tightened inside Opus-5-v2** (verification-economy #213/#214 landed
    08-06; letter-level diff conditions and adversarial plan passes became routine), so the 53%
    row overstates any builder effect. CRELaunch's o5v2 rate (7/8) is dominated by one
@@ -72,13 +82,16 @@ populations are comparable*.
 
 ## Verdict
 
-**Suggestive, not conclusive — but the suggestion runs the owner's way.** Under identical
-verifier and process, Opus-5 windows show 45–53% remediation against a 0%-in-12 Opus-4.8 window
-whose cleanliness is statistically unlikely to be chance, yet whose sample is too small and
-mix-skewed to settle the question. The retrospective cannot fully separate builder capability
-from task mix. The decisive instrument is the **paired bake-off**: build the same milestone on
-both models in parallel worktrees off the same base, verify each with the same Fable-5 dispatch,
-compare first-pass findings — the within-milestone pairing removes the mix confound entirely.
+**Suggestive, not conclusive — but the suggestion runs the owner's way, and the corrected era
+labels strengthen it.** With the pre-era read as owner-recalled Opus-4.8 builds under a lenient
+Opus-4.8 verifier, the shape of the data is: Opus 4.8 built June–July at a 30%-floor remediation
+rate under the dull instrument and went 12/12 clean in August under the sharp one, while Opus 5
+runs 45–53% under the same sharp instrument. Verifier sharpness explains the pre-vs-post jump
+but cannot explain the within-August 45%-vs-0% gap, whose examiner was constant; only the small,
+mix-skewed 4.8 sample keeps that gap from being decisive. The decisive instrument is the
+**paired bake-off**: build the same milestone on both models in parallel worktrees off the same
+base, verify each with the same Fable-5 dispatch, compare first-pass findings — the
+within-milestone pairing removes the mix confound entirely.
 
 Raw per-pin data: session scratchpad `mine-*.tsv` (BidLevel 57 rows, CRELaunch 103, Relay 76,
 SessionSmith 50, keel 128); regenerable from the repos' specs + git history by the same method.

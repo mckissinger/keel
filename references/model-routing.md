@@ -63,11 +63,11 @@ frontmatter defaults already carry most rows, and the per-invocation override th
 
 **Any skill without an explicit row above runs `inherit`, effort `high`.** The skills covered by this
 rule — enumerated here so coverage is auditable, never "covered by omission":
-`adopt`, `app-design-directions`, `auto-merge`, `consult`, `demo`, `gtm`, `harden`, `harvest`, `kickoff`,
-`logo`, `marketing-site`, `measure`, `product-video`, `provision`, `run-growth`, `spec-campaign`,
-`test-health`.
+`adopt`, `app-design-directions`, `auto-merge`, `babysit-prs`, `consult`, `demo`, `gtm`, `harden`,
+`harvest`, `kickoff`, `logo`, `marketing-site`, `measure`, `product-video`, `provision`, `run-growth`,
+`spec-campaign`, `test-health`.
 
-A reader can `ls skills/` and confirm every one of the 32 skills is either in the table above or in this
+A reader can `ls skills/` and confirm every one of the 33 skills is either in the table above or in this
 default list, and the `verifier` and `oracle` agents are in the table — nothing is treated by omission.
 (The `consult` skill pins no `effort:` in its frontmatter, matching every other default-list skill; the
 judgment it dispatches runs at the `oracle` agent's own pinned `claude-fable-5`/`high`.)

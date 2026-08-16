@@ -1,0 +1,32 @@
+# babysit-prs — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The four sentences the milestone spec names as load-bearing
+# (specs/milestones/babysit-prs.md, anchor-file condition), plus the
+# automates-waiting boundary and the two dispatch pointers. Each literal was
+# confirmed present verbatim on ONE physical line in its named file —
+# check-skill-anchors.sh matches fixed strings (grep -F) line-by-line.
+
+# --- no marker, no merge: the workflow has no merge path without a standing authorization ---
+skills/babysit-prs/SKILL.md	with neither an active mode nor a valid committed marker, the workflow contains no merge invocation on any path — it prepares and holds.
+
+# --- never squash a stacked PR (the descendant-pin-orphaning scar, carried into drain) ---
+skills/babysit-prs/SKILL.md	never squash a stacked PR — with retarget-before-delete and close+reopen, per `land-feature`.
+
+# --- red is report-only: no re-fire, no retry, never a fix ---
+skills/babysit-prs/SKILL.md	the PR drops from the loop with the failing check named — no close/reopen re-fire, no retry, never a fix.
+
+# --- the babysitter never edits code ---
+skills/babysit-prs/SKILL.md	its only writes are `scripts/repin.sh`'s plan-only pin commits and branch updates via `gh pr update-branch`.
+
+# --- the headline boundary: waiting is automated, authorization is not ---
+skills/babysit-prs/SKILL.md	The babysitter never merges without a standing human authorization: an active mode or the committed marker.
+
+# --- the queue is never inferred from GitHub review state ---
+skills/babysit-prs/SKILL.md	the workflow never infers landing approval from GitHub review state alone — review approval and green checks are necessary signals, never a sufficient derivation.
+
+# --- land-feature stays the doctrine owner; the pointer executes, never restates ---
+skills/land-feature/SKILL.md	The `babysit-prs` verb runs this per-sibling cycle as a background loop (watch → update → CI-green re-pin → drain under a standing authorization, or hold everything prepared for the user's taps), executing these rules unchanged.
+
+# --- implement-feature's run-through may dispatch the workflow; authorization unchanged ---
+skills/implement-feature/SKILL.md	The run may carry this landing phase via the `babysit-prs` workflow (a doctrine dispatch — the same mechanics and the same committed-marker authorization, run as a background loop).

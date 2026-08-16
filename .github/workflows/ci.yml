@@ -94,7 +94,16 @@ jobs:
       - name: skill anchors lint (this repo)
         run: bash scripts/check-skill-anchors.sh
 
-      # Plugin manifest/structure validation via the Claude Code CLI.
+      # Plugin manifest/structure validation via the Claude Code CLI. The npm
+      # download cache is keyed per-run with a restore-keys prefix fallback:
+      # every run restores the most recent cache and saves a fresh one, so the
+      # cache tracks the CLI's latest version instead of pinning a stale tarball.
+      - name: cache npm downloads (Claude Code CLI)
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-claude-cli-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: npm-claude-cli-${{ runner.os }}-
       - name: install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code
       - name: plugin validate

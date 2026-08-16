@@ -50,7 +50,7 @@ const oriented = await agent(
   `   - committed marker: does .claude/keel-auto-merge.json exist ON THE REMOTE DEFAULT BRANCH (git show origin/<default>:.claude/keel-auto-merge.json) with scope "project"? If yes → "committed-marker".\n` +
   `   - mode: the dispatcher ${dispatcherClaimsMode ? 'DECLARED an active keel:auto mode — corroborate it (an active run ledger under specs/runs/); if corroborated → "mode"' : 'did NOT declare a mode — "mode" is not available to this run'}.\n` +
   `   - neither verified → "none". When authorization is "none" this run is HOLD MODE: it will merge NOTHING.\n` +
-  `2. QUEUE — ${explicitQueue ? `exactly these PR numbers, no additions: ${JSON.stringify(explicitQueue)}` : `no explicit list was given: in hold mode, every open non-draft PR; under the committed marker, its standing scope (gate-passing open non-draft PRs)`}. Never infer landing approval from GitHub review state alone — an explicit list or the marker's standing scope are the only queue sources. For each PR record head/base refs, the spec file carrying its verified: pin (or "plan-only" for a specs/design/decisions/deferrals-only diff), and stackDepth (walk each open PR's base back to the default branch).\n` +
+  `2. QUEUE — ${explicitQueue ? `exactly these PR numbers, no additions: ${JSON.stringify(explicitQueue)}` : `no explicit list was given: in hold mode, every open non-draft PR; under the committed marker, its standing scope (gate-passing open non-draft PRs); under a mode, a derived queue is NOT permitted — a mode run must name its queue explicitly, so report the queue you would have derived but expect the run to fall back to hold`}. Never infer landing approval from GitHub review state alone — an explicit list or the marker's standing scope are the only queue sources. For each PR record head/base refs, the spec file carrying its verified: pin (or "plan-only" for a specs/design/decisions/deferrals-only diff), and stackDepth (walk each open PR's base back to the default branch).\n` +
   `3. WAIT WINDOW — size it from this repo's OBSERVED CI durations: read the last ~10 completed runs (gh run list --json), take the slowest required-check duration, add headroom (~2x). Never use a hard-coded default.\n` +
   `Return per the schema.`,
   { label: 'orient', phase: 'Orient', schema: ORIENT_SCHEMA }
@@ -58,11 +58,16 @@ const oriented = await agent(
 if (!oriented || !oriented.queue || !oriented.queue.length) {
   return { report: 'Nothing to babysit — queue is empty.', merged: [], ready: [], dropped: [] }
 }
-const auth = oriented.authorization || 'none'
+let auth = oriented.authorization || 'none'
+// Deterministic gates the agent's returned enum cannot override: "mode" requires the
+// dispatcher to have declared it (the agent only corroborates, never originates), and a
+// mode run with no explicit queue falls back to hold — the spec's drain-queue rule
+// (explicit list or committed-marker standing scope; a mode never drains a derived queue).
+if (auth === 'mode' && !dispatcherClaimsMode) auth = 'none'
+if (auth === 'mode' && !explicitQueue) { log('mode run with no explicit queue — falling back to HOLD (drain requires a named queue)'); auth = 'none' }
 const drain = auth === 'mode' || auth === 'committed-marker'
 // Bottom-up: ancestors merge before descendants; equal depth = independent siblings.
 const queue = [...oriented.queue].sort((a, b) => (a.stackDepth || 0) - (b.stackDepth || 0))
-const fullStackQueue = !explicitQueue // a derived queue is the full open set; an explicit list may be a prefix of a stack
 log(`queue=[${queue.map(q => q.pr).join(', ')}] authorization=${auth} (${drain ? 'DRAIN' : 'HOLD'} mode) window=${oriented.watchWindowSeconds}s`)
 
 phase('Cycle')
@@ -82,9 +87,7 @@ for (let round = 0; round < MAX_ROUNDS && state.pending.length; round++) {
     `3. OUT-OF-DATE branch (base moved): run 'gh pr update-branch <pr>'. Then classify 'git diff <old-pinned-sha> <new-tip>' against the plan-path rule (specs/**, design/**, decisions/**, deferrals/** minus the carve-outs scripts/check-verified-pin.sh names): diff empty outside plan paths → wait for the re-fired checks (next round if the window is spent) and on green run 'scripts/repin.sh <spec-path> "CI-green at new tip"' — repin.sh refuses dirty trees and first pins by contract; establish the green evidence BEFORE invoking it (its header: evidence is the caller's job). Diff NOT plan-only, update conflicts, or update fails → DROP with the reason. Never resolve conflicts, never write a first pin. A "plan-only" PR (no pin) needs no re-pin — just re-green.\n` +
     (drain
       ? `4. MERGE (drain): for each green, up-to-date, gate-passing PR whose open ancestors are all merged, emit the merge as ITS OWN Bash call, bare and un-chained per scripts/merge-guard.sh's emission contract: exactly 'gh pr merge <pr> --auto --squash' for a PR with stackDepth 0 and no open descendant, or 'gh pr merge <pr> --auto --merge' for a stacked PR — NEVER squash a PR that has (or had) open descendants: squashing rewrites the SHA their verified: pins reference. Never bundle the merge with &&, ;, |, $(), or any other token — and NEVER --delete-branch on the merge (the closed shape excludes it). After a stacked parent merges: retarget each open descendant to the default branch ('gh pr edit <child> --base <default>') BEFORE any branch deletion, then 'gh pr close <child> && gh pr reopen <child>' to re-fire CI. ` +
-        (fullStackQueue
-          ? `Branch deletion: this queue is the full remaining open set, so you MAY delete a merged PR's head branch AFTER no open PR is based on it.`
-          : `Branch deletion: this queue is an EXPLICIT LIST that may be a prefix of a stack — DELETE NO BRANCHES (decoupled post-wave step).`) + `\n`
+        `Branch deletion: before deleting ANY branch, verify via a fresh 'gh pr list' (including drafts) that this queue equals the FULL remaining open PR set; if it does not — an explicit list may be a prefix of a stack, and a marker-scope queue excludes drafts — DELETE NO BRANCHES (deletion is a decoupled post-wave step). Even then, never delete a branch any open PR is based on.\n`
       : `4. HOLD: a green, up-to-date, gate-passing PR goes in "ready". There is NO merge step in hold mode.\n`) +
     `5. Terminal for this round: every queue PR is merged, ready, dropped, or pending. Return per the schema (carry forward the already-merged/ready/dropped lists, updated).`,
     { label: `cycle:r${round + 1}`, phase: 'Cycle', schema: CYCLE_SCHEMA }

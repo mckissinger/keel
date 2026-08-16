@@ -23,6 +23,12 @@ ad hoc fix. An audit that "quickly fixes" a fixture has left its lane.
 - **Per-suite durations vs the profile's Q12 budgets**
   (`references/profile-interface.md`) — which suites have drifted past what they're
   supposed to cost.
+- **Duration growth vs the prior audit** — compare each suite's duration against the
+  number the previous dated audit note under `specs/reviews/` recorded; growth past
+  **1.5×** since the last audit is a finding even while still inside the Q12 budget.
+  Budgets catch breaches; this probe catches the trend before the breach — the
+  2026-08-16 efficiency review found suites growing 3–7× in one month with every
+  individual reading in-budget. First audit in a project records the baseline.
 - **Flake evidence**: retry configuration, serialized workers, shared fixtures — the
   configuration shapes that mask or manufacture flakes.
 - **Hygiene against each rule of §8 of the shared rules**

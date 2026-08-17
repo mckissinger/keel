@@ -15,6 +15,7 @@ references/profile-interface.md	The pin gate, the plan lint, and the security re
 
 # --- the classifier is canonical and fail-closed, never duplicated ---
 references/profile-interface.md	`scripts/check-verified-pin.sh --plan-only-check` — fail-closed: a classifier error runs everything, never skips
+references/profile-interface.md	early-exit on plan-only diffs via the project's copied canonical classifier
 
 # --- the mode's own fail-closed contract, pinned at the script ---
 scripts/check-verified-pin.sh	#     missing merge base (shallow clone), or an erroring diff exits non-zero and

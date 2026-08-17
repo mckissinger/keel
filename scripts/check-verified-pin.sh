@@ -37,11 +37,24 @@
 # Usage:
 #   BASE_REF=origin/main scripts/check-verified-pin.sh [HEAD_REF]
 #   BASE_REF=<parent-branch> ...   # for a stacked PR, check against its base
+#   BASE_REF=origin/main scripts/check-verified-pin.sh --plan-only-check [HEAD_REF]
+#     Classification mode: answers exactly one question — is the diff base..head
+#     plan-only under is_plan_path (both carve-out directions included)? Exit 0 =
+#     plan-only; non-zero = not plan-only (first non-plan file named) OR the
+#     classification could not be computed. FAIL-CLOSED: an unresolvable ref, a
+#     missing merge base (shallow clone), or an erroring diff exits non-zero and
+#     never reads as plan-only — a failed diff must not become a CI fast-path skip.
+#     The mode never reads `verified:` lines and never applies the bootstrap
+#     window (classification has no business reading pins, and a fast-path skip
+#     must not widen during bootstrap). CI suite jobs gate their early-exit on
+#     this mode; the pin gate, plan lint, and security review never do.
 #
 # Exit 0 = pass (or exempt). Non-zero = fail, with the reason on stderr.
 
 set -euo pipefail
 
+MODE="gate"
+if [ "${1:-}" = "--plan-only-check" ]; then MODE="plan-only-check"; shift; fi
 BASE_REF="${BASE_REF:-origin/main}"
 HEAD_REF="${1:-HEAD}"
 
@@ -102,6 +115,23 @@ git merge-base "$BASE_REF" "$HEAD_REF" >/dev/null 2>&1 \
 changed=()
 while IFS= read -r f; do [ -n "$f" ] && changed+=("$f"); done \
   < <(git diff --name-only "$BASE_REF"..."$HEAD_REF")
+
+# 1.5. Classification mode exits here — after the shared fail-closed prelude (-1/0/0.5),
+#      before every gate-only concern (exemption, bootstrap window, pins, drift). An
+#      unresolvable ref or missing merge base already failed above and can never read
+#      as plan-only; a genuinely empty diff is plan-only by definition.
+if [ "$MODE" = "plan-only-check" ]; then
+  if [ ${#changed[@]} -eq 0 ]; then
+    echo "plan-only-check: no changes vs $BASE_REF — plan-only"
+    exit 0
+  fi
+  for f in "${changed[@]}"; do
+    is_plan_path "$f" \
+      || fail "not plan-only — '$f' is a code path (plan-only-check)"
+  done
+  echo "plan-only-check: all ${#changed[@]} changed file(s) are plan paths — plan-only"
+  exit 0
+fi
 
 if [ ${#changed[@]} -eq 0 ]; then
   echo "verified-pin: no changes vs $BASE_REF — pass"

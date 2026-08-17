@@ -50,48 +50,82 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Plan-only fast path (references/profile-interface.md Q11): a PR whose diff
+      # touches only plan paths cannot affect these shell self-tests, so the remaining
+      # steps early-exit. The step ABSORBS the classifier's exit code into an output —
+      # a code diff (or a fail-closed classifier error) sets plan_only=false and NEVER
+      # fails this step; the fail direction of an error is "run everything". The job
+      # itself always runs and reports: never a job-level `if:`, never a `paths:`
+      # filter on a required check (a required check that never reports wedges the
+      # merge). pull_request only — a push to main has no PR diff to classify, and the
+      # empty output makes every step run exactly as before.
+      - name: classify diff (plan-only fast path)
+        id: classify
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          if bash scripts/check-verified-pin.sh --plan-only-check HEAD; then
+            echo "plan_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "plan_only=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # The stack-neutral guard for keel's own corpus + its self-test.
       - name: neutrality guard self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-neutral.test.sh
       - name: neutrality guard (this repo)
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-neutral.sh
 
       # The git hooks keel ships to projects — prove they still behave.
       - name: session bootstrap hook self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/session-bootstrap.test.sh
       - name: merge guard hook self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/merge-guard.test.sh
       - name: branch-rules guard hook self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/guard-branch-rules.test.sh
       - name: attended-marker cross-script parity self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/attended-marker-parity.test.sh
 
       # The auto-run entry preflight keel ships to projects — prove it, incl. the
       # allow_auto_merge assertion (check d).
       - name: auto preflight self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-auto-preflight.test.sh
 
       # The branch-protection assertion keel:arm-auto-merge + preflight share — prove
       # it (wired with prep-auto-merge; keel runs tests by NAME, not a glob, so an
       # unwired test never runs — this is the floor this repo's arming trusts).
       - name: branch-protection assertion self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-branch-protection.test.sh
       # The prep-auto-merge scaffold artifacts — the security-review template stays a
       # valid review job with its SHA in lockstep with keel's own workflow, and the
       # generated names-only check-contract is certified.
       - name: prep-auto-merge scaffold self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-prep-auto-merge.test.sh
 
       # The skill-frontmatter lint keel ships to projects — prove it, and lint keel's own skills.
       - name: skill frontmatter lint self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-skill-frontmatter.test.sh
       - name: skill frontmatter lint (this repo)
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-skill-frontmatter.sh
 
       # The prose-anchor lint — load-bearing skill/agent sentences stay present.
       - name: skill anchors lint self-test
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-skill-anchors.test.sh
       - name: skill anchors lint (this repo)
+        if: steps.classify.outputs.plan_only != 'true'
         run: bash scripts/check-skill-anchors.sh
 
       # Plugin manifest/structure validation via the Claude Code CLI. The npm
@@ -99,14 +133,17 @@ jobs:
       # every run restores the most recent cache and saves a fresh one, so the
       # cache tracks the CLI's latest version instead of pinning a stale tarball.
       - name: cache npm downloads (Claude Code CLI)
+        if: steps.classify.outputs.plan_only != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.npm
           key: npm-claude-cli-${{ runner.os }}-${{ github.run_id }}
           restore-keys: npm-claude-cli-${{ runner.os }}-
       - name: install Claude Code CLI
+        if: steps.classify.outputs.plan_only != 'true'
         run: npm install -g @anthropic-ai/claude-code
       - name: plugin validate
+        if: steps.classify.outputs.plan_only != 'true'
         run: claude plugin validate --strict .
 
   # The autonomy tier's compensating control, live on keel itself: a real

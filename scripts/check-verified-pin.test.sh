@@ -376,6 +376,72 @@ echo "code" > src/with-checks.ts
 git add .claude/keel-auto-merge-checks.json src/with-checks.ts && git commit -qm "check-contract + code, no pinned spec"
 check "check-contract + a code file is still a code PR → fails (carve-out did not widen)" 1 "$BASE2"
 
+# --- --plan-only-check classification mode (cases 34+). Own helper: the mode's
+#     invocation shape differs (leading flag), and it must be tested through the
+#     real CLI, never by sourcing internals.
+check_mode() { # desc  expected_exit  [base_ref]
+  local desc="$1" exp="$2" base="${3:-$BASE}" got
+  BASE_REF="$base" bash "$SCRIPT" --plan-only-check HEAD >/dev/null 2>&1 && got=0 || got=$?
+  if [ "$got" -eq "$exp" ]; then
+    echo "ok   - $desc"; pass=$((pass+1))
+  else
+    echo "FAIL - $desc (got exit $got, want $exp)"; failc=$((failc+1))
+  fi
+}
+
+# 34. Pure plan diff → plan-only (exit 0). Targeted add: `git add -A` here would sweep
+#     untracked leftovers from earlier cases into the commit and poison the diff.
+fresh c34-mode-plan "$BASE2"
+echo "more" >> specs/00-product.md
+git add specs/00-product.md && git commit -qm "plan only"
+check_mode "mode: pure plan diff classifies plan-only" 0 "$BASE2"
+
+# 35. Pure code diff → not plan-only (non-zero).
+fresh c35-mode-code "$BASE2"
+echo "code" > src/mode.ts
+git add -A && git commit -qm "code"
+check_mode "mode: code diff is not plan-only" 1 "$BASE2"
+
+# 36. The code carve-out cuts through the specs/ glob: a stack-profile diff is code.
+fresh c36-mode-carveout "$BASE2"
+echo "profile" > specs/stack-profile.md
+git add -A && git commit -qm "stack profile"
+check_mode "mode: specs/stack-profile.md is code, not plan" 1 "$BASE2"
+
+# 37. The inverse carve-out: a sole auto-merge-marker diff is plan.
+fresh c37-mode-marker "$BASE2"
+mkdir -p .claude
+printf '{"scope":"project","created":"2026-08-16T00:00:00Z","invoker":"human:x"}\n' > .claude/keel-auto-merge.json
+git add -f .claude/keel-auto-merge.json && git commit -qm "marker"
+check_mode "mode: sole .claude/keel-auto-merge.json diff is plan-only" 0 "$BASE2"
+
+# 38. Mixed diff → not plan-only.
+fresh c38-mode-mixed "$BASE2"
+echo "more" >> specs/00-product.md
+echo "code" > src/mixed.ts
+git add -A && git commit -qm "mixed"
+check_mode "mode: mixed plan+code diff is not plan-only" 1 "$BASE2"
+
+# 39. Empty diff (HEAD == base) → plan-only.
+fresh c39-mode-empty "$BASE2"
+check_mode "mode: empty diff classifies plan-only" 0 "$BASE2"
+
+# 40. FAIL-CLOSED: an unresolvable base ref exits non-zero — never plan-only. A
+#     misconfigured CI (missing fetch) must not turn into a suite skip.
+fresh c40-mode-badref "$BASE2"
+echo "more" >> specs/00-product.md
+git add -A && git commit -qm "plan only"
+check_mode "mode: unresolvable BASE_REF fails closed (never plan-only)" 1 "no-such-ref"
+
+# 41. The mode never applies the bootstrap window: a code diff off BASE (window OPEN —
+#     the gate exempts it) still classifies not-plan-only. Classification and
+#     exemption are different questions.
+fresh c41-mode-no-bootstrap "$BASE"
+echo "code" > src/boot.ts
+git add -A && git commit -qm "code in bootstrap window"
+check "gate: code PR in bootstrap window is exempt (control for c41)" 0 "$BASE"
+check_mode "mode: bootstrap window does not widen classification — code diff still not plan-only" 1 "$BASE"
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

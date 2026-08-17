@@ -76,7 +76,14 @@ changes behavior.
   paths intact (mode handling is additive dispatch), and every pre-existing test case in
   `scripts/check-verified-pin.test.sh` passes unmodified — no existing case is edited or
   deleted. *Falsifiable:* any edited/deleted pre-existing test case, or a changed
-  default-path behavior, fails.
+  default-path behavior, fails. **One recorded exception (build-time drift, per the
+  run-discovered-drift rule):** the pre-pin security review confirmed a rename-smuggling
+  hole (a code file `git mv`'d into a plan path classified plan-only — rename detection
+  emits only the destination), fixed by `--no-renames` on both gate diffs. That is a
+  deliberate default-path behavior change, strictly fail-closed (no previously-failing
+  input now passes; the exemption only narrows), matching `merge-guard.sh`'s existing
+  diff rule and locked by regression case 42. It is the sole sanctioned deviation from
+  the byte-equivalence clause.
 - [auto] **Self-test coverage for the mode.** `scripts/check-verified-pin.test.sh` gains
   appended cases covering at least: pure plan diff → 0; pure code diff → non-zero; a
   `specs/stack-profile.md` diff → non-zero (code carve-out); a

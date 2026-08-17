@@ -76,7 +76,14 @@ changes behavior.
   paths intact (mode handling is additive dispatch), and every pre-existing test case in
   `scripts/check-verified-pin.test.sh` passes unmodified — no existing case is edited or
   deleted. *Falsifiable:* any edited/deleted pre-existing test case, or a changed
-  default-path behavior, fails.
+  default-path behavior, fails. **One recorded exception (build-time drift, per the
+  run-discovered-drift rule):** the pre-pin security review confirmed a rename-smuggling
+  hole (a code file `git mv`'d into a plan path classified plan-only — rename detection
+  emits only the destination), fixed by `--no-renames` on both gate diffs. That is a
+  deliberate default-path behavior change, strictly fail-closed (no previously-failing
+  input now passes; the exemption only narrows), matching `merge-guard.sh`'s existing
+  diff rule and locked by regression case 42. It is the sole sanctioned deviation from
+  the byte-equivalence clause.
 - [auto] **Self-test coverage for the mode.** `scripts/check-verified-pin.test.sh` gains
   appended cases covering at least: pure plan diff → 0; pure code diff → non-zero; a
   `specs/stack-profile.md` diff → non-zero (code carve-out); a
@@ -134,3 +141,5 @@ doctrine prose — closable by reading the named files, running the gate self-te
 running the named checks). No `[runtime]` walk — keel is no-UI. Pre-pin
 `/security-review` applies: this milestone edits the shipped canonical gate script (a
 trust-base-adjacent surface), so the review runs before the pin.
+
+verified: clean at 52dc4c9, 2026-08-16, via fresh-context verifier subagent (full pass at 5d63e0c: 8/9 conditions evidenced with file:line and live probes — mode semantics with fail-closed prelude confirmed by direct invocation, seven mode test cases plus bootstrap-independence and rename regression all green 51/0, guards classify step absorbing the exit code with no job-level `if:` and no `paths:` filters, the three universal jobs byte-unchanged vs origin/main, Q11 clause complete with the existing three clauses preserved, spec-foundation host byte-preserved outside its one sentence, anchors live 93→98, no-weakening diff-list confirmed, full battery + 13 self-test suites 497 assertions 0 failed; condition-2 deviation — the `--no-renames` fail-closed tightening from the pre-pin security review's confirmed rename-smuggling finding — flagged there, then sanctioned by the recorded build-time drift amendment and re-confirmed by a focused delta verification at 38e4365: anchor addition live at 99 total, delta isolation exact, battery green at this code tip). Pre-pin /security-review ran: one confirmed finding (rename-into-plan-path classified plan-only, 0.95), fixed at 5d63e0c with `--no-renames` on both gate diffs + regression case 42; all other probed surfaces cleared. (evidence: both verifier reports in PR)

@@ -1,0 +1,24 @@
+# plan-only-fast-path — load-bearing seams (file-path<TAB>literal-anchor).
+# One file per feature; never edit another feature's anchor file (the §4 rule).
+#
+# The three rules the milestone spec names as load-bearing: never a paths: filter
+# on a required check, the three universal checks are never fast-pathed, and the
+# classifier is the canonical script — never duplicated. Each literal confirmed
+# present verbatim on ONE physical line in its named file — check-skill-anchors.sh
+# matches fixed strings (grep -F) line-by-line.
+
+# --- never a paths: filter on a required check (the wedged-merge failure mode) ---
+references/profile-interface.md	**never a workflow `paths:` filter on a required check** — a required check that never reports wedges the merge behind branch protection, while an early-exited job runs and reports.
+
+# --- the three universal checks are never fast-pathed ---
+references/profile-interface.md	The pin gate, the plan lint, and the security review run on **every** PR — they are never fast-pathed.
+
+# --- the classifier is canonical and fail-closed, never duplicated ---
+references/profile-interface.md	`scripts/check-verified-pin.sh --plan-only-check` — fail-closed: a classifier error runs everything, never skips
+references/profile-interface.md	early-exit on plan-only diffs via the project's copied canonical classifier
+
+# --- the mode's own fail-closed contract, pinned at the script ---
+scripts/check-verified-pin.sh	#     missing merge base (shallow clone), or an erroring diff exits non-zero and
+
+# --- spec-foundation wires the early-exit from birth via the COPIED classifier ---
+skills/spec-foundation/SKILL.md	and wire the ladder's suite-grade jobs with the plan-only early-exit via the copied classifier (`check-verified-pin.sh --plan-only-check`)

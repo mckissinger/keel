@@ -442,6 +442,17 @@ git add -A && git commit -qm "code in bootstrap window"
 check "gate: code PR in bootstrap window is exempt (control for c41)" 0 "$BASE"
 check_mode "mode: bootstrap window does not widen classification — code diff still not plan-only" 1 "$BASE"
 
+# 42. Rename-into-plan-path stays visible: with rename detection, --name-only shows only
+#     the destination, so a code file git-mv'd into specs/ would classify plan-only while
+#     deleting code from the tree. --no-renames decomposes it to add+delete; the deleted
+#     code path keeps the diff non-plan in BOTH the mode and the gate's exemption.
+fresh c42-rename-into-plan "$BASE2"
+echo "code" > src/renamed.ts
+git add src/renamed.ts && git commit -qm "code file lands"
+git mv src/renamed.ts specs/renamed.ts && git commit -qm "rename code into specs/"
+check_mode "mode: code file renamed into specs/ is NOT plan-only (--no-renames)" 1 "$(git rev-parse HEAD~1)"
+check "gate: rename-into-specs/ is not exempt as plan-only either" 1 "$(git rev-parse HEAD~1)"
+
 echo "-------------------------------------"
 echo "$pass passed, $failc failed"
 [ "$failc" -eq 0 ]

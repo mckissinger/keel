@@ -112,9 +112,14 @@ git merge-base "$BASE_REF" "$HEAD_REF" >/dev/null 2>&1 \
   || fail "no merge base between BASE_REF '$BASE_REF' and HEAD_REF '$HEAD_REF' — likely a shallow clone (use fetch-depth: 0 / git fetch --unshallow for a full fetch) or unrelated histories; the diff cannot be computed and must never read as 'no changes'"
 
 # 1. What does this PR change (vs the merge-base with BASE_REF)?
+#    --no-renames: with rename detection, --name-only emits only the DESTINATION path,
+#    so a code file renamed into specs/ would classify as plan and its deletion from the
+#    code tree would be invisible to both the exemption and the classification mode.
+#    Decomposing renames into add+delete keeps the code-side path in the list (the same
+#    rule, for the same reason, as merge-guard.sh's diff).
 changed=()
 while IFS= read -r f; do [ -n "$f" ] && changed+=("$f"); done \
-  < <(git diff --name-only "$BASE_REF"..."$HEAD_REF")
+  < <(git diff --no-renames --name-only "$BASE_REF"..."$HEAD_REF")
 
 # 1.5. Classification mode exits here — after the shared fail-closed prelude (-1/0/0.5),
 #      before every gate-only concern (exemption, bootstrap window, pins, drift). An
@@ -196,7 +201,7 @@ for spec in "${specs[@]}"; do
   drift=()
   while IFS= read -r f; do
     [ -n "$f" ] && { is_plan_path "$f" || drift+=("$f"); }
-  done < <(git diff --name-only "$sha" "$HEAD_REF")
+  done < <(git diff --no-renames --name-only "$sha" "$HEAD_REF")
   [ ${#drift[@]} -ne 0 ] && \
     fail "$spec — code changed after the pin ($sha); verified code != merged code: ${drift[*]}"
 
